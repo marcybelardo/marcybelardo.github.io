@@ -1,43 +1,79 @@
-# Astro Starter Kit: Minimal
+# Marceline Portfolio
 
-```sh
-npm create astro@latest -- --template minimal
-```
+Personal portfolio website for Marceline — a static site built with Astro, React, TypeScript, and TailwindCSS.
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
-
-## 🚀 Project Structure
-
-Inside of your Astro project, you'll see the following folders and files:
+## Project Structure
 
 ```text
 /
-├── public/
+├── public/                 # Static assets (favicons, images, etc.)
 ├── src/
-│   └── pages/
-│       └── index.astro
-└── package.json
+│   ├── components/         # Reusable Astro/React components
+│   ├── content/            # Content collections (blog, projects, etc.)
+│   │   ├── blog/           # Blog posts (markdown)
+│   ├── layouts/            # Shared page layouts
+│   ├── pages/              # Route pages
+│   └── styles/             # Global styles
+├── package.json
+└── README.md
 ```
 
-Astro looks for `.astro` or `.md` files in the `src/pages/` directory. Each page is exposed as a route based on its file name.
+## Commands
 
-There's nothing special about `src/components/`, but that's where we like to put any Astro/React/Vue/Svelte/Preact components.
+All commands are run from the project root with `pnpm`:
 
-Any static assets, like images, can be placed in the `public/` directory.
+| Command        | Action                                       |
+| :------------- | :------------------------------------------- |
+| `pnpm dev`     | Starts local dev server at `localhost:4321`  |
+| `pnpm build`   | Build your production site to `./dist/`      |
+| `pnpm preview` | Preview your build locally, before deploying |
+| `pnpm astro`   | Run Astro CLI commands                       |
 
-## 🧞 Commands
+## Creating a Blog Post
 
-All commands are run from the root of the project, from a terminal:
+Blog posts live in `src/content/blog/`. Each file becomes a page at `/code/blog/<filename>/`.
 
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `npm install`             | Installs dependencies                            |
-| `npm run dev`             | Starts local dev server at `localhost:4321`      |
-| `npm run build`           | Build your production site to `./dist/`          |
-| `npm run preview`         | Preview your build locally, before deploying     |
-| `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `npm run astro -- --help` | Get help using the Astro CLI                     |
+Create a new `.md` file inside that directory. Only `title` and `date` are required; all other fields are optional.
 
-## 👀 Want to learn more?
+### Full example
 
-Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
+```markdown
+---
+title: My First Post
+date: 2026-06-02
+description: A short preview for the blog listing page.
+image: ../../assets/my-photo.jpg
+imageAlt: Description of the image
+tags:
+  - Astro
+  - Web Design
+draft: false
+---
+
+## Post body
+
+Write your markdown here.
+```
+
+### Minimal example (text only)
+
+```markdown
+---
+title: Just Thoughts
+date: 2026-06-02
+---
+
+No images, no tags — just writing.
+```
+
+### Available frontmatter fields
+
+| Field         | Required | Description                             |
+| ------------- | -------- | --------------------------------------- |
+| `title`       | yes      | Post title                              |
+| `date`        | yes      | Publish date                            |
+| `description` | no       | Short excerpt shown on the blog listing |
+| `image`       | no       | Path to an image (relative to the file) |
+| `imageAlt`    | no       | Alt text for the image                  |
+| `tags`        | no       | List of tags for filtering              |
+| `draft`       | no       | Set `true` to exclude from the build    |

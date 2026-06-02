@@ -1,0 +1,32 @@
+@import "tailwindcss";
+
+/* ── Web 1.0 Base Styles ─────────────────────────────── */
+
+body {
+    font-family: "Times New Roman", Times, serif;
+    background-color: #fff;
+    color: #000;
+}
+
+/* Classic link style: blue, underlined, with visited/hover colors */
+a {
+    color: #0000ee;
+    text-decoration: underline;
+}
+
+a:visited {
+    color: #551a8b;
+}
+
+a:hover {
+    color: #ee0000;
+}
+
+a:focus {
+    outline: 1px dotted #000;
+}
+
+/* Allow nav bars and other elements to opt links out of underlines */
+a.no-underline {
+    text-decoration: none;
+}

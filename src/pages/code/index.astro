@@ -1,0 +1,99 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import CodeNav from "../../components/CodeNav.astro";
+import ProjectCard from "../../components/ProjectCard.astro";
+
+const skills = [
+  "TypeScript",
+  "React",
+  "Astro",
+  "Node.js",
+  "Python",
+  "PostgreSQL",
+];
+
+const projects = [
+  {
+    title: "Portfolio Site",
+    description:
+      "This very website — a static personal portfolio built with Astro, React, and TailwindCSS.",
+    tags: ["Astro", "React", "TypeScript"],
+  },
+  {
+    title: "CLI Task Manager",
+    description:
+      "A lightweight command-line tool for managing daily tasks and todos, written in Rust.",
+    tags: ["Rust", "CLI"],
+  },
+  {
+    title: "Weather Dashboard",
+    description:
+      "A real-time weather dashboard that pulls from the OpenWeather API and displays forecasts.",
+    tags: ["React", "API", "Charts"],
+  },
+];
+---
+
+<BaseLayout>
+  <CodeNav active="projects" />
+
+  <!-- Hero -->
+  <section class="min-h-[80vh] flex flex-col justify-center -mt-12">
+    <h1
+      class="font-bold text-neutral-900 leading-none px-0 text-[clamp(2.5rem,12vw,10rem)]"
+    >
+      Marceline Belardo
+    </h1>
+    <p class="text-xl text-neutral-600 max-w-2xl leading-relaxed px-6 mt-4">
+      I build things for the web. This is where I share my work, my thoughts,
+      and the occasional experiment.
+    </p>
+  </section>
+
+  <!-- Bio & Skills -->
+  <section class="mb-16 px-6">
+    <h2 class="text-2xl font-semibold text-neutral-900 mb-4">About Me</h2>
+    <p class="text-neutral-600 leading-relaxed mb-5">
+      I'm a developer who enjoys crafting clean, functional interfaces and
+      digging into how things work under the hood. I value simplicity,
+      readability, and tooling that stays out of the way.
+    </p>
+    <ul class="flex flex-wrap gap-2">
+      {
+        skills.map((skill) => (
+          <li class="text-sm font-medium text-neutral-700 bg-neutral-100 px-3 py-1.5">
+            {skill}
+          </li>
+        ))
+      }
+    </ul>
+  </section>
+
+  <!-- Projects -->
+  <section class="mb-16 px-6">
+    <h2 class="text-2xl font-semibold text-neutral-900 mb-5">Projects</h2>
+    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {
+        projects.map((project) => (
+          <ProjectCard
+            title={project.title}
+            description={project.description}
+            tags={project.tags}
+          />
+        ))
+      }
+    </div>
+  </section>
+
+  <!-- Contact -->
+  <section class="px-6">
+    <h2 class="text-2xl font-semibold text-neutral-900 mb-4">Contact</h2>
+    <p class="text-neutral-600 leading-relaxed">
+      Feel free to reach out via email at{" "}
+      <a href="mailto:hello@marceline.dev"> hello@marceline.dev </a>{" "}
+      or find me on{" "}
+      <a href="#"> GitHub </a>
+      .
+    </p>
+  </section>
+</BaseLayout>

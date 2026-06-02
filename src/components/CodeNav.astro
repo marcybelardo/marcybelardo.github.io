@@ -1,0 +1,20 @@
+---
+const { active = "projects" } = Astro.props;
+---
+
+<nav class="flex items-center gap-5 mb-12 pb-3 border-b border-neutral-100">
+  <a
+    href="/code/"
+    class="text-sm font-medium tracking-wider uppercase no-underline"
+    class:list={[active === "projects" ? "font-bold" : ""]}
+  >
+    Projects
+  </a>
+  <a
+    href="/code/blog/"
+    class="text-sm font-medium tracking-wider uppercase no-underline"
+    class:list={[active === "blog" ? "font-bold" : ""]}
+  >
+    Blog
+  </a>
+</nav>

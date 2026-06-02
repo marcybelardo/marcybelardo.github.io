@@ -1,0 +1,28 @@
+---
+title: The Devil You Know, the Devil You Don't
+date: 2026-06-02
+description: Where Marceline comes to terms with AI's usefulness, and why its issues run deeper than technology
+tags:
+  - AI
+  - Technology
+  - Politics
+draft: false
+---
+
+My film professor always used to tell me that true critique can only come from love and hate in equal measure. The example he always liked to use was Andy Warhol. While he was deeply enamored with pop culture, with celebrity and glamour, he was just as effective in depicting its emptiness, the plastic nature of American commercial culture. His film "Kiss" features fifty minutes of couples kissing in three and a half minute segments. He fully isolates the iconography of filmic romance and turns it into erotic spectacle, a tiring exercise in belaboring the point.
+
+I would not call myself a true believer of AI. While cries of excitement emanate from the tech spaces I inhabit, the voices in my artistic spaces are dense with denoucement. I can hardly think of anyone I personally know who really really likes AI. Best I can think of are those who begrudgingly partake, maybe as part of work or a lack of working time. In many ways, the creative world is largely uninterested to hostile towards it.
+
+This has always troubled me, not because I disagreed with any of my friends' concerns, but because I really hardly knew enough about the tech to say I disliked it with confidence. No one I know uses it regularly, and are exposed to it mainly via what it produces: slop, slop on an industrial scale. That, and the news articles of layoffs, firings, and mass labor replacement. Surely, it can't be _that_ good, right? Not so good that it would be worth all this animosity, all the burnt bridges between corporations and their own (former) workers?
+
+Unlike most of my artistically inclined friends, I've always maintained a strong interest in computers and technology. I can't think of another painter I know who also has a homelab. As such, when I heard of local LLMs being a thing, I decided to give one a spin. I had a decent graphics card in my PC (an RTX 4070) so I installed a Mistal dev model and tried to make it work. It didn't really. I couldn't even get it to write the code directly. It was a waste of time, I thought. I got rid of the whole thing, I closed the door on it. No more of this.
+
+But I couldn't shake the curiosity. I noticed an uptick in optimism about AI coding agents in late 2025, and as I tried hard to build projects to try and apply for jobs, I was recommended videos and articles about all the crazy things people are getting up to in their IDEs. As I browsed job listings, I was greeted with entry after entry about AI-powered teams, AI-first engineering, AI, AI, AI. LinkedIn became a cathedral to AI in all ways. God, how good could it be? Do I really have to pay for this shit?
+
+I decided to try out Deepseek and put about five bucks into it to see how long it'd last. I had an idea for a budget management app for my family, where all of us could track transactions from a single pool of funds. I decided I would do my best to only ask for code in small bits, to read as much as I could, and never let in things I could not understand. Slowly, the app took shape, a Java backend that I could reason about, a React frontend. It's not much, but there's a working API and a database that functions. More than I ever managed on my own. And would you look at that, I barely spent half a dollar.
+
+Tokens have since gone up in price by a lot for American models, so in my eyes I was getting away with murder. It's strange because it feels like cheating. I'm not actually putting this stuff down. I can't say I know every letter in my codebase like the back of my hand. Yet, most software developers would find this totally fine. If anything, it represents another step in a lineage of trying to write as little as humanly possible to get the right functions. It's the complete opposite mentality from writing, where one's choice of words and sentence structure is absolute.
+
+True critique is born from love and hatred in equal measure. And the part of me that builds software wants to love this. I've finished projects I've hit dead ends with, I've finally got a functional website up and running after more than a year. But with knowledge I'm better able to articulate my fears, which are many. I've yet to see an adequate answer to its labor effects. At the very least, there seems to be little care in the Western world for those who will be impacted economically by labor disruption. If anything, it's become clearer to me that most people who hate AI are upset by abusive corporations more than the technology itself. I don't believe a painter who loves their craft has anything to fear from AI, but someone whose livelihood relies on freelance illustration projects for corporate partners might find themselves out on the street. This gap is not being closed.
+
+Most probably, I'm going to keep generating code with this. But I don't think I'll be out telling my friends to give it a shot. I live in the Philippines, where many professionals have little choice but to rely on remote work to have enough to live a decent life. AI is, by its reliance on frontier models, heavily corporatized and ripe for exploitation. Not to mention their CEOs are callous to the suffering of working people at best, and utter monsters at worst. But I don't want to battle shadows against the walls of a cave. We must point out the real enemy first to take real action, to hope to take this technology and make it one that serves the needs of the many instead of the few.
