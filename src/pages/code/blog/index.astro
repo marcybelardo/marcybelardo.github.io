@@ -3,25 +3,28 @@ import BaseLayout from "../../../layouts/BaseLayout.astro";
 import CodeNav from "../../../components/CodeNav.astro";
 import { getCollection } from "astro:content";
 
-const posts = await getCollection("blog", ({ data }) => {
+const posts = await getCollection("blog", ({ data }: any) => {
   return import.meta.env.DEV ? true : !data.draft;
 });
 
-posts.sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
+posts.sort((a: any, b: any) => b.data.date.getTime() - a.data.date.getTime());
 ---
 
 <BaseLayout>
   <CodeNav active="blog" />
-  <section class="py-12 px-6">
-    <h1 class="text-3xl font-bold text-neutral-900 mb-6">Blog</h1>
+  <section class="py-12 px-6 mx-auto max-w-2xl">
+    <h1 class="text-3xl font-bold text-neutral-900 mb-6">
+      Blog
+      <a href="/rss.xml" class="text-sm font-normal align-middle ml-3">RSS</a>
+    </h1>
     {
       posts.length === 0 ? (
         <p class="text-neutral-600">No posts yet.</p>
       ) : (
         <ul class="space-y-8">
-          {posts.map((post) => (
+          {posts.map((post: any) => (
             <li>
-              <a href={`/code/blog/${post.slug}/`}>
+              <a href={`/code/blog/${post.id}/`}>
                 <h2 class="text-xl font-bold mb-1">{post.data.title}</h2>
               </a>
               <time

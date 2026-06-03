@@ -2,23 +2,36 @@
 import "../styles/global.css";
 ---
 
-<nav class="flex items-center gap-6 px-6 py-4 border-b border-neutral-200">
-  <a
-    href="/code/"
-    class="font-semibold text-sm tracking-widest uppercase no-underline">Code</a
-  >
-  <a
-    href="/paintings"
-    class="font-semibold text-sm tracking-widest uppercase no-underline"
-    >Paintings</a
-  >
-  <a
-    href="/photography"
-    class="font-semibold text-sm tracking-widest uppercase no-underline"
-    >Photography</a
-  >
-</nav>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" href="/favicon.ico" />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="generator" content={Astro.generator} />
+    <title>Marceline</title>
+  </head>
+  <body>
+    <nav class="flex items-center gap-6 px-6 py-4 border-b border-neutral-200">
+      <a
+        href="/code/"
+        class="font-semibold text-sm tracking-widest uppercase no-underline"
+        >Code</a
+      >
+      <a
+        href="/paintings"
+        class="font-semibold text-sm tracking-widest uppercase no-underline"
+        >Paintings</a
+      >
+      <a
+        href="/photography"
+        class="font-semibold text-sm tracking-widest uppercase no-underline"
+        >Photography</a
+      >
+    </nav>
 
-<main class="w-full py-12">
-  <slot />
-</main>
+    <main class="w-full py-12">
+      <slot />
+    </main>
+  </body>
+</html>

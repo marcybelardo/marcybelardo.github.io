@@ -1,5 +1,6 @@
 import { defineCollection } from "astro:content";
 import { z } from "astro/zod";
+import { glob } from "astro/loaders";
 
 const project = defineCollection({
   schema: z.object({
@@ -23,6 +24,20 @@ const photograph = defineCollection({
 });
 
 const blog = defineCollection({
+  loader: glob({
+    base: "./src/content/blog",
+    pattern: "**/*.{md,mdx}",
+    generateId: ({ data }) => {
+      const title = typeof data.title === "string" ? data.title : "";
+      return title
+        .replace(/[^a-zA-Z0-9\s]/g, "")
+        .split(/\s+/)
+        .filter(Boolean)
+        .slice(0, 4)
+        .join("-")
+        .toLowerCase();
+    },
+  }),
   schema: z.object({
     title: z.string(),
     date: z.coerce.date(),
