@@ -9,11 +9,6 @@ export default defineConfig({
   site: "https://marcybelardo.github.io",
   integrations: [react()],
   vite: {
-    resolve: {
-      alias: {
-        "@": "/src",
-      },
-    },
     plugins: [tailwindcss()],
   },
 });
