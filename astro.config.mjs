@@ -9,6 +9,11 @@ export default defineConfig({
   site: "https://marcelinebelardo.com",
   integrations: [react()],
   vite: {
+    resolve: {
+      alias: {
+        "@": "/src",
+      },
+    },
     plugins: [tailwindcss()],
   },
 });

@@ -1,77 +1,102 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
-import CodeNav from "../../components/CodeNav.astro";
 import ProjectCard from "../../components/ProjectCard.astro";
+import heroImage from "../../assets/20260425_29.jpg";
+import contactImage from "../../assets/IMG_6936_EDIT copy.jpg";
 
 const skills = [
+  "C",
+  "Rust",
+  "Java",
   "TypeScript",
   "React",
-  "Astro",
-  "Node.js",
   "Python",
   "PostgreSQL",
 ];
 
 const projects = [
   {
+    title: "lilyhttpd",
+    description: "An HTTP server for static files written in C",
+    tags: ["C", "HTTP", "Networking"],
+    href: "https://github.com/marcybelardo/lilyhttpd",
+  },
+  // {
+  //   title: "Oro",
+  //   description:
+  //     "Budget management app for personal and group spending, built with Java Spring Boot and React",
+  //   tags: ["Java", "Spring Boot", "React", "API", "Charts"],
+  //   href: "https://github.com/marcybelardo/oro",
+  // },
+  {
+    title: "cmprsr-rs",
+    description: "Canonical Huffman compression tool written in Rust",
+    tags: ["Rust", "Compression"],
+    href: "https://github.com/marcybelardo/cmprsr-rs",
+  },
+  {
     title: "Portfolio Site",
     description:
       "This very website — a static personal portfolio built with Astro, React, and TailwindCSS.",
     tags: ["Astro", "React", "TypeScript"],
-  },
-  {
-    title: "CLI Task Manager",
-    description:
-      "A lightweight command-line tool for managing daily tasks and todos, written in Rust.",
-    tags: ["Rust", "CLI"],
-  },
-  {
-    title: "Weather Dashboard",
-    description:
-      "A real-time weather dashboard that pulls from the OpenWeather API and displays forecasts.",
-    tags: ["React", "API", "Charts"],
+    href: "#",
   },
 ];
 ---
 
 <BaseLayout>
-  <CodeNav active="projects" />
-
   <!-- Hero -->
-  <section class="min-h-[80vh] flex flex-col justify-center -mt-12">
-    <h1
-      class="font-bold text-neutral-900 leading-none px-0 text-[clamp(2.5rem,12vw,10rem)]"
-    >
-      Marceline Belardo
-    </h1>
-    <p class="text-xl text-neutral-600 max-w-2xl leading-relaxed px-6 mt-4">
-      I build things for the web. This is where I share my work, my thoughts,
-      and the occasional experiment.
-    </p>
+  <section
+    id="hero"
+    class="min-h-[80vh] flex flex-col justify-center overflow-hidden"
+  >
+    <div class="flex flex-col">
+      <img
+        src={heroImage.src}
+        alt="Marceline Belardo holding a camera, taking a selfie"
+        class="self-end w-1/3 max-h-[50vh] object-contain mb-8"
+        data-parallax-speed="0.3"
+      />
+      <div>
+        <h1
+          class="font-bold text-neutral-900 leading-none text-[clamp(2.5rem,12vw,10rem)]"
+          data-parallax-speed="0.1"
+        >
+          Marceline Belardo
+        </h1>
+        <p
+          class="text-xl text-right font-medium text-red-500 leading-relaxed mt-4"
+          data-parallax-speed="-0.3"
+        >
+          Software Developer
+        </p>
+      </div>
+    </div>
   </section>
 
   <!-- Bio & Skills -->
-  <section class="mb-16 px-6">
-    <h2 class="text-2xl font-semibold text-neutral-900 mb-4">About Me</h2>
-    <p class="text-neutral-600 leading-relaxed mb-5">
-      I'm a developer who enjoys crafting clean, functional interfaces and
-      digging into how things work under the hood. I value simplicity,
-      readability, and tooling that stays out of the way.
-    </p>
-    <ul class="flex flex-wrap gap-2">
+  <section class="mb-16">
+    <div class="max-w-48 mx-auto">
+      <p class="accent text-xl text-justify text-neutral-800 mb-5">
+        Building maintainable, friendly, and performant programs.
+      </p>
+    </div>
+    <div class="max-w-48" data-parallax-speed="-0.4">
       {
-        skills.map((skill) => (
-          <li class="text-sm font-medium text-neutral-700 bg-neutral-100 px-3 py-1.5">
-            {skill}
-          </li>
-        ))
+        skills.map((skill, index) => {
+          return (
+            <span class="font-medium text-lg text-justify text-red-500">
+              {index != 0 ? ", " : ""}
+              {skill}
+            </span>
+          );
+        })
       }
-    </ul>
+    </div>
   </section>
 
   <!-- Projects -->
-  <section class="mb-16 px-6">
-    <h2 class="text-2xl font-semibold text-neutral-900 mb-5">Projects</h2>
+  <section class="mb-16">
     <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {
         projects.map((project) => (
@@ -79,6 +104,7 @@ const projects = [
             title={project.title}
             description={project.description}
             tags={project.tags}
+            href={project.href}
           />
         ))
       }
@@ -86,14 +112,42 @@ const projects = [
   </section>
 
   <!-- Contact -->
-  <section class="px-6">
-    <h2 class="text-2xl font-semibold text-neutral-900 mb-4">Contact</h2>
-    <p class="text-neutral-600 leading-relaxed">
-      Feel free to reach out via email at{" "}
-      <a href="mailto:hello@marceline.dev"> hello@marceline.dev </a>{" "}
-      or find me on{" "}
-      <a href="#"> GitHub </a>
-      .
-    </p>
+  <section>
+    <div class="relative overflow-hidden w-full h-64">
+      <img
+        src={contactImage.src}
+        alt=""
+        class="w-full h-full object-cover object-bottom"
+      />
+      <div
+        class="absolute inset-0 flex flex-row justify-center items-center px-6"
+      >
+        <div class="bg-neutral-100 px-24 py-10">
+          <h2 class="text-2xl font-semibold text-red-600">Contact</h2>
+          <p class="text-neutral-800 leading-relaxed">
+            Feel free to reach out via email at{" "}
+            <a href="mailto:code@marcelinebelardo.com">
+              code@marcelinebelardo.com
+            </a>{" "}
+            or find me on{" "}
+            <a href="https://github.com/marcybelardo"> GitHub </a>.
+          </p>
+        </div>
+      </div>
+    </div>
   </section>
+
+  <script>
+    const els = document.querySelectorAll("[data-parallax-speed]");
+
+    function handleScroll() {
+      const scrollY = window.scrollY;
+      els.forEach((el) => {
+        const speed = parseFloat(el.getAttribute("data-parallax-speed") || "0");
+        el.style.transform = `translateY(${scrollY * speed}px)`;
+      });
+    }
+
+    window.addEventListener("scroll", handleScroll);
+  </script>
 </BaseLayout>

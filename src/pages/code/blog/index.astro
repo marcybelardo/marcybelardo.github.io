@@ -1,6 +1,5 @@
 ---
 import BaseLayout from "../../../layouts/BaseLayout.astro";
-import CodeNav from "../../../components/CodeNav.astro";
 import { getCollection } from "astro:content";
 
 const posts = await getCollection("blog", ({ data }: any) => {
@@ -11,8 +10,7 @@ posts.sort((a: any, b: any) => b.data.date.getTime() - a.data.date.getTime());
 ---
 
 <BaseLayout>
-  <CodeNav active="blog" />
-  <section class="py-12 px-6 mx-auto max-w-2xl">
+  <section class="py-12 mx-auto max-w-2xl">
     <h1 class="text-3xl font-bold text-neutral-900 mb-6">
       Blog
       <a href="/rss.xml" class="text-sm font-normal align-middle ml-3">RSS</a>
@@ -38,7 +36,7 @@ posts.sort((a: any, b: any) => b.data.date.getTime() - a.data.date.getTime());
                 })}
               </time>
               {post.data.description && (
-                <p class="text-neutral-600 mt-1 leading-relaxed">
+                <p class="font-medium text-red-500 mt-1 leading-relaxed">
                   {post.data.description}
                 </p>
               )}

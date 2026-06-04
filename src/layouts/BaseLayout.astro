@@ -1,5 +1,14 @@
 ---
 import "../styles/global.css";
+import BskyLogo from "@/assets/bsky.svg";
+import GithubLogo from "@/assets/Github_Invertocat_Black.svg";
+import InstagramLogo from "@/assets/Instagram_Glyph_Black.svg";
+
+const path = Astro.url.pathname;
+
+const subLinks = path.startsWith("/code/")
+  ? [{ href: "/code/blog/", label: "Blog" }]
+  : [];
 ---
 
 <html lang="en">
@@ -9,29 +18,129 @@ import "../styles/global.css";
     <link rel="icon" href="/favicon.ico" />
     <meta name="viewport" content="width=device-width" />
     <meta name="generator" content={Astro.generator} />
-    <title>Marceline</title>
+    <title>Marceline Belardo</title>
   </head>
   <body>
-    <nav class="flex items-center gap-6 px-6 py-4 border-b border-neutral-200">
-      <a
-        href="/code/"
-        class="font-semibold text-sm tracking-widest uppercase no-underline"
-        >Code</a
+    <header
+      class="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-[5%] py-3 bg-white border-b border-neutral-200"
+    >
+      <button
+        id="menu-btn"
+        class="text-2xl leading-none cursor-pointer bg-transparent border-none pb-1.5 text-neutral-900 hover:text-neutral-500"
       >
-      <a
-        href="/paintings"
-        class="font-semibold text-sm tracking-widest uppercase no-underline"
-        >Paintings</a
-      >
-      <a
-        href="/photography"
-        class="font-semibold text-sm tracking-widest uppercase no-underline"
-        >Photography</a
-      >
-    </nav>
+        ☰
+      </button>
 
-    <main class="w-full py-12">
+      {
+        subLinks.length > 0 && (
+          <nav class="flex items-center gap-4 ml-4">
+            {subLinks.map((link) => (
+              <a
+                href={link.href}
+                class="no-underline text-sm font-medium uppercase tracking-wider"
+                class:list={[
+                  path.startsWith(link.href)
+                    ? "text-neutral-900"
+                    : "text-neutral-500 hover:text-neutral-700",
+                ]}
+              >
+                {link.label}
+              </a>
+            ))}
+          </nav>
+        )
+      }
+
+      <div class="flex items-center gap-4 ml-auto">
+        <a
+          href="https://bsky.app/profile/marcelinebelardo.com"
+          class="no-underline text-neutral-700 hover:text-neutral-500"
+          title="Bluesky"
+        >
+          <BskyLogo class="w-5 h-5" />
+        </a>
+        <a
+          href="https://instagram.com/marcelinebelardo"
+          class="no-underline text-neutral-700 hover:text-neutral-500"
+          title="Instagram"
+        >
+          <GithubLogo class="w-5 h-5" />
+        </a>
+        <a
+          href="https://github.com/marcybelardo"
+          class="no-underline text-neutral-700 hover:text-neutral-500"
+          title="GitHub"
+        >
+          <InstagramLogo class="w-5 h-5" />
+        </a>
+      </div>
+    </header>
+
+    <aside
+      id="sidebar"
+      class="fixed top-0 left-0 z-40 h-full w-64 bg-white border-r border-neutral-200 -translate-x-full transition-transform duration-200 ease-in-out pt-16"
+    >
+      <nav class="flex flex-col px-6 text-base">
+        <a
+          href="/code/"
+          class="no-underline py-2"
+          class:list={[path.startsWith("/code/") ? "font-bold" : ""]}
+        >
+          Code
+        </a>
+        <a
+          href="/code/blog/"
+          class="no-underline py-2 pl-6"
+          class:list={[path.startsWith("/code/blog/") ? "font-bold" : ""]}
+        >
+          Blog
+        </a>
+        <a
+          href="/paintings/"
+          class="no-underline py-2"
+          class:list={[path.startsWith("/paintings/") ? "font-bold" : ""]}
+        >
+          Paintings
+        </a>
+        <a
+          href="/photography/"
+          class="no-underline py-2"
+          class:list={[path.startsWith("/photography/") ? "font-bold" : ""]}
+        >
+          Photography
+        </a>
+      </nav>
+    </aside>
+
+    <main class="w-full pt-16 pb-12 px-[5%]">
       <slot />
     </main>
+
+    <script>
+      const btn = document.getElementById("menu-btn");
+      const sidebar = document.getElementById("sidebar");
+
+      function toggle() {
+        sidebar?.classList.toggle("-translate-x-full");
+        sidebar?.classList.toggle("translate-x-0");
+      }
+
+      btn?.addEventListener("click", toggle);
+
+      sidebar?.querySelectorAll("a").forEach((a) => {
+        a.addEventListener("click", toggle);
+      });
+
+      document.addEventListener("click", (e) => {
+        if (
+          (e.target as Element)?.id !== "menu-btn" &&
+          !sidebar?.contains(e.target as Node) &&
+          sidebar?.classList.contains("translate-x-0")
+        ) {
+          sidebar?.classList.remove("translate-x-0");
+          sidebar?.classList.add("-translate-x-full");
+        }
+      });
+    </script>
   </body>
 </html>
