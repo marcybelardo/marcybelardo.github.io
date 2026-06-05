@@ -1,81 +1,42 @@
 # Marceline Portfolio — Agent Guide
 
-This file contains instructions for AI coding agents working on this project.
+Static portfolio site for Marceline covering coding, photography, and painting. Built with **Astro + React + TypeScript + TailwindCSS v4**.
 
-## Project Overview
-
-This is a **static personal portfolio website** for Marceline, covering three creative practices — **coding**, **photography**, and **painting** — each presented as a separate page on a unified site. Despite being under one domain, each section should look and feel distinct.
-
-- **Code** — A technical portfolio page showcasing skills and projects, plus a personal blog.
-- **Paintings** — Features an image carousel of paintings as the centerpiece, with additional pages for bio and contact info.
-- **Photography** — Similar to the paintings section, but photos are laid out and tiled directly on the index page (no carousel).
-
-## Technology Stack
-
-| Tool            | Purpose                      |
-| --------------- | ---------------------------- |
-| **Astro**       | Static site generation / SSG |
-| **React**       | Interactive components       |
-| **TypeScript**  | Type-safe JavaScript         |
-| **TailwindCSS** | Styling (not yet installed)  |
-
-## Available Commands
+## Commands
 
 ```sh
-pnpm dev         # Start local dev server at localhost:4321
-pnpm build       # Build production site to ./dist/
-pnpm preview     # Preview production build locally
-pnpm astro       # Run Astro CLI commands
+pnpm dev       # localhost:4321
+pnpm build     # production to ./dist/
+pnpm preview   # preview production build
+pnpm astro     # Astro CLI
 ```
 
-## Project Structure
+No lint, typecheck, or test scripts exist. `pnpm build` is the only validation step.
 
-```
-marceline-portfolio/
-├── public/                # Static assets (favicons, images, etc.)
-│   ├── favicon.ico
-│   └── favicon.svg
-├── src/
-│   ├── content/           # Astro content collections (blog posts, etc.)
-│   ├── content.config.ts  # Content collection configuration
-│   ├── layouts/           # Shared layout components
-│   └── pages/             # Route pages
-├── astro.config.mjs       # Astro configuration
-├── tsconfig.json          # TypeScript configuration
-└── package.json           # Dependencies and scripts
-```
+## Repo details an agent might miss
 
-## Coding Principles
+- **TailwindCSS** is v4, configured via `@tailwindcss/vite` plugin in `astro.config.mjs`. No `tailwind.config.*` or PostCSS config.
+- **Path alias**: `@/*` → `./src/*` (set in `tsconfig.json`).
+- **Node**: `>=22.12.0` required.
+- **Deploy**: auto-deploy to GitHub Pages on push to `main` (`.github/workflows/deploy.yml`).
+- **RSS**: at `/rss.xml`, powered by `@astrojs/rss`.
+- **`pnpm-workspace.yaml`** is single-package with restrictive build permissions (allows only `esbuild`/`sharp` install scripts).
 
-These are the most important rules to follow when working on this project:
+## Content collections (`src/content/`)
 
-1. **Simplicity over everything.**
-   - Do not add new packages or write new code unnecessarily.
-   - Prefer built-in Astro / React features over third-party libraries.
-   - If something can be done with a small component + existing tools, do that.
+Four collections: `blog`, `project`, `painting`, `photograph`. Defined in `src/content.config.ts`.
 
-2. **Prefer components for reused code.**
-   - Extract repeated markup or logic into shared components under `src/components/`.
-   - Keep components small and focused on a single responsibility.
+**Blog ID scheme** — IDs are generated from the first 4 alphanumeric words of the frontmatter `title`, lowercased and joined with `-` (not from the filename). Drafts (`draft: true`) are excluded in production builds.
 
-3. **Always ask for permission.**
-   - Before making significant structural changes, adding a new dependency, or refactoring something non-trivial, stop and ask the user.
-   - Propose your approach concisely and wait for approval before acting.
+Paintings and photography pages are currently placeholder ("Coming soon") — those sections are not yet implemented.
 
-4. **Stay consistent with the existing codebase.**
-   - Match the naming conventions, file organization, and coding style already in use.
-   - Don't change existing patterns unless the user explicitly asks.
+## Coding principles
 
-## Content Collections
+1. **Simplicity** — Prefer built-in Astro/React features. No new deps without asking.
+2. **Ask before acting** — Get approval for structural changes, new dependencies, non-trivial refactors.
+3. **Stay consistent** — Match existing naming, organization, and style.
+4. **Static only** — No SSR, no on-demand routes.
 
-Blog posts and other structured content should live in `src/content/` using Astro's content collections API. Configure them in `src/content.config.ts`.
+## Instructions for agents
 
-## Styling
-
-Style with **TailwindCSS**. Keep utility class usage clean and readable. Extract repeated utility patterns into component classes only when they meaningfully reduce duplication.
-
-## Important Constraints
-
-- The site must be **static** — no server-side rendering or on-demand routes.
-- Keep the build output in `./dist/` (Astro's default).
-- TypeScript strict mode is enabled — write type-safe code.
+1. When significant changes are made, update the AGENTS.md file

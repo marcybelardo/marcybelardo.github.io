@@ -1,5 +1,5 @@
 ---
-import BaseLayout from "../../../../layouts/BaseLayout.astro";
+import BaseLayout from "../../../layouts/BaseLayout.astro";
 import { getCollection, render } from "astro:content";
 
 export async function getStaticPaths() {
@@ -28,9 +28,22 @@ const { Content } = await render(post);
         })
       }
     </time>
-    <h1 class="text-3xl font-bold text-neutral-900 mt-1 mb-6">
+    <h1 class="text-3xl font-bold text-neutral-900 mt-1 mb-2">
       {post.data.title}
     </h1>
+    {post.data.tags && post.data.tags.length > 0 && (
+      <p class="text-sm italic text-neutral-400 mb-6">
+        {post.data.tags.map((tag: string, i: number) => [
+          i > 0 && ", ",
+          <a
+            href={`/blog/tags/${tag.toLowerCase()}/`}
+            class="hover:text-neutral-600 underline"
+          >
+            {tag}
+          </a>,
+        ])}
+      </p>
+    )}
     <div class="prose text-neutral-700 leading-relaxed space-y-4">
       <Content />
     </div>

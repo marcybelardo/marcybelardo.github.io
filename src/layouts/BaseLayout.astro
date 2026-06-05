@@ -5,10 +5,6 @@ import GithubLogo from "../assets/GitHub_Invertocat_Black.svg";
 import InstagramLogo from "../assets/Instagram_Glyph_Black.svg";
 
 const path = Astro.url.pathname;
-
-const subLinks = path.startsWith("/code/")
-  ? [{ href: "/code/blog/", label: "Blog" }]
-  : [];
 ---
 
 <html lang="en">
@@ -30,26 +26,6 @@ const subLinks = path.startsWith("/code/")
       >
         ☰
       </button>
-
-      {
-        subLinks.length > 0 && (
-          <nav class="flex items-center gap-4 ml-4">
-            {subLinks.map((link) => (
-              <a
-                href={link.href}
-                class="no-underline text-sm font-medium uppercase tracking-wider"
-                class:list={[
-                  path.startsWith(link.href)
-                    ? "text-neutral-900"
-                    : "text-neutral-500 hover:text-neutral-700",
-                ]}
-              >
-                {link.label}
-              </a>
-            ))}
-          </nav>
-        )
-      }
 
       <div class="flex items-center gap-4 ml-auto">
         <a
@@ -89,13 +65,6 @@ const subLinks = path.startsWith("/code/")
           Code
         </a>
         <a
-          href="/code/blog/"
-          class="no-underline py-2 pl-6"
-          class:list={[path.startsWith("/code/blog/") ? "font-bold" : ""]}
-        >
-          Blog
-        </a>
-        <a
           href="/paintings/"
           class="no-underline py-2"
           class:list={[path.startsWith("/paintings/") ? "font-bold" : ""]}
@@ -108,6 +77,13 @@ const subLinks = path.startsWith("/code/")
           class:list={[path.startsWith("/photography/") ? "font-bold" : ""]}
         >
           Photography
+        </a>
+        <a
+          href="/blog/"
+          class="no-underline py-2"
+          class:list={[path.startsWith("/blog/") ? "font-bold" : ""]}
+        >
+          Blog
         </a>
       </nav>
     </aside>

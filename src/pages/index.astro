@@ -2,4 +2,16 @@
 import BaseLayout from "../layouts/BaseLayout.astro";
 ---
 
-<BaseLayout />
+<BaseLayout>
+  <section class="min-h-[80vh] flex flex-col justify-center">
+    <h1 class="font-bold text-neutral-900 leading-none text-[clamp(2.5rem,12vw,10rem)]">
+      Marceline Belardo
+    </h1>
+    <nav class="mt-8 space-y-2">
+      <a href="/code/" class="text-xl font-medium text-neutral-600 hover:text-neutral-900 no-underline block">Code</a>
+      <a href="/paintings/" class="text-xl font-medium text-neutral-600 hover:text-neutral-900 no-underline block">Paintings</a>
+      <a href="/photography/" class="text-xl font-medium text-neutral-600 hover:text-neutral-900 no-underline block">Photography</a>
+      <a href="/blog/" class="text-xl font-medium text-neutral-600 hover:text-neutral-900 no-underline block">Blog</a>
+    </nav>
+  </section>
+</BaseLayout>
