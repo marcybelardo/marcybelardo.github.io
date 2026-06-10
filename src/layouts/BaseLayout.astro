@@ -27,6 +27,7 @@ const path = Astro.url.pathname;
         ☰
       </button>
 
+
       <div class="flex items-center gap-4 ml-auto">
         <a
           href="https://bsky.app/profile/marcelinebelardo.com"
@@ -57,6 +58,13 @@ const path = Astro.url.pathname;
       class="fixed top-0 left-0 z-40 h-full w-64 bg-white border-r border-neutral-200 -translate-x-full transition-transform duration-200 ease-in-out pt-16"
     >
       <nav class="flex flex-col px-6 text-base">
+        <a
+          href="/"
+          class="no-underline py-2"
+          class:list={[path.startsWith("/") && path.length == 1 ? "font-bold" : ""]}
+        >
+          Home
+        </a>
         <a
           href="/code/"
           class="no-underline py-2"
