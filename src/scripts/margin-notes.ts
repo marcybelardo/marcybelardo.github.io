@@ -22,6 +22,14 @@ type MarginNoteRuntime = {
 
 type MarginNoteNode = HTMLElement;
 
+type MarginNotePosition = {
+  readonly placeholder: Comment;
+  readonly parent: Node;
+  readonly index: number;
+  readonly previousSibling: Node | null;
+  readonly nextSibling: Node | null;
+};
+
 /**
  * Progressively enhances a semantic footnote section with a desktop rail.
  * Every DOM operation is kept here; the controller receives only injected
@@ -52,7 +60,7 @@ export function initializeMarginNotes(
     return null;
   }
 
-  const placeholders = new Map<MarginNoteNode, Comment>();
+  const positions = new Map<MarginNoteNode, MarginNotePosition>();
 
   function createPlaceholders(
     notes: ReadonlyArray<{ readonly node: object }>,
@@ -65,17 +73,30 @@ export function initializeMarginNotes(
           throw new Error("margin-note definition has no list parent");
         }
 
+        const siblings = Array.from(node.parentNode.childNodes);
+        const index = siblings.indexOf(node);
+
+        if (index < 0) {
+          throw new Error("margin-note definition position is unavailable");
+        }
+
         const placeholder = browserDocument.createComment("margin-note-position");
         node.parentNode.insertBefore(placeholder, node);
-        placeholders.set(node, placeholder);
+        positions.set(node, {
+          placeholder,
+          parent: node.parentNode,
+          index,
+          previousSibling: siblings[index - 1] ?? null,
+          nextSibling: siblings[index + 1] ?? null,
+        });
         created.push(node);
       });
     } catch (error) {
       created.forEach((node) => {
-        const placeholder = placeholders.get(node);
+        const placeholder = positions.get(node)?.placeholder;
         placeholder?.parentNode?.insertBefore(node, placeholder);
         placeholder?.remove();
-        placeholders.delete(node);
+        positions.delete(node);
       });
       throw error;
     }
@@ -97,7 +118,7 @@ export function initializeMarginNotes(
       }
 
       const note = node;
-      if (!placeholders.has(note)) {
+      if (!positions.has(note)) {
         throw new Error("margin-note definition has no restoration placeholder");
       }
 
@@ -110,21 +131,54 @@ export function initializeMarginNotes(
       }
 
       const note = node;
-      const placeholder = placeholders.get(note);
-      const originalParent = placeholder?.parentNode;
+      const position = positions.get(note);
 
-      if (!originalParent) {
+      if (!position) {
         return false;
       }
 
-      originalParent.insertBefore(note, placeholder);
+      let restored = false;
 
-      if (note.parentNode !== originalParent) {
+      if (position.parent.isConnected) {
+        try {
+          if (position.placeholder.parentNode === position.parent) {
+            position.parent.insertBefore(note, position.placeholder);
+          } else if (position.nextSibling?.parentNode === position.parent) {
+            position.parent.insertBefore(note, position.nextSibling);
+          } else if (position.previousSibling?.parentNode === position.parent) {
+            const previousIndex = Array.from(position.parent.childNodes).indexOf(
+              position.previousSibling,
+            );
+            const reference = position.parent.childNodes[previousIndex + 1] ?? null;
+            position.parent.insertBefore(note, reference);
+          } else {
+            const reference = position.parent.childNodes[position.index] ?? null;
+            position.parent.insertBefore(note, reference);
+          }
+
+          restored = note.parentNode === position.parent;
+        } catch {
+          restored = false;
+        }
+      }
+
+      if (!restored) {
+        const fallbackList = endnotes.querySelector<HTMLOListElement>("ol");
+
+        if (fallbackList) {
+          const fallbackIndex = Math.min(position.index, fallbackList.childNodes.length);
+          const reference = fallbackList.childNodes[fallbackIndex] ?? null;
+          fallbackList.insertBefore(note, reference);
+          restored = note.parentNode === fallbackList;
+        }
+      }
+
+      if (!restored) {
         return false;
       }
 
-      placeholder.remove();
-      placeholders.delete(note);
+      position.placeholder.remove();
+      positions.delete(note);
       note.style.removeProperty("--margin-note-top");
       return true;
     },

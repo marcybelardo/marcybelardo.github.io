@@ -165,8 +165,9 @@ article {
     display: none;
 }
 
-.margin-note-rail[data-margin-note-cleanup-failed="true"] {
+.blog-article[data-margin-note-cleanup-failed="true"] .margin-note-rail {
     display: block;
+    visibility: visible;
 }
 
 @media (min-width: 72rem) {
@@ -435,12 +436,13 @@ a.no-underline {
         display: none !important;
     }
 
-    .margin-note-rail[data-margin-note-cleanup-failed="true"] {
+    .blog-article[data-margin-note-cleanup-failed="true"] .margin-note-rail {
         position: static !important;
         display: block !important;
         width: auto !important;
         height: auto !important;
         margin-top: 2rem !important;
+        visibility: visible !important;
     }
 
     .blog-article [data-footnotes] {

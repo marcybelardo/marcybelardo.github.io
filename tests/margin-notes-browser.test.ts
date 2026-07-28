@@ -1,7 +1,13 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import test from "node:test";
 
 import { initializeMarginNotes } from "../src/scripts/margin-notes.ts";
+
+const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const stylesheet = readFileSync(resolve(repositoryRoot, "src/styles/global.css"), "utf8");
 
 type Child = FakeElement | FakeComment;
 type Rect = { readonly top: number; readonly width: number; readonly height: number };
@@ -62,6 +68,16 @@ class FakeElement extends FakeEventTarget {
 
   get id(): string {
     return this.attributes.get("id") ?? "";
+  }
+
+  get isConnected(): boolean {
+    let current: FakeElement | null = this;
+
+    while (current?.parentNode) {
+      current = current.parentNode;
+    }
+
+    return current === this.ownerDocument.article;
   }
 
   set id(value: string) {
@@ -238,7 +254,9 @@ function createBrowserFixture(fontsReady: Promise<void>): {
   readonly document: FakeDocument;
   readonly window: FakeWindow;
   readonly article: FakeElement;
+  readonly endnotes: FakeElement;
   readonly endnoteList: FakeElement;
+  readonly rail: FakeElement;
   readonly railList: FakeElement;
   readonly notes: ReadonlyArray<FakeElement>;
 } {
@@ -281,9 +299,38 @@ function createBrowserFixture(fontsReady: Promise<void>): {
     document,
     window,
     article,
+    endnotes,
     endnoteList,
+    rail,
     railList,
     notes: [noteOne, noteTwo],
+  };
+}
+
+type VisibilityContext = "narrow" | "print";
+
+function getComputedStyle(
+  article: FakeElement,
+  context: VisibilityContext,
+): Readonly<{ display: string; visibility: string }> {
+  if (article.dataset.marginNoteCleanupFailed !== "true") {
+    return { display: "none", visibility: "visible" };
+  }
+
+  const relevantStyles =
+    context === "print"
+      ? stylesheet.slice(stylesheet.indexOf("@media print"))
+      : stylesheet.slice(0, stylesheet.indexOf("@media (min-width: 72rem)"));
+  const declarations =
+    relevantStyles.match(
+      /\.blog-article\[data-margin-note-cleanup-failed="true"\]\s+\.margin-note-rail\s*\{([^}]*)\}/,
+    )?.[1] ?? "";
+
+  return {
+    display: /\bdisplay:\s*block/.test(declarations) ? "block" : "none",
+    visibility: /\bvisibility:\s*visible/.test(declarations)
+      ? "visible"
+      : "hidden",
   };
 }
 
@@ -396,7 +443,7 @@ test("browser shell rejects incomplete reference coverage before moving notes", 
   }
 });
 
-test("browser shell leaves readable baseline visible when an anchor cannot restore", async () => {
+test("browser shell restores the original order when a placeholder is missing", async () => {
   const restoreGlobals = installBrowserGlobals();
   try {
     const fixture = createBrowserFixture(Promise.resolve());
@@ -416,10 +463,60 @@ test("browser shell leaves readable baseline visible when an anchor cannot resto
 
     assert.equal(runtime?.controller.isEnhanced(), false);
     assert.equal(fixture.article.dataset.marginNotesEnhanced, undefined);
+    assert.equal(fixture.article.dataset.marginNoteCleanupFailed, undefined);
+    assert.equal(fixture.railList.children.length, 0);
+    assert.deepEqual(fixture.endnoteList.children, fixture.notes);
+  } finally {
+    restoreGlobals();
+  }
+});
+
+test("browser shell falls back to the visible endnote list when the original parent is unavailable", async () => {
+  const restoreGlobals = installBrowserGlobals();
+  try {
+    const fixture = createBrowserFixture(Promise.resolve());
+    const runtime = initializeMarginNotes({
+      root: fixture.article,
+      window: fixture.window as unknown as Window,
+    });
+    await flushEnhancement(fixture.window, () => {});
+    assert.equal(runtime?.controller.isEnhanced(), true);
+
+    fixture.endnotes.removeChild(fixture.endnoteList);
+    const fallbackList = new FakeElement(fixture.document, "OL");
+    fixture.endnotes.append(fallbackList);
+    fixture.window.dispatchEvent("beforeprint");
+
+    assert.equal(runtime?.controller.isEnhanced(), false);
+    assert.equal(fixture.article.dataset.marginNoteCleanupFailed, undefined);
+    assert.equal(fixture.railList.children.length, 0);
+    assert.deepEqual(fallbackList.children, fixture.notes);
+  } finally {
+    restoreGlobals();
+  }
+});
+
+test("cleanup failure keeps the rail computed-visible in narrow and print contexts", async () => {
+  const restoreGlobals = installBrowserGlobals();
+  try {
+    const fixture = createBrowserFixture(Promise.resolve());
+    const runtime = initializeMarginNotes({
+      root: fixture.article,
+      window: fixture.window as unknown as Window,
+    });
+    await flushEnhancement(fixture.window, () => {});
+    assert.equal(runtime?.controller.isEnhanced(), true);
+
+    fixture.endnotes.removeChild(fixture.endnoteList);
+    fixture.window.dispatchEvent("beforeprint");
+
+    assert.equal(runtime?.controller.isEnhanced(), false);
     assert.equal(fixture.article.dataset.marginNoteCleanupFailed, "true");
-    assert.equal(fixture.railList.children.length, 1);
-    assert.equal(fixture.endnoteList.children.length, 1);
-    assert.equal(fixture.endnoteList.children.includes(fixture.notes[0]!), false);
+    assert.equal(getComputedStyle(fixture.article, "narrow").display, "block");
+    assert.equal(getComputedStyle(fixture.article, "narrow").visibility, "visible");
+    assert.equal(getComputedStyle(fixture.article, "print").display, "block");
+    assert.equal(getComputedStyle(fixture.article, "print").visibility, "visible");
+    assert.equal(fixture.rail.children.length, 1);
   } finally {
     restoreGlobals();
   }
