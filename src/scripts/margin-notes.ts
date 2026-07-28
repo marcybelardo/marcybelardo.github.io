@@ -39,6 +39,16 @@ type MarginNoteMeasurementPreparation = (
   definitions: ReadonlyArray<MarginNoteNode>,
 ) => (preservePositions: boolean) => MarginNoteMeasurementCleanupResult;
 
+class MarginNotePreparationError extends Error {
+  readonly cleanupNodes: Array<MarginNoteNode>;
+
+  constructor(cleanupNodes: Array<MarginNoteNode>) {
+    super("margin-note measurement preparation failed");
+    this.name = "MarginNotePreparationError";
+    this.cleanupNodes = cleanupNodes;
+  }
+}
+
 /**
  * Progressively enhances a semantic footnote section with a desktop rail.
  * Every DOM operation is kept here; the controller receives only injected
@@ -193,9 +203,22 @@ export function initializeMarginNotes(
         try {
           definitions.forEach((node) => railList.append(node));
         } catch (error) {
+          const remaining: Array<MarginNoteNode> = [];
+
           definitions.forEach((node) => {
-            restoreNodeToList(node, true);
+            try {
+              if (!restoreNodeToList(node, true)) {
+                remaining.push(node);
+              }
+            } catch {
+              remaining.push(node);
+            }
           });
+
+          if (remaining.length > 0) {
+            throw new MarginNotePreparationError(remaining);
+          }
+
           throw error;
         }
 
@@ -431,7 +454,25 @@ function measureMarginNotes(
       return { success: false, reason: "margin-note rail measurement failed" };
     }
 
-    const restoreAfterMeasurement = prepareDefinitionMeasurement?.(definitions);
+    let restoreAfterMeasurement:
+      | ReturnType<MarginNoteMeasurementPreparation>
+      | undefined;
+
+    try {
+      restoreAfterMeasurement = prepareDefinitionMeasurement?.(definitions);
+    } catch (error) {
+      if (error instanceof MarginNotePreparationError) {
+        return {
+          success: false,
+          reason: "margin-note measurement preparation failed",
+          cleanupFailed: true,
+          cleanupNodes: error.cleanupNodes,
+        };
+      }
+
+      throw error;
+    }
+
     let measurementSucceeded = false;
     let measurementResult: MarginNoteMeasureResult = { success: true, notes };
 

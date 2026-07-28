@@ -60,6 +60,7 @@ class FakeElement extends FakeEventTarget {
   railHeight = 0;
   parentNode: FakeElement | null = null;
   attributes = new Map<string, string>();
+  readonly appendFailures = new Set<FakeElement>();
   readonly insertBeforeFailures = new Set<FakeElement>();
 
   constructor(ownerDocument: FakeDocument, tagName: string) {
@@ -99,6 +100,10 @@ class FakeElement extends FakeEventTarget {
         node.parentNode?.removeChild(node);
       }
       this.childNodes.push(node);
+
+      if (node instanceof FakeElement && this.appendFailures.has(node)) {
+        throw new Error("forced append failure");
+      }
     });
   }
 
@@ -552,6 +557,34 @@ test("measurement cleanup attempts every note and preserves cleanup-failed visib
     assert.deepEqual(fixture.railList.children, [firstNote]);
     assert.equal(getComputedStyle(fixture.article, "rail", "narrow").display, "block");
     assert.equal(getComputedStyle(fixture.article, "rail", "narrow").visibility, "visible");
+  } finally {
+    restoreGlobals();
+  }
+});
+
+test("partial measurement movement failure preserves an unrestored node visibly", async () => {
+  const restoreGlobals = installBrowserGlobals();
+  try {
+    const fixture = createBrowserFixture(Promise.resolve());
+    const failedNote = fixture.notes[1];
+    assert.ok(failedNote);
+    fixture.railList.appendFailures.add(failedNote);
+    fixture.endnoteList.insertBeforeFailures.add(failedNote);
+
+    const runtime = initializeMarginNotes({
+      root: fixture.article,
+      window: fixture.window as unknown as Window,
+    });
+    await flushEnhancement(fixture.window, () => {});
+
+    assert.equal(runtime?.controller.isEnhanced(), false);
+    assert.equal(fixture.article.dataset.marginNoteCleanupFailed, "true");
+    assert.deepEqual(fixture.endnoteList.children, [fixture.notes[0]]);
+    assert.deepEqual(fixture.railList.children, [failedNote]);
+    assert.equal(getComputedStyle(fixture.article, "rail", "narrow").display, "block");
+    assert.equal(getComputedStyle(fixture.article, "rail", "narrow").visibility, "visible");
+    assert.equal(getComputedStyle(fixture.article, "rail", "print").display, "block");
+    assert.equal(getComputedStyle(fixture.article, "rail", "print").visibility, "visible");
   } finally {
     restoreGlobals();
   }
