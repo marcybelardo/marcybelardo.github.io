@@ -36,6 +36,8 @@ Paintings and photography pages are currently placeholder ("Coming soon") — th
 
 `pnpm test` runs the serial missing-image-alt validation fixture, the production build, and the dependency-free Node test suite. `pnpm verify` aliases `pnpm test`.
 
+`BaseLayout` owns the canonical metadata contract: every page supplies a title and description, while canonical URLs resolve from the configured `Astro.site`. Current indexable output is checked for distinct self-canonicals and matching Open Graph/Twitter title and description values; the current 404 is the only `noindex` page.
+
 ## Coding principles
 
 1. **Simplicity** — Prefer built-in Astro/React features. No new deps without asking.

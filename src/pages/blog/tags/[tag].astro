@@ -1,4 +1,5 @@
 ---
+// pattern: Imperative Shell
 import BaseLayout from "../../../layouts/BaseLayout.astro";
 import { getCollection } from "astro:content";
 
@@ -21,7 +22,10 @@ const posts = await getCollection("blog", ({ data }) => {
 posts.sort((a: any, b: any) => b.data.date.getTime() - a.data.date.getTime());
 ---
 
-<BaseLayout>
+<BaseLayout
+  title={`Posts tagged: ${tag}`}
+  description={`Writing by Marceline Belardo tagged with ${tag}.`}
+>
   <section class="py-12 mx-auto max-w-2xl">
     <a href="/blog/" class="text-sm text-neutral-500 hover:text-neutral-700 no-underline"
       >&larr; Back to Blog</a

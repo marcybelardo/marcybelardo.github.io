@@ -1,4 +1,5 @@
 ---
+// pattern: Imperative Shell
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import ProjectCard from "../../components/ProjectCard.astro";
 import heroImage from "../../assets/20260425_29.jpg";
@@ -44,7 +45,10 @@ const projects = [
 ];
 ---
 
-<BaseLayout>
+<BaseLayout
+  title="Code"
+  description="Software projects by Marceline Belardo, spanning C, Rust, Java, TypeScript, React, Python, and PostgreSQL."
+>
   <!-- Hero -->
   <section
     id="hero"

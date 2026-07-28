@@ -1,8 +1,14 @@
 ---
+// pattern: Imperative Shell
 import BaseLayout from "../layouts/BaseLayout.astro";
+import { getRobotsValue } from "../metadata/page-metadata.ts";
 ---
 
-<BaseLayout>
+<BaseLayout
+  title="Page not found"
+  description="The page you requested could not be found."
+  robots={getRobotsValue(false)}
+>
   <section class="min-h-[60vh] flex flex-col justify-center">
     <div class="max-w-xl">
       <h1 class="font-bold text-neutral-900 leading-none text-[clamp(2.5rem,8vw,6rem)]">

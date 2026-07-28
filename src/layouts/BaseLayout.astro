@@ -1,10 +1,48 @@
 ---
+// pattern: Imperative Shell
 import "../styles/global.css";
 import BskyLogo from "../assets/bsky.svg";
 import GithubLogo from "../assets/GitHub_Invertocat_Black.svg";
 import InstagramLogo from "../assets/Instagram_Glyph_Black.svg";
+import {
+  composeSiteTitle,
+  createSocialImageUrl,
+  serializeJsonLd,
+  SITE_ORIGIN,
+} from "../metadata/page-metadata.ts";
 
 const path = Astro.url.pathname;
+
+type Props = {
+  readonly title: string;
+  readonly description: string;
+  readonly canonicalPath?: string;
+  readonly canonicalUrl?: string;
+  readonly robots?: string;
+  readonly socialImage?: string;
+  readonly socialImageAlt?: string;
+  readonly socialType?: "website" | "article";
+  readonly structuredData?: Readonly<Record<string, unknown>>;
+};
+
+const {
+  title,
+  description,
+  canonicalPath,
+  canonicalUrl,
+  robots,
+  socialImage,
+  socialImageAlt,
+  socialType = "website",
+  structuredData,
+} = Astro.props;
+const renderedTitle = composeSiteTitle(title);
+const canonical =
+  canonicalUrl ??
+  new URL(canonicalPath ?? Astro.url.pathname, Astro.site ?? new URL(SITE_ORIGIN)).toString();
+const socialImageUrl = socialImage
+  ? createSocialImageUrl(socialImage, Astro.site ?? SITE_ORIGIN)
+  : null;
 ---
 
 <html lang="en">
@@ -25,7 +63,31 @@ const path = Astro.url.pathname;
     <link rel="icon" href="/favicon.ico" />
     <meta name="viewport" content="width=device-width" />
     <meta name="generator" content={Astro.generator} />
-    <title>Marceline Belardo</title>
+    <title>{renderedTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <meta property="og:type" content={socialType} />
+    <meta property="og:title" content={renderedTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    {socialImageUrl && <meta property="og:image" content={socialImageUrl} />}
+    {socialImageUrl && socialImageAlt && (
+      <meta property="og:image:alt" content={socialImageAlt} />
+    )}
+    <meta
+      name="twitter:card"
+      content={socialImageUrl ? "summary_large_image" : "summary"}
+    />
+    <meta name="twitter:title" content={renderedTitle} />
+    <meta name="twitter:description" content={description} />
+    {socialImageUrl && <meta name="twitter:image" content={socialImageUrl} />}
+    {socialImageUrl && socialImageAlt && (
+      <meta name="twitter:image:alt" content={socialImageAlt} />
+    )}
+    {robots && <meta name="robots" content={robots} />}
+    {structuredData && (
+      <script type="application/ld+json" set:html={serializeJsonLd(structuredData)} />
+    )}
   </head>
   <body>
     <header
