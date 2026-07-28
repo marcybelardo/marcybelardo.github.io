@@ -20,6 +20,18 @@ function getHtmlFiles(directory: string): Array<string> {
   });
 }
 
+function getCssFiles(directory: string): Array<string> {
+  return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    const entryPath = resolve(directory, entry.name);
+
+    if (entry.isDirectory()) {
+      return getCssFiles(entryPath);
+    }
+
+    return entry.name.endsWith(".css") ? [entryPath] : [];
+  });
+}
+
 function getSingleMatch(html: string, pattern: RegExp, label: string): string {
   const matches = [...html.matchAll(pattern)];
 
@@ -181,6 +193,32 @@ test("the current 404 is noindex and omits optional JSON-LD on ordinary pages", 
   );
   assert.doesNotMatch(indexHtml, /<meta name="robots"/);
   assert.doesNotMatch(indexHtml, /application\/ld\+json/);
+});
+
+test("generated output uses the editorial visual system without parallax or cards", () => {
+  assert.ok(existsSync(distDirectory), "production output must exist before visual assertions");
+
+  const css = getCssFiles(distDirectory)
+    .map((cssPath) => readFileSync(cssPath, "utf8"))
+    .join("\n");
+  const html = getHtmlFiles(distDirectory)
+    .map((htmlPath) => readFileSync(htmlPath, "utf8"))
+    .join("\n");
+  const codeHtml = readFileSync(resolve(distDirectory, "code", "index.html"), "utf8");
+
+  assert.match(css, /--color-paper:\s*#f6f4ee/);
+  assert.match(css, /--color-ink:\s*#171717/);
+  assert.match(css, /--color-muted-ink:\s*#68655f/);
+  assert.match(css, /--color-rule:\s*#c9c4b8/);
+  assert.match(css, /--color-prussian-blue:\s*#003153/);
+  assert.match(css, /--font-reading:Georgia/);
+  assert.match(css, /--font-utility:"Helvetica Neue"/);
+  assert.match(css, /@media\s*\(prefers-reduced-motion:\s*reduce\)/);
+  assert.match(css, /@media\s*print/);
+  assert.match(css, /a:focus-visible/);
+  assert.match(css, /button:focus-visible/);
+  assert.doesNotMatch(html, /data-parallax-speed/);
+  assert.doesNotMatch(codeHtml, /ProjectCard|grid-cols-|border-neutral-900/);
 });
 
 test("the tracked blog post keeps its stable published route", () => {
