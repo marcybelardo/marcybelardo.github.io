@@ -1,6 +1,9 @@
 ---
 // pattern: Imperative Shell
 import BaseLayout from "../../layouts/BaseLayout.astro";
+import SquareImage from "../../components/SquareImage.astro";
+import contactImage from "../../assets/IMG_6936_EDIT copy.jpg";
+import portraitImage from "../../assets/20260425_29.jpg";
 
 const skills = [
   "C",
@@ -52,6 +55,22 @@ const projects = [
       </p>
     </header>
 
+    <section class="editorial-section" aria-label="Selected photographs">
+      <div class="code-images">
+        <SquareImage
+          src={portraitImage}
+          alt="Marceline Belardo holding a camera, taking a selfie"
+          class="code-image"
+          priority
+        />
+        <SquareImage
+          src={contactImage}
+          alt=""
+          class="code-image"
+        />
+      </div>
+    </section>
+
     <section class="editorial-section" aria-labelledby="skills-heading">
       <h2 id="skills-heading">Tools and languages</h2>
       <p class="accent">{skills.join(" · ")}</p>
@@ -75,3 +94,16 @@ const projects = [
     </section>
   </article>
 </BaseLayout>
+
+<style>
+  .code-images {
+    display: grid;
+    gap: 1rem;
+  }
+
+  @media (min-width: 48rem) {
+    .code-images {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+</style>

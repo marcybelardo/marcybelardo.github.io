@@ -35,6 +35,7 @@ Projects use explicit stable slugs, validated publication metadata, and optional
 The shared `BaseLayout` owns the accessible editorial header. Its only primary destinations are Projects, Blog, Bio, and Contact; Code, Paintings, and Photography remain migration/placeholder documents outside the primary navigation.
 Projects, Bio, and Contact are working static destinations. Projects reads published entries from the phase 1 collection, while Bio and Contact contain the verified profile copy and destinations until later phases expand their presentations.
 The site-wide stylesheet defines the editorial visual tokens, typography, rules, focus-visible states, reduced-motion behavior, and print behavior. It intentionally has no external font imports.
+`SquareImage` owns the shared square, uncropped, responsive image contract; the Code migration page exercises it with the verified portrait and landscape assets.
 
 `pnpm test` runs serial missing-image-alt validation for project and blog images, verifies temporary draft routes stay out of production, runs the production build, and executes the dependency-free Node test suite. `pnpm verify` aliases `pnpm test`.
 
