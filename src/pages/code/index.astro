@@ -1,109 +1,23 @@
 ---
 // pattern: Imperative Shell
 import BaseLayout from "../../layouts/BaseLayout.astro";
-import SquareImage from "../../components/SquareImage.astro";
-import contactImage from "../../assets/IMG_6936_EDIT copy.jpg";
-import portraitImage from "../../assets/20260425_29.jpg";
-
-const skills = [
-  "C",
-  "Rust",
-  "Java",
-  "TypeScript",
-  "React",
-  "Python",
-  "PostgreSQL",
-];
-
-const projects = [
-  {
-    title: "lilyhttpd",
-    description: "An HTTP server for static files written in C",
-    tags: ["C", "HTTP", "Networking"],
-  },
-  {
-    title: "Osborne",
-    description:
-      "Budget management app for personal and group spending, built with Java Spring Boot and React",
-    tags: ["Java", "Spring Boot", "React", "API", "Charts"],
-  },
-  {
-    title: "cmprsr-rs",
-    description: "Canonical Huffman compression tool written in Rust",
-    tags: ["Rust", "Compression"],
-  },
-  {
-    title: "Portfolio Site",
-    description:
-      "This very website — a static personal portfolio built with Astro, React, and TailwindCSS.",
-    tags: ["Astro", "React", "TypeScript"],
-  },
-];
-
 ---
 
 <BaseLayout
   title="Code"
-  description="Software projects by Marceline Belardo, spanning C, Rust, Java, TypeScript, React, Python, and PostgreSQL."
+  description="The Code section has moved into Marceline Belardo's Projects archive."
+  canonicalUrl="https://www.marcelinebelardo.com/projects/"
+  robots="noindex,follow"
+  metaRefreshPath="/projects/"
 >
   <article class="editorial-page editorial-measure">
     <header class="editorial-page__header">
-      <p class="eyebrow">Migration archive</p>
+      <p class="eyebrow">Section moved</p>
       <h1>Code</h1>
-      <p>
-        Software work by Marceline Belardo, focused on maintainable, friendly, and
-        performant programs.
-      </p>
+      <p>This work is now part of the Projects archive.</p>
     </header>
-
-    <section class="editorial-section" aria-label="Selected photographs">
-      <div class="code-images">
-        <SquareImage
-          src={portraitImage}
-          alt="Marceline Belardo holding a camera, taking a selfie"
-          class="code-image"
-        />
-        <SquareImage
-          src={contactImage}
-          alt=""
-          class="code-image"
-        />
-      </div>
-    </section>
-
-    <section class="editorial-section" aria-labelledby="skills-heading">
-      <h2 id="skills-heading">Tools and languages</h2>
-      <p class="accent">{skills.join(" · ")}</p>
-    </section>
-
-    <section class="editorial-section" aria-labelledby="projects-heading">
-      <h2 id="projects-heading">Selected software</h2>
-      <ul class="editorial-list">
-        {
-          projects.map((project) => (
-            <li>
-              <article class="editorial-article">
-                <h3>{project.title}</h3>
-                <p>{project.description}</p>
-                <p class="metadata">{project.tags.join(" · ")}</p>
-              </article>
-            </li>
-          ))
-        }
-      </ul>
-    </section>
+    <p class="editorial-section">
+      <a href="/projects/">Continue to Projects</a>
+    </p>
   </article>
 </BaseLayout>
-
-<style>
-  .code-images {
-    display: grid;
-    gap: 1rem;
-  }
-
-  @media (min-width: 48rem) {
-    .code-images {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-  }
-</style>

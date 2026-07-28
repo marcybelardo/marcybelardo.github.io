@@ -5,16 +5,19 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 
 <BaseLayout
   title="Photography"
-  description="Photography by Marceline Belardo. This collection is coming soon."
+  description="The Photography section has moved into Marceline Belardo's Projects archive."
+  canonicalUrl="https://www.marcelinebelardo.com/projects/"
+  robots="noindex,follow"
+  metaRefreshPath="/projects/"
 >
-  <section class="min-h-[60vh] flex flex-col justify-center">
-    <div class="max-w-xl">
-      <h1
-        class="font-bold text-neutral-900 leading-none text-[clamp(2.5rem,8vw,6rem)]"
-      >
-        Photography
-      </h1>
-      <p class="text-xl text-neutral-600 leading-relaxed mt-4">Coming soon.</p>
-    </div>
-  </section>
+  <article class="editorial-page editorial-measure">
+    <header class="editorial-page__header">
+      <p class="eyebrow">Section moved</p>
+      <h1>Photography</h1>
+      <p>This work is now part of the Projects archive.</p>
+    </header>
+    <p class="editorial-section">
+      <a href="/projects/">Continue to Projects</a>
+    </p>
+  </article>
 </BaseLayout>

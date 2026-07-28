@@ -27,6 +27,7 @@ type Props = {
   readonly canonicalPath?: string;
   readonly canonicalUrl?: string;
   readonly robots?: string;
+  readonly metaRefreshPath?: string;
   readonly socialImage?: string;
   readonly socialImageAlt?: string;
   readonly socialType?: "website" | "article";
@@ -39,6 +40,7 @@ const {
   canonicalPath,
   canonicalUrl,
   robots,
+  metaRefreshPath,
   socialImage,
   socialImageAlt,
   socialType = "website",
@@ -48,6 +50,10 @@ const renderedTitle = composeSiteTitle(title);
 const canonical =
   canonicalUrl ??
   createCanonicalUrl(canonicalPath ?? Astro.url.pathname, Astro.site ?? SITE_ORIGIN);
+if (metaRefreshPath !== undefined) {
+  createCanonicalUrl(metaRefreshPath, Astro.site ?? SITE_ORIGIN);
+}
+const refreshPath = metaRefreshPath ?? null;
 const socialImageUrl = socialImage
   ? createSocialImageUrl(socialImage, Astro.site ?? SITE_ORIGIN)
   : null;
@@ -93,6 +99,9 @@ const socialImageUrl = socialImage
       <meta name="twitter:image:alt" content={socialImageAlt} />
     )}
     {robots && <meta name="robots" content={robots} />}
+    {refreshPath && (
+      <meta http-equiv="refresh" content={`0; url=${refreshPath}`} />
+    )}
     {structuredData && (
       <script type="application/ld+json" set:html={serializeJsonLd(structuredData)} />
     )}

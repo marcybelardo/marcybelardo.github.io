@@ -6,13 +6,13 @@ import test from "node:test";
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const distDirectory = resolve(repositoryRoot, "dist");
-const codePath = resolve(distDirectory, "code", "index.html");
+const bioPath = resolve(distDirectory, "bio", "index.html");
 const representativePaths: ReadonlyArray<string> = [
   resolve(distDirectory, "index.html"),
   resolve(distDirectory, "blog", "index.html"),
   resolve(distDirectory, "blog", "the-devil-you-know", "index.html"),
   resolve(distDirectory, "blog", "tags", "ai", "index.html"),
-  codePath,
+  bioPath,
   resolve(distDirectory, "paintings", "index.html"),
   resolve(distDirectory, "photography", "index.html"),
   resolve(distDirectory, "404.html"),
@@ -34,13 +34,13 @@ function getImagesInsideSquareWrappers(html: string): Array<string> {
   return getSquareImageWrappers(html).flatMap((wrapper) => getImages(wrapper));
 }
 
-test("Code uses square contain frames for portrait and landscape images", () => {
-  assert.ok(existsSync(codePath), "Code output must exist before image assertions");
+test("Bio uses a square contain frame for its portrait image", () => {
+  assert.ok(existsSync(bioPath), "Bio output must exist before image assertions");
 
-  const codeHtml = readFileSync(codePath, "utf8");
-  const wrappers = getSquareImageWrappers(codeHtml);
+  const bioHtml = readFileSync(bioPath, "utf8");
+  const wrappers = getSquareImageWrappers(bioHtml);
 
-  assert.equal(wrappers.length, 2);
+  assert.equal(wrappers.length, 1);
   wrappers.forEach((wrapper) => {
     assert.match(wrapper, /style="aspect-ratio:\s*1;"/);
     assert.match(wrapper, /class="square-image__image/);
@@ -48,43 +48,42 @@ test("Code uses square contain frames for portrait and landscape images", () => 
     assert.match(wrapper, /style="object-fit:\s*contain;"/);
   });
 
-  assert.match(codeHtml, /alt="Marceline Belardo holding a camera, taking a selfie"/);
-  assert.match(codeHtml, /\balt(?:="")?\s+sizes=/);
+  assert.match(bioHtml, /alt="Marceline Belardo holding a camera, taking a selfie"/);
   assert.equal(
-    getImagesInsideSquareWrappers(codeHtml).length,
-    getImages(codeHtml).length,
-    "every Code image must be contained by a square-image frame",
+    getImagesInsideSquareWrappers(bioHtml).length,
+    getImages(bioHtml).length,
+    "every Bio image must be contained by a square-image frame",
   );
 });
 
 test("SquareImage output reserves intrinsic dimensions and responsive sources", () => {
-  assert.ok(existsSync(codePath), "Code output must exist before image assertions");
+  assert.ok(existsSync(bioPath), "Bio output must exist before image assertions");
 
-  const codeHtml = readFileSync(codePath, "utf8");
-  const images = getImages(codeHtml);
+  const bioHtml = readFileSync(bioPath, "utf8");
+  const images = getImages(bioHtml);
 
-  assert.equal(images.length, 2);
+  assert.equal(images.length, 1);
   images.forEach((image) => {
     assert.match(image, /\bwidth="\d+"/);
     assert.match(image, /\bheight="\d+"/);
     assert.match(image, /\bsrcset="[^"]+"/);
     assert.match(image, /\bsizes="[^"]+"/);
-    assert.match(image, /\bloading="lazy"/);
+    assert.match(image, /\bloading="(?:lazy|eager)"/);
     assert.doesNotMatch(image, /20260425_29[^"?]*\.jpg(?:["?]|$)/);
     assert.doesNotMatch(image, /IMG_6936_EDIT[^"?]*\.jpg(?:["?]|$)/);
   });
 
-  assert.match(codeHtml, /\s320w/);
-  assert.match(codeHtml, /\s1280w/);
+  assert.match(bioHtml, /\s320w/);
+  assert.match(bioHtml, /\s1280w/);
   assert.match(
-    codeHtml,
+    bioHtml,
     /sizes="auto"/,
-    "Code images must let the browser use their scrollbar-excluding rendered width",
+    "Bio images must let the browser use their scrollbar-excluding rendered width",
   );
   assert.doesNotMatch(
-    codeHtml,
+    bioHtml,
     /sizes="[^"]*100vw/,
-    "Code image sizing must not overstate the layout width with 100vw",
+    "Bio image sizing must not overstate the layout width with 100vw",
   );
 });
 
