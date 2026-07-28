@@ -267,10 +267,10 @@ test("generated documents expose the accessible primary navigation contract", ()
     });
     assert.doesNotMatch(navigation, />\s*(Code|Paintings|Photography)\s*</);
     assert.match(navigation, /<button\b[^>]*aria-controls="primary-navigation"/);
-    assert.match(navigation, /aria-expanded="false"/);
-    assert.match(navigation, /aria-label="Open primary navigation"/);
+    assert.match(navigation, /aria-expanded="true"/);
+    assert.match(navigation, /aria-label="Close primary navigation"/);
     assert.match(navigation, /data-menu-button/);
-    assert.match(navigation, /id="primary-navigation"[^>]*data-open="false"/);
+    assert.match(navigation, /id="primary-navigation"[^>]*data-open="true"/);
   });
 
   const routeExpectations = [
@@ -294,13 +294,36 @@ test("generated documents expose the accessible primary navigation contract", ()
     );
   });
 
-  assert.match(allHtml, /astro:before-swap/);
-  assert.match(allHtml, /\.key===?["']Escape["']/);
-  assert.match(allHtml, /requestAnimationFrame/);
-  assert.match(allHtml, /toggleAttribute\("inert"/);
   assert.match(allHtml, /href="https:\/\/instagram\.com\/marcelinebelardo"[^>]*aria-label="Instagram"/);
   assert.match(allHtml, /href="https:\/\/github\.com\/marcybelardo"[^>]*aria-label="GitHub"/);
   assert.doesNotMatch(getPrimaryNavigation(htmlDocuments[0] ?? ""), /aria-label="(Bluesky|Instagram|GitHub)"/);
+});
+
+test("server-rendered mobile navigation remains usable without JavaScript", () => {
+  assert.ok(existsSync(distDirectory), "production output must exist before no-JS assertions");
+
+  const homepageHtml = readFileSync(resolve(distDirectory, "index.html"), "utf8");
+  const navigation = getPrimaryNavigation(homepageHtml);
+  const css = getCssFiles(distDirectory)
+    .map((cssPath) => readFileSync(cssPath, "utf8"))
+    .join("\n");
+  const panelMatch = navigation.match(
+    /<div class="primary-navigation__panel"[^>]*>[\s\S]*?<\/div>/,
+  );
+
+  assert.ok(panelMatch, "server-rendered navigation must include its panel");
+  assert.match(panelMatch[0], /data-open="true"/);
+  assert.doesNotMatch(panelMatch[0], /aria-hidden|\binert\b/);
+  assert.match(
+    css,
+    /\.primary-navigation\[data-js-ready\] \.primary-navigation__panel\[data-open(?:="false"|=false)\]/,
+    "only the enhanced navigation may hide its closed panel",
+  );
+  assert.match(
+    css,
+    /\.primary-navigation\[data-js-ready\] \.primary-navigation__menu-button/,
+    "the menu control must be progressively enhanced",
+  );
 });
 
 test("representative documents preserve one accessible shared shell", () => {

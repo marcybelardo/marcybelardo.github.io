@@ -26,6 +26,14 @@ function getSquareImageWrappers(html: string): Array<string> {
   ].map((match) => match[0] ?? "");
 }
 
+function getImages(html: string): Array<string> {
+  return [...html.matchAll(/<img\b[^>]*>/g)].map((match) => match[0] ?? "");
+}
+
+function getImagesInsideSquareWrappers(html: string): Array<string> {
+  return getSquareImageWrappers(html).flatMap((wrapper) => getImages(wrapper));
+}
+
 test("Code uses square contain frames for portrait and landscape images", () => {
   assert.ok(existsSync(codePath), "Code output must exist before image assertions");
 
@@ -42,13 +50,18 @@ test("Code uses square contain frames for portrait and landscape images", () => 
 
   assert.match(codeHtml, /alt="Marceline Belardo holding a camera, taking a selfie"/);
   assert.match(codeHtml, /\balt(?:="")?\s+sizes=/);
+  assert.equal(
+    getImagesInsideSquareWrappers(codeHtml).length,
+    getImages(codeHtml).length,
+    "every Code image must be contained by a square-image frame",
+  );
 });
 
 test("SquareImage output reserves intrinsic dimensions and responsive sources", () => {
   assert.ok(existsSync(codePath), "Code output must exist before image assertions");
 
   const codeHtml = readFileSync(codePath, "utf8");
-  const images = [...codeHtml.matchAll(/<img\b[^>]*>/g)].map((match) => match[0] ?? "");
+  const images = getImages(codeHtml);
 
   assert.equal(images.length, 2);
   images.forEach((image) => {
@@ -62,13 +75,18 @@ test("SquareImage output reserves intrinsic dimensions and responsive sources", 
 
   assert.match(codeHtml, /\s320w/);
   assert.match(codeHtml, /\s1280w/);
+  assert.match(
+    codeHtml,
+    /sizes="\(min-width: 48rem\) calc\(\(min\(100vw - 4rem, 44rem\) - 1rem\) \/ 2\), calc\(100vw - 2rem\)"/,
+    "Code images must declare their two-column rendered width",
+  );
 });
 
 test("representative pages contain only valid generated image markup", () => {
   representativePaths.forEach((htmlPath) => {
     assert.ok(existsSync(htmlPath), `${htmlPath} must exist before image assertions`);
     const html = readFileSync(htmlPath, "utf8");
-    const images = [...html.matchAll(/<img\b[^>]*>/g)].map((match) => match[0] ?? "");
+    const images = getImages(html);
 
     images.forEach((image) => {
       assert.match(image, /\bwidth="\d+"/);
@@ -77,5 +95,11 @@ test("representative pages contain only valid generated image markup", () => {
       assert.match(image, /\bsizes="[^"]+"/);
       assert.match(image, /data-astro-image-fit="contain"/);
     });
+
+    assert.equal(
+      getImagesInsideSquareWrappers(html).length,
+      images.length,
+      `${htmlPath} must contain every emitted image inside a square-image frame`,
+    );
   });
 });

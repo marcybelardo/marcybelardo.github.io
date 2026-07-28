@@ -289,11 +289,11 @@ a.no-underline {
         position: relative;
     }
 
-    .primary-navigation__menu-button {
+    .primary-navigation[data-js-ready] .primary-navigation__menu-button {
         display: inline-flex;
     }
 
-    .primary-navigation__panel[data-open="false"] {
+    .primary-navigation[data-js-ready] .primary-navigation__panel[data-open="false"] {
         display: none;
     }
 

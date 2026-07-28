@@ -117,13 +117,13 @@ const socialImageUrl = socialImage
             class="primary-navigation__menu-button"
             id="primary-menu-button"
             aria-controls="primary-navigation"
-            aria-expanded="false"
-            aria-label="Open primary navigation"
+            aria-expanded="true"
+            aria-label="Close primary navigation"
             data-menu-button
           >
             Menu
           </button>
-          <div class="primary-navigation__panel" id="primary-navigation" data-open="false">
+          <div class="primary-navigation__panel" id="primary-navigation" data-open="true">
             <ul class="primary-navigation__list">
               {
                 primaryLinks.map((link) => (
@@ -180,6 +180,7 @@ const socialImageUrl = socialImage
       const navigation = document.querySelector("[data-site-navigation]");
 
       if (navigation instanceof HTMLElement) {
+        navigation.dataset.jsReady = "true";
         const menuButton = navigation.querySelector("[data-menu-button]");
         const menuPanel = navigation.querySelector("[data-open]");
         const firstLink = menuPanel?.querySelector("a");
