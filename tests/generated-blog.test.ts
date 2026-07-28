@@ -39,6 +39,9 @@ test("production blog output preserves the published post and tag routes", () =>
     existsSync(resolve(distDirectory, "blog", "tags", "draft-only-review", "index.html")),
     false,
   );
+  assert.match(detailHtml, /data-margin-note-article/);
+  assert.match(detailHtml, /data-margin-note-rail/);
+  assert.doesNotMatch(detailHtml, /data-margin-notes-enhanced="true"/);
 });
 
 test("blog detail JSON-LD contains only the visible published fields", () => {

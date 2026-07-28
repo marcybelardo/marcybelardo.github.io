@@ -1,5 +1,6 @@
 ---
 // pattern: Imperative Shell
+import SquareImage from "../../components/SquareImage.astro";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import { getCollection, type CollectionEntry } from "astro:content";
 import {
@@ -29,6 +30,15 @@ const posts: Array<CollectionEntry<"blog">> = getPublishedBlogPosts(
         <ul class="space-y-8">
           {posts.map((post) => (
             <li>
+              {post.data.image && post.data.imageAlt && (
+                <a href={`/blog/${post.id}/`} class="blog-index__image-link">
+                  <SquareImage
+                    src={post.data.image}
+                    alt={post.data.imageAlt}
+                    class="blog-index__image"
+                  />
+                </a>
+              )}
               <a href={`/blog/${post.id}/`}>
                 <h2 class="text-xl font-bold mb-1">{post.data.title}</h2>
               </a>
