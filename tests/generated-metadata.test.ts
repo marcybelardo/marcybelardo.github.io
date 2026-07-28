@@ -112,6 +112,20 @@ test("every current indexable document has complete, self-referencing metadata",
   const indexableFiles = htmlFiles.filter(
     (htmlPath) => !readFileSync(htmlPath, "utf8").includes('name="robots"'),
   );
+  const indexableRoutes = indexableFiles.map(getRouteFromHtmlPath).sort();
+
+  assert.deepEqual(indexableRoutes, [
+    "/",
+    "/blog/",
+    "/blog/tags/ai/",
+    "/blog/tags/politics/",
+    "/blog/tags/technology/",
+    "/blog/the-devil-you-know/",
+    "/code/",
+    "/paintings/",
+    "/photography/",
+  ]);
+
   const metadata = indexableFiles.map((htmlPath) => {
     const html = readFileSync(htmlPath, "utf8");
     const pageMetadata = getMetadata(html);
@@ -148,4 +162,11 @@ test("the current 404 is noindex and omits optional JSON-LD on ordinary pages", 
   );
   assert.doesNotMatch(indexHtml, /<meta name="robots"/);
   assert.doesNotMatch(indexHtml, /application\/ld\+json/);
+});
+
+test("the tracked blog post keeps its stable published route", () => {
+  const blogPath = resolve(distDirectory, "blog", "the-devil-you-know", "index.html");
+
+  assert.ok(existsSync(blogPath));
+  assert.equal(getRouteFromHtmlPath(blogPath), "/blog/the-devil-you-know/");
 });

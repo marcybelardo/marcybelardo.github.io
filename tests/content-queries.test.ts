@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
+import { readdirSync, readFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import test from "node:test";
 
+import { generateProjectId } from "../src/content/content-identifiers.ts";
 import {
   filterPublishedEntries,
   getFeaturedProjects,
@@ -72,4 +76,39 @@ test("recent post limiting sorts a copy before slicing", () => {
   assert.deepEqual(recent.map((entry) => entry.id), ["draft", "alpha"]);
   assert.deepEqual(entries.map((entry) => entry.id), ["zeta", "alpha", "draft", "older"]);
   assert.notEqual(recent, entries);
+});
+
+const projectsDirectory = resolve(
+  dirname(fileURLToPath(import.meta.url)),
+  "../src/content/projects",
+);
+
+function getFrontmatterValue(contents: string, field: string): string {
+  const match = contents.match(new RegExp(`^${field}:\\s*(.+)$`, "m"));
+
+  assert.ok(match, `${field} must be present in project frontmatter`);
+  return match[1]?.trim() ?? "";
+}
+
+test("published project IDs remain explicit and stable", () => {
+  const projectFiles = readdirSync(projectsDirectory)
+    .filter((fileName) => fileName.endsWith(".md"))
+    .sort();
+  const projectIds = projectFiles.map((fileName) => {
+    const contents = readFileSync(resolve(projectsDirectory, fileName), "utf8");
+    const slug = getFrontmatterValue(contents, "slug");
+    const title = getFrontmatterValue(contents, "title");
+    const draft = getFrontmatterValue(contents, "draft");
+
+    assert.equal(draft, "false");
+    assert.equal(slug, fileName.replace(/\.md$/, ""));
+    assert.equal(
+      generateProjectId({ slug, title: `${title} with a changed title` }),
+      slug,
+    );
+    return slug;
+  });
+
+  assert.deepEqual(projectIds, ["cmprsr-rs", "lilyhttpd", "osborne", "portfolio-site"]);
+  assert.ok(projectIds.every((projectId) => projectId.length > 0));
 });
