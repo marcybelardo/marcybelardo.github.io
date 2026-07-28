@@ -9,6 +9,8 @@ import {
   filterPublishedEntries,
   getFeaturedProjects,
   limitRecentPosts,
+  resolveRelatedProjects,
+  resolveRelatedWriting,
   sortByDateDescending,
   sortFeaturedProjects,
 } from "../src/content/content-queries.ts";
@@ -76,6 +78,45 @@ test("recent post limiting sorts a copy before slicing", () => {
   assert.deepEqual(recent.map((entry) => entry.id), ["draft", "alpha"]);
   assert.deepEqual(entries.map((entry) => entry.id), ["zeta", "alpha", "draft", "older"]);
   assert.notEqual(recent, entries);
+});
+
+type RelationEntry = {
+  readonly id: string;
+  readonly data: {
+    readonly draft?: boolean;
+  };
+};
+
+const relationEntries: ReadonlyArray<RelationEntry> = [
+  { id: "alpha", data: {} },
+  { id: "beta", data: {} },
+  { id: "draft", data: { draft: true } },
+  { id: "self", data: {} },
+];
+
+test("related project resolution preserves author order and drops invalid IDs", () => {
+  const resolved = resolveRelatedProjects({
+    ids: ["beta", "missing", "draft", "self", "alpha", "beta"],
+    entries: relationEntries,
+    selfId: "self",
+  });
+
+  assert.deepEqual(resolved.map((entry) => entry.id), ["beta", "alpha"]);
+  assert.deepEqual(relationEntries.map((entry) => entry.id), [
+    "alpha",
+    "beta",
+    "draft",
+    "self",
+  ]);
+});
+
+test("related writing resolution preserves author order and excludes drafts and missing IDs", () => {
+  const resolved = resolveRelatedWriting({
+    ids: ["self", "draft", "missing", "alpha"],
+    entries: relationEntries,
+  });
+
+  assert.deepEqual(resolved.map((entry) => entry.id), ["self", "alpha"]);
 });
 
 const projectsDirectory = resolve(
