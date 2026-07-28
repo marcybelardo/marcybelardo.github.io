@@ -9,6 +9,7 @@ import { getFeaturedProjects, getRecentPosts } from "../src/content/content-quer
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const homepagePath = resolve(repositoryRoot, "dist", "index.html");
 const bioPath = resolve(repositoryRoot, "dist", "bio", "index.html");
+const contactPath = resolve(repositoryRoot, "dist", "contact", "index.html");
 const homepageSourcePath = resolve(repositoryRoot, "src", "pages", "index.astro");
 const configuredOrigin = "https://www.marcelinebelardo.com";
 const profileUrls = [
@@ -27,6 +28,11 @@ function readHomepage(): string {
 function readBio(): string {
   assert.ok(existsSync(bioPath), "Bio output must exist before generated assertions");
   return readFileSync(bioPath, "utf8");
+}
+
+function readContact(): string {
+  assert.ok(existsSync(contactPath), "Contact output must exist before generated assertions");
+  return readFileSync(contactPath, "utf8");
 }
 
 function getJsonLd(html: string): Readonly<Record<string, unknown>> {
@@ -108,4 +114,25 @@ test("Bio uses verified copy and the square portrait without résumé placeholde
     /<meta name="description" content="About Marceline Belardo, a software developer working across software, visual culture, research, and writing\."/,
   );
   assert.doesNotMatch(html, /<h[1-6][^>]*>\s*(?:Résumé|Resume)\s*<\/h[1-6]>/i);
+});
+
+test("Contact exposes verified destinations with descriptive, non-empty links", () => {
+  const html = readContact();
+  const destinations = [
+    ["mailto:marcy@marcelinebelardo.com", "Email Marceline at marcy@marcelinebelardo.com"],
+    ["https://github.com/marcybelardo", "GitHub profile"],
+    ["https://bsky.app/profile/marcelinebelardo.com", "Bluesky profile"],
+    ["https://instagram.com/marcelinebelardo", "Instagram profile"],
+  ] as const;
+
+  assert.match(html, /Feel free to reach out by email or through one of these profiles\./);
+  destinations.forEach(([href, label]) => {
+    assert.match(html, new RegExp(`<a href="${href.replaceAll("/", "\\/")}">${label}<\/a>`));
+  });
+  assert.doesNotMatch(html, /<a\b[^>]*>\s*<\/a>/);
+  assert.match(
+    html,
+    /<meta name="description" content="Contact Marceline Belardo by email or through verified GitHub, Bluesky, and Instagram profiles\."/,
+  );
+  assert.doesNotMatch(html, /<form\b|availability|endpoint|API/i);
 });

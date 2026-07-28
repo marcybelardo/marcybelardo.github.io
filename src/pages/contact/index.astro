@@ -1,27 +1,44 @@
 ---
 // pattern: Imperative Shell
 import BaseLayout from "../../layouts/BaseLayout.astro";
+
+const contactDestinations = {
+  email: {
+    label: "Email Marceline at marcy@marcelinebelardo.com",
+    href: "mailto:marcy@marcelinebelardo.com",
+  },
+  profiles: [
+    { label: "GitHub profile", href: "https://github.com/marcybelardo" },
+    {
+      label: "Bluesky profile",
+      href: "https://bsky.app/profile/marcelinebelardo.com",
+    },
+    {
+      label: "Instagram profile",
+      href: "https://instagram.com/marcelinebelardo",
+    },
+  ],
+};
 ---
 
 <BaseLayout
   title="Contact"
-  description="Contact Marceline Belardo by email or through her social profiles."
+  description="Contact Marceline Belardo by email or through verified GitHub, Bluesky, and Instagram profiles."
 >
   <article class="editorial-page editorial-measure">
     <header class="editorial-page__header">
       <p class="eyebrow">Get in touch</p>
       <h1>Contact</h1>
-      <p>
-        Email <a href="mailto:marcy@marcelinebelardo.com">marcy@marcelinebelardo.com</a>
-        or find Marceline through these profiles.
-      </p>
+      <p>Feel free to reach out by email or through one of these profiles.</p>
     </header>
 
     <ul class="editorial-list" aria-label="Contact links">
-      <li><a href="mailto:marcy@marcelinebelardo.com">Email</a></li>
-      <li><a href="https://github.com/marcybelardo">GitHub</a></li>
-      <li><a href="https://bsky.app/profile/marcelinebelardo.com">Bluesky</a></li>
-      <li><a href="https://instagram.com/marcelinebelardo">Instagram</a></li>
+      <li><a href={contactDestinations.email.href}>{contactDestinations.email.label}</a></li>
+      {
+        contactDestinations.profiles.map((destination) => (
+          <li><a href={destination.href}>{destination.label}</a></li>
+        ))
+      }
     </ul>
   </article>
 </BaseLayout>
