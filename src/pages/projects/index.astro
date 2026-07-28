@@ -5,6 +5,7 @@ import {
   filterPublishedEntries,
   sortByDateDescending,
 } from "../../content/content-queries.ts";
+import ProjectIndexEntry from "../../components/ProjectIndexEntry.astro";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 
 const projects: Array<CollectionEntry<"project">> = sortByDateDescending(
@@ -14,23 +15,20 @@ const projects: Array<CollectionEntry<"project">> = sortByDateDescending(
 
 <BaseLayout
   title="Projects"
-  description="Selected projects by Marceline Belardo."
+  description="An editorial index of published software, visual, and research projects by Marceline Belardo."
 >
   <article class="editorial-page editorial-measure">
     <header class="editorial-page__header">
       <p class="eyebrow">Selected work</p>
       <h1>Projects</h1>
-      <p>A simple index of Marceline Belardo's published projects.</p>
+      <p>Published work across software, visual practice, research, and writing.</p>
     </header>
 
     <ul class="editorial-list" aria-label="Projects">
       {
-        projects.map((project) => (
+        projects.map((project, index) => (
           <li>
-            <article class="editorial-article">
-              <h2>{project.data.title}</h2>
-              <p>{project.data.description}</p>
-            </article>
+            <ProjectIndexEntry project={project} ordinal={index + 1} />
           </li>
         ))
       }

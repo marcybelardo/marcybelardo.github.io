@@ -1,0 +1,123 @@
+---
+// pattern: Imperative Shell
+import type { CollectionEntry } from "astro:content";
+
+import SquareImage from "./SquareImage.astro";
+
+type Props = {
+  readonly project: CollectionEntry<"project">;
+  readonly ordinal: number;
+};
+
+const { project, ordinal } = Astro.props;
+const { data } = project;
+const year = data.date.getFullYear();
+const projectUrl = `/projects/${project.id}/`;
+---
+
+<article class="project-index-entry">
+  <div class="project-index-entry__heading">
+    <p class="metadata">
+      <span aria-hidden="true">{String(ordinal).padStart(2, "0")}</span>
+      <time datetime={data.date.toISOString()}>{year}</time>
+      {data.status && <span>{data.status}</span>}
+    </p>
+    <h2><a href={projectUrl}>{data.title}</a></h2>
+  </div>
+
+  <div class="project-index-entry__body">
+    {
+      data.coverImage && data.coverImageAlt && (
+        <SquareImage
+          src={data.coverImage}
+          alt={data.coverImageAlt}
+          class="project-index-entry__image"
+          sizes="(min-width: 48rem) 18rem, 100vw"
+        />
+      )
+    }
+
+    <div class="project-index-entry__details">
+      <p>{data.description}</p>
+
+      <ul class="project-index-entry__disciplines" aria-label="Disciplines">
+        {data.disciplines.map((discipline) => <li>{discipline}</li>)}
+      </ul>
+
+      {
+        data.tags.length > 0 && (
+          <ul class="project-index-entry__tags" aria-label="Tags">
+            {data.tags.map((tag) => <li>{tag}</li>)}
+          </ul>
+        )
+      }
+    </div>
+  </div>
+</article>
+
+<style>
+  .project-index-entry__heading {
+    display: grid;
+    gap: 0.35rem;
+  }
+
+  .project-index-entry__heading h2 {
+    margin: 0;
+  }
+
+  .project-index-entry__heading h2 a {
+    color: var(--color-ink);
+  }
+
+  .project-index-entry__heading h2 a:hover {
+    color: var(--color-prussian-blue);
+  }
+
+  .project-index-entry__heading .metadata {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin: 0;
+  }
+
+  .project-index-entry__body {
+    display: grid;
+    gap: 1.25rem;
+    margin-top: 1rem;
+  }
+
+  .project-index-entry__details p {
+    margin: 0;
+  }
+
+  .project-index-entry__disciplines,
+  .project-index-entry__tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1rem;
+    margin: 1rem 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .project-index-entry__disciplines {
+    color: var(--color-prussian-blue);
+    font-family: var(--font-utility);
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .project-index-entry__tags {
+    color: var(--color-muted-ink);
+    font-family: var(--font-utility);
+    font-size: 0.75rem;
+  }
+
+  @media (min-width: 48rem) {
+    .project-index-entry__body {
+      grid-template-columns: minmax(0, 18rem) minmax(0, 1fr);
+      align-items: start;
+    }
+  }
+</style>
