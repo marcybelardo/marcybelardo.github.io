@@ -7,6 +7,29 @@ import test from "node:test";
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const distDirectory = resolve(repositoryRoot, "dist");
 const configuredOrigin = "https://www.marcelinebelardo.com";
+const primaryDestinations = ["/projects/", "/blog/", "/bio/", "/contact/"];
+const requiredHtmlArtifacts = [
+  "404.html",
+  "bio/index.html",
+  "blog/index.html",
+  "blog/tags/ai/index.html",
+  "blog/tags/politics/index.html",
+  "blog/tags/technology/index.html",
+  "blog/the-devil-you-know/index.html",
+  "code/index.html",
+  "contact/index.html",
+  "index.html",
+  "paintings/index.html",
+  "photography/index.html",
+  "projects/cmprsr-rs/index.html",
+  "projects/index.html",
+  "projects/lilyhttpd/index.html",
+  "projects/osborne/index.html",
+  "projects/portfolio-site/index.html",
+];
+const requiredNonHtmlArtifacts = ["rss.xml", "sitemap-0.xml", "sitemap-index.xml"];
+
+type JsonLdEntry = Readonly<Record<string, unknown>>;
 
 function getHtmlFiles(directory: string): Array<string> {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
@@ -41,11 +64,43 @@ function getPrimaryNavigation(html: string): string {
   return matches[0]?.[0] ?? "";
 }
 
+function getPrimaryDestinationHrefs(navigation: string): Array<string> {
+  const panelMatch = navigation.match(
+    /<div class="primary-navigation__panel"[^>]*>([\s\S]*?)<\/div>/,
+  );
+
+  assert.ok(panelMatch?.[1], "primary navigation must contain its destination panel");
+  return [...panelMatch[1].matchAll(/<a\b[^>]*href="([^"]+)"/g)].map(
+    (match) => match[1] ?? "",
+  );
+}
+
 function getSingleMatch(html: string, pattern: RegExp, label: string): string {
   const matches = [...html.matchAll(pattern)];
 
   assert.equal(matches.length, 1, `${label} must appear exactly once`);
   return decodeHtmlEntities(matches[0]?.[1] ?? "");
+}
+
+function getStructuredData(html: string, label: string): JsonLdEntry {
+  const matches = [
+    ...html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g),
+  ];
+
+  assert.equal(matches.length, 1, `${label} must contain one JSON-LD script`);
+  const serialized = matches[0]?.[1];
+  assert.ok(serialized, `${label} JSON-LD must contain data`);
+  return JSON.parse(serialized) as JsonLdEntry;
+}
+
+function getGraphEntries(structuredData: JsonLdEntry, label: string): Array<JsonLdEntry> {
+  const graph = structuredData["@graph"];
+
+  assert.ok(Array.isArray(graph), `${label} JSON-LD must expose a graph`);
+  return graph.filter(
+    (entry): entry is JsonLdEntry =>
+      typeof entry === "object" && entry !== null && !Array.isArray(entry),
+  );
 }
 
 function decodeHtmlEntities(value: string): string {
@@ -160,6 +215,36 @@ test("robots index directives remain part of the indexable metadata contract", (
   );
 });
 
+test("production output includes every current route and discovery artifact", () => {
+  assert.ok(existsSync(distDirectory), "production output must exist before route assertions");
+
+  requiredHtmlArtifacts.forEach((relativePath) => {
+    assert.ok(
+      existsSync(resolve(distDirectory, relativePath)),
+      `${relativePath} must be generated`,
+    );
+  });
+  requiredNonHtmlArtifacts.forEach((relativePath) => {
+    assert.ok(
+      existsSync(resolve(distDirectory, relativePath)),
+      `${relativePath} must be generated`,
+    );
+  });
+
+  assert.match(
+    readFileSync(resolve(distDirectory, "rss.xml"), "utf8"),
+    /<rss\b[\s\S]*the-devil-you-know/,
+  );
+  assert.match(
+    readFileSync(resolve(distDirectory, "sitemap-index.xml"), "utf8"),
+    /sitemap-0\.xml/,
+  );
+  assert.match(
+    readFileSync(resolve(distDirectory, "sitemap-0.xml"), "utf8"),
+    new RegExp(`${configuredOrigin.replaceAll(".", "\\.")}\\/projects\\/`),
+  );
+});
+
 test("every current indexable document has complete, self-referencing metadata", () => {
   assert.ok(existsSync(distDirectory), "production output must exist before metadata tests");
 
@@ -258,12 +343,11 @@ test("generated documents expose the accessible primary navigation contract", ()
   const htmlFiles = getHtmlFiles(distDirectory);
   const htmlDocuments = htmlFiles.map((htmlPath) => readFileSync(htmlPath, "utf8"));
   const allHtml = htmlDocuments.join("\n");
-  const expectedDestinations = ["/projects/", "/blog/", "/bio/", "/contact/"];
-
   htmlDocuments.forEach((html) => {
     const navigation = getPrimaryNavigation(html);
+    assert.deepEqual(getPrimaryDestinationHrefs(navigation), primaryDestinations);
 
-    expectedDestinations.forEach((destination) => {
+    primaryDestinations.forEach((destination) => {
       assert.match(
         navigation,
         new RegExp(`href="${destination.replaceAll("/", "\\/")}"`),
@@ -301,6 +385,65 @@ test("generated documents expose the accessible primary navigation contract", ()
   assert.match(allHtml, /href="https:\/\/instagram\.com\/marcelinebelardo"[^>]*aria-label="Instagram"/);
   assert.match(allHtml, /href="https:\/\/github\.com\/marcybelardo"[^>]*aria-label="GitHub"/);
   assert.doesNotMatch(getPrimaryNavigation(htmlDocuments[0] ?? ""), /aria-label="(Bluesky|Instagram|GitHub)"/);
+});
+
+test("homepage and project JSON-LD contain only visible fields", () => {
+  const homepageHtml = readFileSync(resolve(distDirectory, "index.html"), "utf8");
+  const homepageData = getStructuredData(homepageHtml, "homepage");
+  const homepageEntries = getGraphEntries(homepageData, "homepage");
+  const canonical = `${configuredOrigin}/`;
+  const website = homepageEntries.find((entry) => entry["@type"] === "WebSite");
+  const person = homepageEntries.find((entry) => entry["@type"] === "Person");
+
+  assert.deepEqual(website, {
+    "@id": canonical,
+    "@type": "WebSite",
+    name: "Marceline Belardo",
+    url: canonical,
+  });
+  assert.deepEqual(person, {
+    "@id": `${canonical}#person`,
+    "@type": "Person",
+    name: "Marceline Belardo",
+    sameAs: [
+      "https://github.com/marcybelardo",
+      "https://bsky.app/profile/marcelinebelardo.com",
+      "https://instagram.com/marcelinebelardo",
+    ],
+    url: canonical,
+  });
+
+  ["cmprsr-rs", "lilyhttpd", "osborne", "portfolio-site"].forEach((slug) => {
+    const projectPath = resolve(distDirectory, "projects", slug, "index.html");
+    const projectHtml = readFileSync(projectPath, "utf8");
+    const projectData = getStructuredData(projectHtml, `${slug} project`);
+
+    assert.deepEqual(Object.keys(projectData).sort(), [
+      "@context",
+      "@id",
+      "@type",
+      "datePublished",
+      "description",
+      "keywords",
+      "name",
+      "url",
+    ]);
+    assert.equal(projectData["@type"], "CreativeWork");
+    assert.equal(projectData["@id"], `${configuredOrigin}/projects/${slug}/`);
+    assert.equal(projectData.url, projectData["@id"]);
+    assert.equal(
+      projectData.name,
+      getSingleMatch(projectHtml, /<h1[^>]*>([^<]+)<\/h1>/g, `${slug} project heading`),
+    );
+    assert.equal(
+      projectData.description,
+      getSingleMatch(
+        projectHtml,
+        /<meta name="description" content="([^"]*)"\s*\/?\s*>/g,
+        `${slug} project description`,
+      ),
+    );
+  });
 });
 
 test("server-rendered mobile navigation remains usable without JavaScript", () => {

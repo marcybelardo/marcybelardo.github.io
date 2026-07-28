@@ -11,6 +11,7 @@ const homepagePath = resolve(repositoryRoot, "dist", "index.html");
 const bioPath = resolve(repositoryRoot, "dist", "bio", "index.html");
 const contactPath = resolve(repositoryRoot, "dist", "contact", "index.html");
 const homepageSourcePath = resolve(repositoryRoot, "src", "pages", "index.astro");
+const bioSourcePath = resolve(repositoryRoot, "src", "pages", "bio", "index.astro");
 const configuredOrigin = "https://www.marcelinebelardo.com";
 const profileUrls = [
   "https://github.com/marcybelardo",
@@ -42,6 +43,18 @@ function getJsonLd(html: string): Readonly<Record<string, unknown>> {
 
   assert.ok(match?.[1], "homepage must contain JSON-LD");
   return JSON.parse(match[1]) as Readonly<Record<string, unknown>>;
+}
+
+function getSelectedProjectIds(html: string): Array<string> {
+  return [...html.matchAll(/href="\/projects\/([^/]+)\/"/g)].map(
+    (match) => match[1] ?? "",
+  );
+}
+
+function getRecentWritingIds(html: string): Array<string> {
+  return [...html.matchAll(/href="\/blog\/([^/]+)\/"/g)].map(
+    (match) => match[1] ?? "",
+  );
 }
 
 test("homepage renders the practice, mixed selected work, writing, and contact prompt", () => {
@@ -84,6 +97,80 @@ test("homepage JSON-LD matches visible identity and verified profiles", () => {
   assert.equal(person.name, "Marceline Belardo");
   assert.equal(person.url, canonical);
   assert.deepEqual(person.sameAs, profileUrls);
+  assert.deepEqual(website, {
+    "@id": canonical,
+    "@type": "WebSite",
+    name: "Marceline Belardo",
+    url: canonical,
+  });
+  assert.deepEqual(person, {
+    "@id": `${canonical}#person`,
+    "@type": "Person",
+    name: "Marceline Belardo",
+    sameAs: profileUrls,
+    url: canonical,
+  });
+});
+
+test("homepage ordering and limits remain stable across repeated runs", () => {
+  const homepageRuns = [readHomepage(), readHomepage()];
+  const selectedProjectRuns = homepageRuns.map(getSelectedProjectIds);
+  const recentWritingRuns = homepageRuns.map(getRecentWritingIds);
+
+  assert.deepEqual(selectedProjectRuns[0], selectedProjectRuns[1]);
+  assert.deepEqual(selectedProjectRuns[0], [
+    "lilyhttpd",
+    "osborne",
+    "cmprsr-rs",
+    "portfolio-site",
+  ]);
+  assert.ok((selectedProjectRuns[0]?.length ?? 0) <= 4);
+  assert.deepEqual(recentWritingRuns[0], recentWritingRuns[1]);
+  assert.deepEqual(recentWritingRuns[0], ["the-devil-you-know"]);
+  assert.ok((recentWritingRuns[0]?.length ?? 0) <= 3);
+
+  const fixtureEntries = [
+    {
+      id: "zeta",
+      data: { date: new Date("2026-06-12"), featured: true, featuredOrder: 2 },
+    },
+    {
+      id: "alpha",
+      data: { date: new Date("2026-06-12"), featured: true, featuredOrder: 1 },
+    },
+    {
+      id: "draft",
+      data: {
+        date: new Date("2026-06-14"),
+        draft: true,
+        featured: true,
+        featuredOrder: 0,
+      },
+    },
+    {
+      id: "bravo",
+      data: { date: new Date("2026-06-11"), featured: true, featuredOrder: 3 },
+    },
+    {
+      id: "charlie",
+      data: { date: new Date("2026-06-10"), featured: true, featuredOrder: 4 },
+    },
+    {
+      id: "overflow",
+      data: { date: new Date("2026-06-09"), featured: true, featuredOrder: 5 },
+    },
+  ] as const;
+  const featuredRuns = [fixtureEntries, [...fixtureEntries].reverse()].map((entries) =>
+    getFeaturedProjects(entries, true, 4).map((entry) => entry.id),
+  );
+  const recentRuns = [fixtureEntries, [...fixtureEntries].reverse()].map((entries) =>
+    getRecentPosts(entries, true, 3).map((entry) => entry.id),
+  );
+
+  assert.deepEqual(featuredRuns[0], featuredRuns[1]);
+  assert.deepEqual(featuredRuns[0], ["alpha", "zeta", "bravo", "charlie"]);
+  assert.deepEqual(recentRuns[0], recentRuns[1]);
+  assert.deepEqual(recentRuns[0], ["alpha", "zeta", "bravo"]);
 });
 
 test("empty featured and recent fixtures have no optional section to render", () => {
@@ -93,11 +180,11 @@ test("empty featured and recent fixtures have no optional section to render", ()
   const source = readFileSync(homepageSourcePath, "utf8");
   assert.match(
     source,
-    /featuredProjects\.length > 0 && \(\s*<section[\s\S]*?selected-projects-heading/,
+    /featuredProjects\.length > 0 && \(\s*<section[\s\S]*?selected-projects-heading[\s\S]*?<ul[\s\S]*?<\/section>/,
   );
   assert.match(
     source,
-    /recentPosts\.length > 0 && \(\s*<section[\s\S]*?recent-writing-heading/,
+    /recentPosts\.length > 0 && \(\s*<section[\s\S]*?recent-writing-heading[\s\S]*?<ul[\s\S]*?<\/section>/,
   );
 });
 
@@ -114,6 +201,9 @@ test("Bio uses verified copy and the square portrait without résumé placeholde
     /<meta name="description" content="About Marceline Belardo, a software developer working across software, visual culture, research, and writing\."/,
   );
   assert.doesNotMatch(html, /<h[1-6][^>]*>\s*(?:Résumé|Resume)\s*<\/h[1-6]>/i);
+  assert.doesNotMatch(html, /<section\b[^>]*>\s*<h[1-6][^>]*>\s*(?:Résumé|Resume)/i);
+  assert.doesNotMatch(html, /<section\b[^>]*>\s*<\/section>/i);
+  assert.doesNotMatch(readFileSync(bioSourcePath, "utf8"), /(?:Résumé|Resume)-heading/i);
 });
 
 test("Contact exposes verified destinations with descriptive, non-empty links", () => {
