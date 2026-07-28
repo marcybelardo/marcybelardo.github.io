@@ -11,7 +11,7 @@
     "preview": "astro preview",
     "astro": "astro",
     "test": "node tests/content-validation-negative.mjs && node tests/project-fixture-build.mjs && node tests/homepage-fixture-build.mjs && pnpm build && node --experimental-strip-types --test --test-concurrency=1 tests/*.test.ts",
-    "verify": "pnpm test"
+    "verify": "pnpm run test"
   },
   "dependencies": {
     "@astrojs/markdown-remark": "^7.2.0",
