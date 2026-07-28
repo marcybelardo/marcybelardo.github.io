@@ -8,6 +8,7 @@ import { generateProjectId } from "../src/content/content-identifiers.ts";
 import {
   filterPublishedEntries,
   getFeaturedProjects,
+  getRecentPosts,
   limitRecentPosts,
   resolveRelatedProjects,
   resolveRelatedWriting,
@@ -70,6 +71,29 @@ test("featured sorting uses order, date, then ID", () => {
 
   assert.deepEqual(sorted.map((entry) => entry.id), ["draft", "alpha", "zeta", "older"]);
   assert.deepEqual(getFeaturedProjects(entries, true).map((entry) => entry.id), ["alpha", "zeta"]);
+});
+
+test("featured and recent selections apply deterministic limits after publication filtering", () => {
+  const manyFeatured: ReadonlyArray<TestEntry> = [
+    ...entries,
+    {
+      id: "bravo",
+      data: { date: new Date("2026-06-11"), featured: true, featuredOrder: 3 },
+    },
+    {
+      id: "charlie",
+      data: { date: new Date("2026-06-10"), featured: true, featuredOrder: 4 },
+    },
+  ];
+
+  assert.deepEqual(
+    getFeaturedProjects(manyFeatured, true, 3).map((entry) => entry.id),
+    ["alpha", "zeta", "bravo"],
+  );
+  assert.deepEqual(
+    getRecentPosts(manyFeatured, true, 3).map((entry) => entry.id),
+    ["alpha", "zeta", "bravo"],
+  );
 });
 
 test("recent post limiting sorts a copy before slicing", () => {

@@ -1,21 +1,119 @@
 ---
 // pattern: Imperative Shell
+import { getCollection, type CollectionEntry } from "astro:content";
+
+import ProjectIndexEntry from "../components/ProjectIndexEntry.astro";
+import {
+  getFeaturedProjects,
+  getRecentPosts,
+} from "../content/content-queries.ts";
 import BaseLayout from "../layouts/BaseLayout.astro";
+import { SITE_ORIGIN } from "../site-config.ts";
+
+const isProduction = !import.meta.env.DEV;
+const [projectEntries, blogEntries] = await Promise.all([
+  getCollection("project"),
+  getCollection("blog"),
+]);
+const featuredProjects: Array<CollectionEntry<"project">> = getFeaturedProjects(
+  projectEntries,
+  isProduction,
+  4,
+);
+const recentPosts: Array<CollectionEntry<"blog">> = getRecentPosts(
+  blogEntries,
+  isProduction,
+  3,
+);
+const canonicalUrl = new URL("/", Astro.site ?? SITE_ORIGIN).toString();
+const profileUrls = [
+  "https://github.com/marcybelardo",
+  "https://bsky.app/profile/marcelinebelardo.com",
+  "https://instagram.com/marcelinebelardo",
+];
+const structuredData = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebSite",
+      "@id": canonicalUrl,
+      url: canonicalUrl,
+      name: "Marceline Belardo",
+    },
+    {
+      "@type": "Person",
+      "@id": `${canonicalUrl}#person`,
+      url: canonicalUrl,
+      name: "Marceline Belardo",
+      sameAs: profileUrls,
+    },
+  ],
+};
 ---
 
 <BaseLayout
   title="Marceline Belardo"
   description="Marceline Belardo is a software developer, photographer, and painter."
+  structuredData={structuredData}
 >
-  <section class="min-h-[80vh] flex flex-col justify-center">
-    <h1 class="font-bold text-neutral-900 leading-none text-[clamp(2.5rem,12vw,10rem)]">
-      Marceline Belardo
-    </h1>
-    <nav class="homepage-navigation mt-8 space-y-2" aria-label="Homepage destinations">
-      <a href="/projects/" class="text-xl font-medium text-neutral-600 hover:text-neutral-900 no-underline block">Projects</a>
-      <a href="/blog/" class="text-xl font-medium text-neutral-600 hover:text-neutral-900 no-underline block">Blog</a>
-      <a href="/bio/" class="text-xl font-medium text-neutral-600 hover:text-neutral-900 no-underline block">Bio</a>
-      <a href="/contact/" class="text-xl font-medium text-neutral-600 hover:text-neutral-900 no-underline block">Contact</a>
-    </nav>
-  </section>
+  <article class="editorial-page editorial-measure">
+    <header class="editorial-page__header">
+      <p class="eyebrow">A connected practice</p>
+      <h1>Marceline Belardo</h1>
+    </header>
+
+    <section class="editorial-section" aria-labelledby="practice-heading">
+      <h2 id="practice-heading">Practice</h2>
+      <p class="accent">I work across software, visual culture, research, and writing.</p>
+    </section>
+
+    {
+      featuredProjects.length > 0 && (
+        <section class="editorial-section" aria-labelledby="selected-projects-heading">
+          <h2 id="selected-projects-heading">Selected Projects</h2>
+          <ul class="editorial-list" aria-label="Selected projects">
+            {featuredProjects.map((project, index) => (
+              <li>
+                <ProjectIndexEntry project={project} ordinal={index + 1} />
+              </li>
+            ))}
+          </ul>
+        </section>
+      )
+    }
+
+    {
+      recentPosts.length > 0 && (
+        <section class="editorial-section" aria-labelledby="recent-writing-heading">
+          <h2 id="recent-writing-heading">Recent Writing</h2>
+          <ul class="editorial-list" aria-label="Recent writing">
+            {recentPosts.map((post) => (
+              <li>
+                <article class="editorial-article">
+                  <h3><a href={`/blog/${post.id}/`}>{post.data.title}</a></h3>
+                  <time class="metadata" datetime={post.data.date.toISOString()}>
+                    {post.data.date.toLocaleDateString("en-US", {
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                    })}
+                  </time>
+                  {post.data.description && <p>{post.data.description}</p>}
+                </article>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )
+    }
+
+    <section class="editorial-section" aria-labelledby="contact-prompt-heading">
+      <h2 id="contact-prompt-heading">Get in touch</h2>
+      <p>
+        Feel free to reach out at <a href="mailto:marcy@marcelinebelardo.com">
+          marcy@marcelinebelardo.com
+        </a>.
+      </p>
+    </section>
+  </article>
 </BaseLayout>

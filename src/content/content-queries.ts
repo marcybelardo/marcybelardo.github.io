@@ -89,21 +89,39 @@ export function sortFeaturedProjects<T extends FeaturedProject>(
 export function getFeaturedProjects<T extends FeaturedProject>(
   entries: ReadonlyArray<T>,
   isProduction: boolean,
+  limit = 4,
+): Array<T> {
+  assertValidLimit(limit, "featured project");
+  const published = filterPublishedEntries(entries, isProduction);
+
+  return sortFeaturedProjects(
+    published.filter((entry) => entry.data.featured === true),
+  ).slice(0, limit);
+}
+
+export function getRecentPosts<T extends PublishableEntry & DatedEntry>(
+  entries: ReadonlyArray<T>,
+  isProduction: boolean,
+  limit = 3,
 ): Array<T> {
   const published = filterPublishedEntries(entries, isProduction);
 
-  return sortFeaturedProjects(published.filter((entry) => entry.data.featured === true));
+  return limitRecentPosts(published, limit);
 }
 
 export function limitRecentPosts<T extends DatedEntry>(
   entries: ReadonlyArray<T>,
   limit: number,
 ): Array<T> {
-  if (!Number.isInteger(limit) || limit < 0) {
-    throw new RangeError("recent post limit must be a non-negative integer");
-  }
+  assertValidLimit(limit, "recent post");
 
   return sortByDateDescending(entries).slice(0, limit);
+}
+
+function assertValidLimit(limit: number, label: string): void {
+  if (!Number.isInteger(limit) || limit < 0) {
+    throw new RangeError(`${label} limit must be a non-negative integer`);
+  }
 }
 
 function getFeaturedOrder(entry: FeaturedProject): number {
