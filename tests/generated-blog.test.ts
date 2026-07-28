@@ -15,6 +15,13 @@ function readBlogOutput(...segments: ReadonlyArray<string>): string {
   return readFileSync(outputPath, "utf8");
 }
 
+function readRssOutput(): string {
+  const outputPath = resolve(distDirectory, "rss.xml");
+
+  assert.ok(existsSync(outputPath), "RSS output must exist");
+  return readFileSync(outputPath, "utf8");
+}
+
 function getJsonLd(html: string): Readonly<Record<string, unknown>> {
   const match = html.match(
     /<script type="application\/ld\+json">([\s\S]*?)<\/script>/,
@@ -69,7 +76,26 @@ test("blog detail JSON-LD contains only the visible published fields", () => {
   );
   assert.equal(jsonLd.datePublished, "2026-06-02T00:00:00.000Z");
   assert.deepEqual(jsonLd.keywords, ["AI", "Technology", "Politics"]);
+  assert.equal("image" in jsonLd, false);
   assert.doesNotMatch(html, /draft-route-fixture|draft-only-review/i);
+});
+
+test("RSS contains deterministic published-only canonical discovery output", () => {
+  const rss = readRssOutput();
+  const canonicalPostUrl = `${configuredOrigin}/blog/the-devil-you-know/`;
+
+  assert.match(rss, new RegExp(`<link>${configuredOrigin.replaceAll(".", "\\.")}\/</link>`));
+  assert.match(rss, new RegExp(`<link>${canonicalPostUrl.replaceAll(".", "\\.")}</link>`));
+  assert.match(rss, new RegExp(`<guid isPermaLink="true">${canonicalPostUrl.replaceAll(".", "\\.")}</guid>`));
+  assert.match(rss, /<category>AI<\/category>/);
+  assert.match(rss, /<category>Technology<\/category>/);
+  assert.match(rss, /<category>Politics<\/category>/);
+  assert.match(rss, /The Devil You Know, the Devil You Don&apos;t/);
+  assert.match(
+    rss,
+    /Where Marceline comes to terms with AI&apos;s usefulness, and why its issues run deeper than technology/,
+  );
+  assert.doesNotMatch(rss, /draft-route-fixture|draft-only-review|marcybelardo\.github\.io/i);
 });
 
 test("blog routes contain no untyped any annotations", () => {

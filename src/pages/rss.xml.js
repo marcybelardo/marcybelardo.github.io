@@ -1,8 +1,12 @@
+// pattern: Imperative Shell
 import rss from "@astrojs/rss";
 import { getCollection } from "astro:content";
 
+import { getPublishedBlogPosts } from "../content/content-queries.ts";
+
 export async function GET(context) {
-  const posts = await getCollection("blog");
+  const posts = getPublishedBlogPosts(await getCollection("blog"), true);
+
   return rss({
     title: "Art Computer Insanity Posting",
     description: "Marceline Belardo's thoughts on tech, politics, and art",
@@ -12,6 +16,7 @@ export async function GET(context) {
       pubDate: post.data.date,
       description: post.data.description,
       link: `/blog/${post.id}/`,
+      ...(post.data.tags.length > 0 ? { categories: post.data.tags } : {}),
     })),
   });
 }

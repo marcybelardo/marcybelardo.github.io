@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { existsSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -168,6 +168,17 @@ try {
       false,
       "draft-only tag archive was generated in production",
     );
+    [
+      resolve(repositoryRoot, "dist/index.html"),
+      resolve(repositoryRoot, "dist/blog/index.html"),
+      resolve(repositoryRoot, "dist/rss.xml"),
+    ].forEach((outputPath) => {
+      assert.doesNotMatch(
+        readFileSync(outputPath, "utf8"),
+        /Draft Route Fixture|draft-only-review|Temporary draft route fixture/i,
+        `${outputPath} leaked the draft post`,
+      );
+    });
   } finally {
     rmSync(draftRouteFixturePath, { force: true });
   }
