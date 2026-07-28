@@ -1,79 +1,160 @@
 # Marceline Portfolio
 
-Personal portfolio website for Marceline — a static site built with Astro, React, TypeScript, and TailwindCSS.
+Personal portfolio website for Marceline Belardo — a static site built with Astro, React, TypeScript, and TailwindCSS.
 
-## Project Structure
+The canonical origin is `https://www.marcelinebelardo.com`. The site is deployed as a static GitHub Pages artifact; there is no SSR or on-demand routing.
+
+## Project structure and routes
 
 ```text
 /
-├── public/                 # Static assets (favicons, images, etc.)
+├── public/                    # Static assets, favicons, and robots.txt
 ├── src/
-│   ├── components/         # Reusable Astro/React components
-│   ├── content/            # Content collections (blog, projects, etc.)
-│   │   ├── blog/           # Blog posts (markdown)
-│   ├── layouts/            # Shared page layouts
-│   ├── pages/              # Route pages
-│   └── styles/             # Global styles
+│   ├── assets/                # Imported image and social assets
+│   ├── components/            # Reusable Astro components
+│   ├── content/
+│   │   ├── projects/          # Project case studies (.md/.mdx)
+│   │   └── blog/              # Blog posts (.md/.mdx)
+│   ├── layouts/              # Shared Astro layouts
+│   ├── pages/                 # Static route entrypoints
+│   └── styles/                # Global styles
+├── tests/                     # Node 22 built-in tests and build fixtures
+├── astro.config.mjs
+├── AGENTS.md
 ├── package.json
 └── README.md
 ```
 
+The generated route tree is:
+
+```text
+/
+├── projects/
+│   └── <project-slug>/
+├── blog/
+│   ├── <post-slug>/
+│   └── tags/<tag-slug>/
+├── bio/
+├── contact/
+├── rss.xml
+├── sitemap-index.xml
+├── sitemap-0.xml
+├── robots.txt
+└── 404.html
+```
+
+`/code/`, `/paintings/`, and `/photography/` remain static noindex migration documents pointing to `/projects/`; they are not primary sections and are excluded from the sitemap.
+
 ## Commands
 
-All commands are run from the project root with `pnpm`:
+Run commands from the project root with `pnpm`:
 
-| Command        | Action                                       |
-| :------------- | :------------------------------------------- |
-| `pnpm dev`     | Starts local dev server at `localhost:4321`  |
-| `pnpm build`   | Build your production site to `./dist/`      |
-| `pnpm preview` | Preview your build locally, before deploying |
-| `pnpm astro`   | Run Astro CLI commands                       |
+| Command | Action |
+| --- | --- |
+| `pnpm dev` | Start the local Astro server at `localhost:4321` |
+| `pnpm build` | Build the static production site to `./dist/` |
+| `pnpm preview` | Preview the production build locally |
+| `pnpm astro` | Run Astro CLI commands |
+| `pnpm test` | Run validation fixtures, build the site, and run Node tests |
+| `pnpm verify` | Alias for `pnpm test`; use this as the quality gate |
 
-## Creating a Blog Post
+Tests use Node 22's built-in `node:test` runner with TypeScript stripping. No test framework, lint script, or typecheck script is configured.
 
-Blog posts live in `src/content/blog/`. Each file becomes a page at `/code/blog/<filename>/`.
+## Adding a project
 
-Create a new `.md` file inside that directory. Only `title` and `date` are required; all other fields are optional.
+Create `src/content/projects/<filename>.md` or `.mdx`. The filename is not the public identifier: set an immutable explicit lowercase `slug`; the resulting URL is `/projects/<slug>/`. Once published, never change a slug without creating a migration document for the old URL.
 
-### Full example
+Use this complete frontmatter shape as a starting point. Image paths are relative to this Markdown file, so replace the example files with real assets before building.
 
 ```markdown
 ---
-title: My First Post
-date: 2026-06-02
-description: A short preview for the blog listing page.
-image: ../../assets/my-photo.jpg
-imageAlt: Description of the image
+slug: example-project
+title: Example Project
+date: 2026-07-29
+description: A concise, non-empty summary of what this project does.
+disciplines:
+  - software
 tags:
   - Astro
-  - Web Design
-draft: false
+  - TypeScript
+status: Published
+role: Designer and developer
+collaborators:
+  - Collaborator Name
+repositoryUrl: https://github.com/example/example-project
+liveUrl: https://example.com/example-project/
+externalUrl: https://example.org/project-reference
+featured: true
+featuredOrder: 5
+draft: true
+coverImage: ../../assets/example-project-cover.jpg
+coverImageAlt: A meaningful description of the example project interface
+gallery:
+  - image: ../../assets/example-project-detail.jpg
+    imageAlt: A meaningful description of the example project detail view
+    caption: Optional caption for the detail view.
 ---
 
-## Post body
+## Summary
 
-Write your markdown here.
+Write the case study as prose-only Markdown. Explain the context, decisions, and
+result in a way that matches the visible project metadata.
 ```
 
-### Minimal example (text only)
+Project frontmatter rules:
+
+- `title`, ISO `date`, non-empty `description`, and a non-empty `disciplines` list are required.
+- `tags`, `status`, `role`, `collaborators`, `repositoryUrl`, `liveUrl`, and `externalUrl` are optional. URLs must be valid absolute URLs.
+- `featured` defaults to `false`. A featured project needs a unique positive `featuredOrder`; do not reuse an order among featured projects.
+- Use `draft: true` while authoring. Draft projects are excluded from production detail routes, homepage sections, relationships, RSS, and sitemap output.
+- `coverImage` is relative to the project Markdown file. If it is present, `coverImageAlt` is mandatory and must meaningfully describe the image.
+- Each optional `gallery` entry requires an image and meaningful `imageAlt`; `caption` is optional.
+- Project Markdown bodies are prose-only. Put case-study images in `coverImage` or `gallery` so the site can enforce square framing, responsive image generation, intrinsic dimensions, and alt text. Do not add Markdown, HTML, or JSX images to the body.
+- Published slugs are permanent. If a published URL must change, keep the old route as a migration document rather than silently changing the slug.
+
+Run `pnpm verify` after adding or editing a project.
+
+## Adding a blog post
+
+Create `src/content/blog/<filename>.md` or `.mdx`. Set an explicit stable lowercase `slug`; the resulting URL is `/blog/<slug>/`.
 
 ```markdown
 ---
-title: Just Thoughts
-date: 2026-06-02
+slug: example-post
+title: Example Post
+date: 2026-07-29
+description: A non-empty description used when this post is published.
+tags:
+  - Research
+  - Writing
+image: ../../assets/example-post.jpg
+imageAlt: A meaningful description of the post image
+draft: true
 ---
 
-No images, no tags — just writing.
+Write the post in standard Markdown. A footnote uses the normal paired syntax:
+
+This sentence has a note.[^source]
+
+[^source]: The footnote definition appears at the end of the document.
 ```
 
-### Available frontmatter fields
+Blog rules:
 
-| Field         | Required | Description                             |
-| ------------- | -------- | --------------------------------------- |
-| `title`       | yes      | Post title                              |
-| `date`        | yes      | Publish date                            |
-| `description` | no       | Short excerpt shown on the blog listing |
-| `image`       | no       | Path to an image (relative to the file) |
-| `imageAlt`    | no       | Alt text for the image                  |
-| `tags`        | no       | List of tags for filtering              |
-| `draft`       | no       | Set `true` to exclude from the build    |
+- `title` and ISO `date` are required. A published post must have a non-empty `description`; use `draft: true` while writing without one.
+- `tags`, `image`, `imageAlt`, and `draft` are optional. `imageAlt` is required whenever `image` is present, and an image must not be paired with an empty alt value.
+- Use standard Markdown footnotes with `[^id]` references and `[^id]: definition` definitions. The generated post keeps linked references, definitions, and backlinks.
+- Tags generate `/blog/tags/<tag-slug>/` archives. Draft posts are omitted from production detail routes, tag archives, homepage writing, RSS, and sitemap output.
+- The legacy title-derived blog ID remains only as a compatibility fallback for posts without a slug: it uses the first four alphanumeric title words. All new posts should set `slug`.
+
+Run `pnpm verify` after adding or editing a post.
+
+## Editing Bio and Contact
+
+Bio copy lives in the small `bioContent` block in [`src/pages/bio/index.astro`](src/pages/bio/index.astro). Edit the factual `label`, `statement`, `skills`, and `portraitAlt` values; keep the portrait alt text meaningful.
+
+Contact copy and destinations live in the `contactDestinations` block in [`src/pages/contact/index.astro`](src/pages/contact/index.astro). Edit the email label/address and the verified profile labels/URLs. Keep all copy factual; do not invent résumé details, availability, or contact destinations. Run `pnpm verify` after changes.
+
+## Integration note
+
+When integrating this redesign, do not overwrite the original workspace's untracked `src/content/blog/blog02.md`. Preserve that file and resolve its contents deliberately if it is present outside this worktree.
