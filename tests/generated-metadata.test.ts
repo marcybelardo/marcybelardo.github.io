@@ -41,6 +41,21 @@ function getPrimaryNavigation(html: string): string {
   return matches[0]?.[0] ?? "";
 }
 
+function getHomepageContentNavigation(html: string): string {
+  const matches = [
+    ...html.matchAll(
+      /<nav\b[^>]*aria-label="Homepage destinations"[^>]*>[\s\S]*?<\/nav>/gi,
+    ),
+  ];
+
+  assert.equal(
+    matches.length,
+    1,
+    "the homepage must contain one content navigation",
+  );
+  return matches[0]?.[0] ?? "";
+}
+
 function getSingleMatch(html: string, pattern: RegExp, label: string): string {
   const matches = [...html.matchAll(pattern)];
 
@@ -297,6 +312,22 @@ test("generated documents expose the accessible primary navigation contract", ()
   assert.match(allHtml, /href="https:\/\/instagram\.com\/marcelinebelardo"[^>]*aria-label="Instagram"/);
   assert.match(allHtml, /href="https:\/\/github\.com\/marcybelardo"[^>]*aria-label="GitHub"/);
   assert.doesNotMatch(getPrimaryNavigation(htmlDocuments[0] ?? ""), /aria-label="(Bluesky|Instagram|GitHub)"/);
+});
+
+test("homepage content navigation uses the current destinations", () => {
+  assert.ok(existsSync(distDirectory), "production output must exist before navigation assertions");
+
+  const homepageHtml = readFileSync(resolve(distDirectory, "index.html"), "utf8");
+  const navigation = getHomepageContentNavigation(homepageHtml);
+  const expectedDestinations = ["/projects/", "/blog/", "/bio/", "/contact/"];
+
+  expectedDestinations.forEach((destination) => {
+    assert.match(
+      navigation,
+      new RegExp(`href="${destination.replaceAll("/", "\\/")}"`),
+    );
+  });
+  assert.doesNotMatch(navigation, />\s*(Code|Paintings|Photography)\s*</);
 });
 
 test("server-rendered mobile navigation remains usable without JavaScript", () => {
