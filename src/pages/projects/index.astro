@@ -1,0 +1,39 @@
+---
+// pattern: Imperative Shell
+import { getCollection, type CollectionEntry } from "astro:content";
+import {
+  filterPublishedEntries,
+  sortByDateDescending,
+} from "../../content/content-queries.ts";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+
+const projects: Array<CollectionEntry<"project">> = sortByDateDescending(
+  filterPublishedEntries(await getCollection("project"), !import.meta.env.DEV),
+);
+---
+
+<BaseLayout
+  title="Projects"
+  description="Selected projects by Marceline Belardo."
+>
+  <article class="editorial-page editorial-measure">
+    <header class="editorial-page__header">
+      <p class="eyebrow">Selected work</p>
+      <h1>Projects</h1>
+      <p>A simple index of Marceline Belardo's published projects.</p>
+    </header>
+
+    <ul class="editorial-list" aria-label="Projects">
+      {
+        projects.map((project) => (
+          <li>
+            <article class="editorial-article">
+              <h2>{project.data.title}</h2>
+              <p>{project.data.description}</p>
+            </article>
+          </li>
+        ))
+      }
+    </ul>
+  </article>
+</BaseLayout>

@@ -14,6 +14,13 @@ import {
 
 const path = Astro.url.pathname;
 
+const primaryLinks = [
+  { label: "Projects", href: "/projects/" },
+  { label: "Blog", href: "/blog/" },
+  { label: "Bio", href: "/bio/" },
+  { label: "Contact", href: "/contact/" },
+];
+
 type Props = {
   readonly title: string;
   readonly description: string;
@@ -90,115 +97,194 @@ const socialImageUrl = socialImage
       <script type="application/ld+json" set:html={serializeJsonLd(structuredData)} />
     )}
   </head>
-  <body>
-    <header
-      class="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-[5%] py-3 bg-white border-b border-neutral-200"
-    >
-      <button
-        id="menu-btn"
-        class="text-2xl leading-none cursor-pointer bg-transparent border-none pb-1.5 text-neutral-900 hover:text-neutral-500"
-      >
-        ☰
-      </button>
-
-
-      <div class="flex items-center gap-4 ml-auto">
-        <a
-          href="https://bsky.app/profile/marcelinebelardo.com"
-          class="no-underline text-neutral-700 hover:text-neutral-500"
-          title="Bluesky"
+  <body class="editorial-shell">
+    <header class="site-header">
+      <div class="site-header__inner">
+        <nav
+          class="primary-navigation"
+          aria-label="Primary"
+          data-site-navigation
         >
-          <BskyLogo class="w-5 h-5" />
-        </a>
-        <a
-          href="https://instagram.com/marcelinebelardo"
-          class="no-underline text-neutral-700 hover:text-neutral-500"
-          title="Instagram"
-        >
-          <GithubLogo class="w-5 h-5" />
-        </a>
-        <a
-          href="https://github.com/marcybelardo"
-          class="no-underline text-neutral-700 hover:text-neutral-500"
-          title="GitHub"
-        >
-          <InstagramLogo class="w-5 h-5" />
-        </a>
+          <a
+            href="/"
+            class="site-brand no-underline"
+            aria-current={path === "/" ? "page" : undefined}
+          >
+            Marceline Belardo
+          </a>
+          <button
+            type="button"
+            class="primary-navigation__menu-button"
+            id="primary-menu-button"
+            aria-controls="primary-navigation"
+            aria-expanded="false"
+            aria-label="Open primary navigation"
+            data-menu-button
+          >
+            Menu
+          </button>
+          <div class="primary-navigation__panel" id="primary-navigation" data-open="false">
+            <ul class="primary-navigation__list">
+              {
+                primaryLinks.map((link) => (
+                  <li>
+                    <a
+                      href={link.href}
+                      class="primary-navigation__link"
+                      aria-current={path === link.href ? "page" : undefined}
+                    >
+                      {link.label}
+                    </a>
+                  </li>
+                ))
+              }
+            </ul>
+          </div>
+        </nav>
       </div>
     </header>
 
-    <aside
-      id="sidebar"
-      class="fixed top-0 left-0 z-40 h-full w-64 bg-white border-r border-neutral-200 -translate-x-full transition-transform duration-200 ease-in-out pt-16"
-    >
-      <nav class="flex flex-col px-6 text-base">
-        <a
-          href="/"
-          class="no-underline py-2"
-          class:list={[path.startsWith("/") && path.length == 1 ? "font-bold" : ""]}
-        >
-          Home
-        </a>
-        <a
-          href="/code/"
-          class="no-underline py-2"
-          class:list={[path.startsWith("/code/") ? "font-bold" : ""]}
-        >
-          Code
-        </a>
-        <a
-          href="/paintings/"
-          class="no-underline py-2"
-          class:list={[path.startsWith("/paintings/") ? "font-bold" : ""]}
-        >
-          Paintings
-        </a>
-        <a
-          href="/photography/"
-          class="no-underline py-2"
-          class:list={[path.startsWith("/photography/") ? "font-bold" : ""]}
-        >
-          Photography
-        </a>
-        <a
-          href="/blog/"
-          class="no-underline py-2"
-          class:list={[path.startsWith("/blog/") ? "font-bold" : ""]}
-        >
-          Blog
-        </a>
-      </nav>
-    </aside>
-
-    <main class="w-full pt-16 pb-12 px-[5%]">
+    <main class="editorial-main">
       <slot />
     </main>
 
+    <footer class="social-links" aria-label="Social links">
+      <a
+        href="https://bsky.app/profile/marcelinebelardo.com"
+        class="no-underline"
+        aria-label="Bluesky"
+        title="Bluesky"
+      >
+        <BskyLogo width={20} height={20} />
+      </a>
+      <a
+        href="https://instagram.com/marcelinebelardo"
+        class="no-underline"
+        aria-label="Instagram"
+        title="Instagram"
+      >
+        <InstagramLogo width={20} height={20} />
+      </a>
+      <a
+        href="https://github.com/marcybelardo"
+        class="no-underline"
+        aria-label="GitHub"
+        title="GitHub"
+      >
+        <GithubLogo width={20} height={20} />
+      </a>
+    </footer>
+
     <script>
-      const btn = document.getElementById("menu-btn");
-      const sidebar = document.getElementById("sidebar");
+      // pattern: Imperative Shell
+      const navigation = document.querySelector("[data-site-navigation]");
 
-      function toggle() {
-        sidebar?.classList.toggle("-translate-x-full");
-        sidebar?.classList.toggle("translate-x-0");
-      }
+      if (navigation instanceof HTMLElement) {
+        const menuButton = navigation.querySelector("[data-menu-button]");
+        const menuPanel = navigation.querySelector("[data-open]");
+        const firstLink = menuPanel?.querySelector("a");
+        const compactLayout = window.matchMedia("(max-width: 47.999rem)");
+        let isOpen = false;
+        let removeListeners = () => {};
 
-      btn?.addEventListener("click", toggle);
-
-      sidebar?.querySelectorAll("a").forEach((a) => {
-        a.addEventListener("click", toggle);
-      });
-
-      document.addEventListener("click", (e) => {
         if (
-          (e.target as Element)?.id !== "menu-btn" &&
-          !sidebar?.contains(e.target as Node) &&
-          sidebar?.classList.contains("translate-x-0")
+          menuButton instanceof HTMLButtonElement &&
+          menuPanel instanceof HTMLElement
         ) {
-          sidebar?.classList.remove("translate-x-0");
-          sidebar?.classList.add("-translate-x-full");
+          const setPanelState = (open: boolean) => {
+            const shouldShowPanel = !compactLayout.matches || open;
+
+            menuPanel.dataset.open = String(shouldShowPanel);
+            menuPanel.setAttribute("aria-hidden", String(!shouldShowPanel));
+            menuPanel.toggleAttribute("inert", !shouldShowPanel);
+            menuButton.setAttribute("aria-expanded", String(open));
+            menuButton.setAttribute(
+              "aria-label",
+              open ? "Close primary navigation" : "Open primary navigation",
+            );
+          };
+
+          const closeMenu = (restoreFocus: boolean) => {
+            isOpen = false;
+            setPanelState(false);
+
+            if (restoreFocus) {
+              menuButton.focus();
+            }
+          };
+
+          const openMenu = () => {
+            if (!compactLayout.matches) {
+              return;
+            }
+
+            isOpen = true;
+            setPanelState(true);
+            window.requestAnimationFrame(() => {
+              firstLink?.focus();
+            });
+          };
+
+          const handleButtonClick = () => {
+            if (isOpen) {
+              closeMenu(true);
+            } else {
+              openMenu();
+            }
+          };
+
+          const handleDocumentClick = (event: MouseEvent) => {
+            if (
+              isOpen &&
+              event.target instanceof Node &&
+              !navigation.contains(event.target)
+            ) {
+              closeMenu(true);
+            }
+          };
+
+          const handleKeydown = (event: KeyboardEvent) => {
+            if (event.key === "Escape" && isOpen) {
+              closeMenu(true);
+            }
+          };
+
+          const handleMediaChange = () => {
+            if (!compactLayout.matches) {
+              isOpen = false;
+            }
+
+            setPanelState(isOpen);
+          };
+
+          const handleLinkClick = () => {
+            closeMenu(false);
+          };
+
+          menuButton.addEventListener("click", handleButtonClick);
+          document.addEventListener("click", handleDocumentClick);
+          document.addEventListener("keydown", handleKeydown);
+          compactLayout.addEventListener("change", handleMediaChange);
+          menuPanel.querySelectorAll("a").forEach((link) => {
+            link.addEventListener("click", handleLinkClick);
+          });
+          setPanelState(false);
+
+          removeListeners = () => {
+            menuButton.removeEventListener("click", handleButtonClick);
+            document.removeEventListener("click", handleDocumentClick);
+            document.removeEventListener("keydown", handleKeydown);
+            compactLayout.removeEventListener("change", handleMediaChange);
+            menuPanel.querySelectorAll("a").forEach((link) => {
+              link.removeEventListener("click", handleLinkClick);
+            });
+          };
         }
-      });
+
+        document.addEventListener("astro:before-swap", removeListeners, {
+          once: true,
+        });
+      }
     </script>
   </body>
 </html>

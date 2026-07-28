@@ -32,6 +32,15 @@ function getCssFiles(directory: string): Array<string> {
   });
 }
 
+function getPrimaryNavigation(html: string): string {
+  const matches = [
+    ...html.matchAll(/<nav\b[^>]*aria-label="Primary"[^>]*>[\s\S]*?<\/nav>/gi),
+  ];
+
+  assert.equal(matches.length, 1, "each document must contain one primary navigation");
+  return matches[0]?.[0] ?? "";
+}
+
 function getSingleMatch(html: string, pattern: RegExp, label: string): string {
   const matches = [...html.matchAll(pattern)];
 
@@ -147,14 +156,17 @@ test("every current indexable document has complete, self-referencing metadata",
 
   assert.deepEqual(indexableRoutes, [
     "/",
+    "/bio/",
     "/blog/",
     "/blog/tags/ai/",
     "/blog/tags/politics/",
     "/blog/tags/technology/",
     "/blog/the-devil-you-know/",
     "/code/",
+    "/contact/",
     "/paintings/",
     "/photography/",
+    "/projects/",
   ]);
 
   const metadata = indexableFiles.map((htmlPath) => {
@@ -219,6 +231,61 @@ test("generated output uses the editorial visual system without parallax or card
   assert.match(css, /button:focus-visible/);
   assert.doesNotMatch(html, /data-parallax-speed/);
   assert.doesNotMatch(codeHtml, /ProjectCard|grid-cols-|border-neutral-900/);
+});
+
+test("generated documents expose the accessible primary navigation contract", () => {
+  assert.ok(existsSync(distDirectory), "production output must exist before navigation assertions");
+
+  const htmlFiles = getHtmlFiles(distDirectory);
+  const htmlDocuments = htmlFiles.map((htmlPath) => readFileSync(htmlPath, "utf8"));
+  const allHtml = htmlDocuments.join("\n");
+  const expectedDestinations = ["/projects/", "/blog/", "/bio/", "/contact/"];
+
+  htmlDocuments.forEach((html) => {
+    const navigation = getPrimaryNavigation(html);
+
+    expectedDestinations.forEach((destination) => {
+      assert.match(
+        navigation,
+        new RegExp(`href="${destination.replaceAll("/", "\\/")}"`),
+      );
+    });
+    assert.doesNotMatch(navigation, />\s*(Code|Paintings|Photography)\s*</);
+    assert.match(navigation, /<button\b[^>]*aria-controls="primary-navigation"/);
+    assert.match(navigation, /aria-expanded="false"/);
+    assert.match(navigation, /aria-label="Open primary navigation"/);
+    assert.match(navigation, /data-menu-button/);
+    assert.match(navigation, /id="primary-navigation"[^>]*data-open="false"/);
+  });
+
+  const routeExpectations = [
+    ["/", "/"],
+    ["/projects/", "/projects/"],
+    ["/blog/", "/blog/"],
+    ["/bio/", "/bio/"],
+    ["/contact/", "/contact/"],
+  ] as const;
+
+  routeExpectations.forEach(([route, activeHref]) => {
+    const htmlPath = route === "/"
+      ? resolve(distDirectory, "index.html")
+      : resolve(distDirectory, route.slice(1), "index.html");
+    const navigation = getPrimaryNavigation(readFileSync(htmlPath, "utf8"));
+
+    assert.match(
+      navigation,
+      new RegExp(`href="${activeHref.replaceAll("/", "\\/")}"[^>]*aria-current="page"`),
+      `${route} must mark its exact primary destination as current`,
+    );
+  });
+
+  assert.match(allHtml, /astro:before-swap/);
+  assert.match(allHtml, /\.key===?["']Escape["']/);
+  assert.match(allHtml, /requestAnimationFrame/);
+  assert.match(allHtml, /toggleAttribute\("inert"/);
+  assert.match(allHtml, /href="https:\/\/instagram\.com\/marcelinebelardo"[^>]*aria-label="Instagram"/);
+  assert.match(allHtml, /href="https:\/\/github\.com\/marcybelardo"[^>]*aria-label="GitHub"/);
+  assert.doesNotMatch(getPrimaryNavigation(htmlDocuments[0] ?? ""), /aria-label="(Bluesky|Instagram|GitHub)"/);
 });
 
 test("the tracked blog post keeps its stable published route", () => {

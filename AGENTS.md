@@ -32,7 +32,9 @@ Projects use explicit stable slugs, validated publication metadata, and optional
 
 **Blog ID scheme** — IDs use a non-empty explicit frontmatter `slug` when present; otherwise they fall back to the first 4 alphanumeric words of `title`, lowercased and joined with `-` (not from the filename). Drafts (`draft: true`) are excluded in production builds.
 
-Paintings and photography pages are currently placeholder ("Coming soon") — those sections are not yet implemented.
+The shared `BaseLayout` owns the accessible editorial header. Its only primary destinations are Projects, Blog, Bio, and Contact; Code, Paintings, and Photography remain migration/placeholder documents outside the primary navigation.
+Projects, Bio, and Contact are working static destinations. Projects reads published entries from the phase 1 collection, while Bio and Contact contain the verified profile copy and destinations until later phases expand their presentations.
+The site-wide stylesheet defines the editorial visual tokens, typography, rules, focus-visible states, reduced-motion behavior, and print behavior. It intentionally has no external font imports.
 
 `pnpm test` runs serial missing-image-alt validation for project and blog images, verifies temporary draft routes stay out of production, runs the production build, and executes the dependency-free Node test suite. `pnpm verify` aliases `pnpm test`.
 
