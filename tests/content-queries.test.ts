@@ -189,6 +189,18 @@ test("published blog queries exclude drafts and sort deterministically", () => {
   assert.deepEqual(blogEntries.map((entry) => entry.id), ["zeta", "alpha", "draft", "older"]);
 });
 
+test("authored invalid tags fail validation before production filtering", () => {
+  const invalidDraft = {
+    id: "invalid-draft",
+    data: { date: new Date("2026-06-15"), draft: true, tags: ["!!!"] },
+  };
+
+  assert.throws(
+    () => getPublishedBlogPosts([invalidDraft], true),
+    /blog tag must normalize to a non-empty slug/,
+  );
+});
+
 test("unique blog tags merge normalized collisions and deduplicate posts", () => {
   const tags = getUniqueBlogTags(blogEntries, true);
   const archives = getBlogTagArchives(blogEntries, true);

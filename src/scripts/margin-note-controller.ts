@@ -19,16 +19,18 @@ export type MarginNoteMeasureResult =
       readonly reason: string;
     };
 
+export type MarginNoteState = "baseline" | "enhanced" | "cleanup-failed";
+
 export type MarginNoteControllerPorts = {
   readonly measure: () => MarginNoteMeasureResult;
   readonly moveToRail: (node: object, top: number) => void;
-  readonly restoreToList: (node: object) => void;
-  readonly setEnhancedState: (isEnhanced: boolean) => void;
+  readonly restoreToList: (node: object) => boolean;
+  readonly setEnhancedState: (state: MarginNoteState) => void;
 };
 
 export type MarginNoteController = {
   readonly enhance: () => boolean;
-  readonly restore: () => void;
+  readonly restore: () => boolean;
   readonly isEnhanced: () => boolean;
 };
 
@@ -43,34 +45,43 @@ export function createMarginNoteController(
   let measuredNotes: Array<MeasuredMarginNote> = [];
   let enhanced = false;
 
-  function restoreNodes(notes: ReadonlyArray<MeasuredMarginNote>): void {
-    notes.forEach(({ node }) => {
+  function restoreNodes(
+    notes: ReadonlyArray<MeasuredMarginNote>,
+  ): Array<MeasuredMarginNote> {
+    const remaining: Array<MeasuredMarginNote> = [];
+
+    notes.forEach((note) => {
       try {
-        ports.restoreToList(node);
+        if (!ports.restoreToList(note.node)) {
+          remaining.push(note);
+        }
       } catch {
-        // Keep restoring the remaining nodes when one DOM operation fails.
+        remaining.push(note);
       }
     });
+
+    return remaining;
   }
 
-  function clearEnhancedState(): void {
-    try {
-      ports.setEnhancedState(false);
-    } catch {
-      // Failure cleanup must not prevent the readable baseline from returning.
-    }
+  function restore(): boolean {
+    const remaining = restoreNodes(measuredNotes);
+    measuredNotes = remaining;
     enhanced = false;
-  }
 
-  function restore(): void {
-    restoreNodes(measuredNotes);
-    measuredNotes = [];
-    clearEnhancedState();
+    if (remaining.length > 0) {
+      ports.setEnhancedState("cleanup-failed");
+      return false;
+    }
+
+    ports.setEnhancedState("baseline");
+    return true;
   }
 
   function enhance(): boolean {
-    if (enhanced) {
-      restore();
+    if (enhanced || measuredNotes.length > 0) {
+      if (!restore()) {
+        return false;
+      }
     }
 
     let result: MarginNoteMeasureResult;
@@ -79,13 +90,13 @@ export function createMarginNoteController(
       result = ports.measure();
     } catch {
       measuredNotes = [];
-      clearEnhancedState();
+      ports.setEnhancedState("baseline");
       return false;
     }
 
     if (!result.success) {
       measuredNotes = [];
-      clearEnhancedState();
+      ports.setEnhancedState("baseline");
       return false;
     }
 
@@ -115,7 +126,7 @@ export function createMarginNoteController(
 
         ports.moveToRail(note.node, top);
       });
-      ports.setEnhancedState(true);
+      ports.setEnhancedState("enhanced");
       enhanced = true;
       return true;
     } catch {

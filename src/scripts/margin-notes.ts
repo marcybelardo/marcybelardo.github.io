@@ -5,6 +5,7 @@ import {
   type MarginNoteController,
   type MarginNoteControllerPorts,
   type MarginNoteMeasureResult,
+  type MarginNoteState,
 } from "./margin-note-controller.ts";
 
 export const MARGIN_NOTE_WIDE_LAYOUT_QUERY = "(min-width: 72rem)";
@@ -41,8 +42,13 @@ export function initializeMarginNotes(
 
   const rail = article.querySelector<HTMLElement>("[data-margin-note-rail]");
   const endnotes = article.querySelector<HTMLElement>("[data-footnotes]");
+  const railList = rail?.querySelector<HTMLOListElement>("ol");
 
-  if (!(rail instanceof HTMLElement) || !(endnotes instanceof HTMLElement)) {
+  if (
+    !(rail instanceof HTMLElement) ||
+    !(endnotes instanceof HTMLElement) ||
+    !(railList instanceof HTMLOListElement)
+  ) {
     return null;
   }
 
@@ -95,7 +101,7 @@ export function initializeMarginNotes(
         throw new Error("margin-note definition has no restoration placeholder");
       }
 
-      rail.append(note);
+      railList.append(note);
       note.style.setProperty("--margin-note-top", `${top}px`);
     },
     restoreToList: (node) => {
@@ -105,29 +111,34 @@ export function initializeMarginNotes(
 
       const note = node;
       const placeholder = placeholders.get(note);
+      const originalParent = placeholder?.parentNode;
 
-      if (placeholder?.parentNode) {
-        placeholder.parentNode.insertBefore(note, placeholder);
-        placeholder.remove();
-      } else {
-        const orderedList = endnotes.querySelector<HTMLOListElement>("ol");
-
-        if (!orderedList) {
-          throw new Error("margin-note endnotes list is missing");
-        }
-
-        orderedList.append(note);
+      if (!originalParent) {
+        return false;
       }
 
+      originalParent.insertBefore(note, placeholder);
+
+      if (note.parentNode !== originalParent) {
+        return false;
+      }
+
+      placeholder.remove();
       placeholders.delete(note);
       note.style.removeProperty("--margin-note-top");
+      return true;
     },
-    setEnhancedState: (isEnhanced) => {
-      if (isEnhanced) {
+    setEnhancedState: (state: MarginNoteState) => {
+      delete article.dataset.marginNotesEnhanced;
+      delete article.dataset.marginNoteCleanupFailed;
+
+      if (state === "enhanced") {
         article.dataset.marginNotesEnhanced = "true";
         rail.setAttribute("aria-hidden", "false");
+      } else if (state === "cleanup-failed") {
+        article.dataset.marginNoteCleanupFailed = "true";
+        rail.setAttribute("aria-hidden", "false");
       } else {
-        delete article.dataset.marginNotesEnhanced;
         rail.setAttribute("aria-hidden", "true");
       }
     },
@@ -136,16 +147,20 @@ export function initializeMarginNotes(
   const wideLayout = browserWindow.matchMedia(MARGIN_NOTE_WIDE_LAYOUT_QUERY);
   let isScheduled = false;
   let isDestroyed = false;
+  let isPrinting = false;
+  let generation = 0;
   let observedWidth: number | null = null;
 
-  function runEnhancement(): void {
-    isScheduled = false;
-
-    if (isDestroyed) {
+  function runEnhancement(scheduledGeneration: number): void {
+    if (scheduledGeneration !== generation || isPrinting || isDestroyed) {
       return;
     }
 
-    controller.restore();
+    isScheduled = false;
+
+    if (!controller.restore()) {
+      return;
+    }
 
     if (wideLayout.matches) {
       controller.enhance();
@@ -153,17 +168,44 @@ export function initializeMarginNotes(
   }
 
   function scheduleEnhancement(): void {
-    if (isScheduled || isDestroyed) {
+    if (isScheduled || isDestroyed || isPrinting) {
       return;
     }
 
     isScheduled = true;
+    const scheduledGeneration = generation;
     void browserDocument.fonts.ready.then(
       () => {
-        browserWindow.requestAnimationFrame(runEnhancement);
+        if (
+          isDestroyed ||
+          isPrinting ||
+          scheduledGeneration !== generation
+        ) {
+          if (scheduledGeneration === generation) {
+            isScheduled = false;
+          }
+          return;
+        }
+
+        browserWindow.requestAnimationFrame(() => {
+          runEnhancement(scheduledGeneration);
+        });
       },
       () => {
-        browserWindow.requestAnimationFrame(runEnhancement);
+        if (
+          isDestroyed ||
+          isPrinting ||
+          scheduledGeneration !== generation
+        ) {
+          if (scheduledGeneration === generation) {
+            isScheduled = false;
+          }
+          return;
+        }
+
+        browserWindow.requestAnimationFrame(() => {
+          runEnhancement(scheduledGeneration);
+        });
       },
     );
   }
@@ -172,9 +214,15 @@ export function initializeMarginNotes(
     scheduleEnhancement();
   };
   const handleBeforePrint = (): void => {
+    isPrinting = true;
+    generation += 1;
+    isScheduled = false;
     controller.restore();
   };
   const handleAfterPrint = (): void => {
+    isPrinting = false;
+    generation += 1;
+
     if (wideLayout.matches) {
       scheduleEnhancement();
     }
@@ -209,6 +257,8 @@ export function initializeMarginNotes(
       }
 
       isDestroyed = true;
+      generation += 1;
+      isScheduled = false;
       resizeObserver?.disconnect();
       wideLayout.removeEventListener("change", handleMediaChange);
       browserWindow.removeEventListener("beforeprint", handleBeforePrint);
@@ -229,6 +279,11 @@ function measureMarginNotes(
     article.querySelectorAll<HTMLElement>("[data-margin-note-ref]"),
   );
   const referenceById = new Map<string, HTMLElement>();
+  const availableDefinitionIds = new Set(
+    definitions
+      .map((definition) => definition.id)
+      .filter((id) => id.length > 0),
+  );
 
   if (definitions.length === 0 || references.length === 0) {
     return { success: false, reason: "no complete margin notes found" };
@@ -238,7 +293,12 @@ function measureMarginNotes(
     const referenceId = reference.id;
     const definitionId = reference.dataset.marginNoteRef;
 
-    if (!referenceId || !definitionId || referenceById.has(referenceId)) {
+    if (
+      !referenceId ||
+      !definitionId ||
+      !availableDefinitionIds.has(definitionId) ||
+      referenceById.has(referenceId)
+    ) {
       return { success: false, reason: "margin-note reference identity is invalid" };
     }
 

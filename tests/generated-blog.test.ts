@@ -48,7 +48,15 @@ test("production blog output preserves the published post and tag routes", () =>
   );
   assert.match(detailHtml, /data-margin-note-article/);
   assert.match(detailHtml, /data-margin-note-rail/);
+  assert.match(detailHtml, /data-margin-note-rail[\s\S]*<ol aria-label="Margin notes"><\/ol>/);
   assert.doesNotMatch(detailHtml, /data-margin-notes-enhanced="true"/);
+});
+
+test("margin-note CSS positions list items beneath the semantic rail wrapper", () => {
+  const stylesheet = readFileSync(resolve(repositoryRoot, "src/styles/global.css"), "utf8");
+
+  assert.match(stylesheet, /\.margin-note-rail > ol > li/);
+  assert.doesNotMatch(stylesheet, /\.margin-note-rail > li/);
 });
 
 test("blog detail JSON-LD contains only the visible published fields", () => {

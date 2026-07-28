@@ -5,6 +5,7 @@ import {
   createMarginNoteController,
   type MarginNoteControllerPorts,
   type MarginNoteMeasureResult,
+  type MarginNoteState,
 } from "../src/scripts/margin-note-controller.ts";
 
 type FakeNote = {
@@ -19,7 +20,7 @@ function createPorts(
   readonly ports: MarginNoteControllerPorts;
   readonly moved: Array<string>;
   readonly restored: Array<string>;
-  readonly states: Array<boolean>;
+  readonly states: Array<MarginNoteState>;
 } {
   const moved: Array<string> = [];
   const restored: Array<string> = [];
@@ -42,9 +43,10 @@ function createPorts(
     restoreToList: (node) => {
       const note = node as FakeNote;
       restored.push(note.id);
+      return true;
     },
-    setEnhancedState: (isEnhanced) => {
-      states.push(isEnhanced);
+    setEnhancedState: (state) => {
+      states.push(state);
     },
   };
 
@@ -62,7 +64,7 @@ test("controller enhances measured notes and restores their original order", () 
   assert.equal(controller.enhance(), true);
   assert.equal(controller.isEnhanced(), true);
   assert.deepEqual(fake.moved, ["source", "second"]);
-  assert.deepEqual(fake.states, [true]);
+  assert.deepEqual(fake.states, ["enhanced"]);
 
   controller.restore();
 
@@ -72,7 +74,7 @@ test("controller enhances measured notes and restores their original order", () 
     ["source-ref", "source-ref-2"],
     ["second-ref"],
   ]);
-  assert.deepEqual(fake.states, [true, false]);
+  assert.deepEqual(fake.states, ["enhanced", "baseline"]);
 });
 
 test("invalid measurements leave the baseline unenhanced", () => {
@@ -90,7 +92,7 @@ test("invalid measurements leave the baseline unenhanced", () => {
   assert.equal(controller.enhance(), false);
   assert.equal(controller.isEnhanced(), false);
   assert.deepEqual(fake.moved, []);
-  assert.deepEqual(fake.states, [false]);
+  assert.deepEqual(fake.states, ["baseline"]);
 });
 
 test("a placement exception restores every note and removes enhancement state", () => {
@@ -109,7 +111,36 @@ test("a placement exception restores every note and removes enhancement state", 
   assert.equal(controller.isEnhanced(), false);
   assert.deepEqual(fake.moved, ["first", "second"]);
   assert.deepEqual(fake.restored, ["first", "second"]);
-  assert.deepEqual(fake.states, [false]);
+  assert.deepEqual(fake.states, ["baseline"]);
+});
+
+test("restoration failure keeps the controller in a visible cleanup state", () => {
+  const note = { id: "unrestored", backlinks: ["unrestored-ref"] };
+  const fake = createPorts([note]);
+  const states: Array<MarginNoteState> = [];
+  let shouldFail = true;
+  const controller = createMarginNoteController({
+    ...fake.ports,
+    restoreToList: () => {
+      if (shouldFail) {
+        return false;
+      }
+
+      return true;
+    },
+    setEnhancedState: (state) => {
+      states.push(state);
+    },
+  });
+
+  assert.equal(controller.enhance(), true);
+  assert.equal(controller.restore(), false);
+  assert.deepEqual(states, ["enhanced", "cleanup-failed"]);
+  assert.equal(controller.isEnhanced(), false);
+
+  shouldFail = false;
+  assert.equal(controller.restore(), true);
+  assert.deepEqual(states, ["enhanced", "cleanup-failed", "baseline"]);
 });
 
 test("before-print restoration keeps multiple backlinks attached to one note", () => {

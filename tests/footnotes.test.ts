@@ -86,3 +86,119 @@ test("unpaired footnote nodes remain unchanged and unenhanced", () => {
   assert.deepEqual(tree, before);
   assert.doesNotMatch(JSON.stringify(tree), /dataMarginNote/);
 });
+
+test("mixed paired and unpaired footnotes remain completely unannotated", () => {
+  const tree = {
+    type: "root",
+    children: [
+      {
+        type: "element",
+        tagName: "p",
+        properties: {},
+        children: [
+          {
+            type: "element",
+            tagName: "a",
+            properties: {
+              href: "#fn-source",
+              id: "fnref-source",
+              dataFootnoteRef: true,
+            },
+            children: [{ type: "text", value: "1" }],
+          },
+          {
+            type: "element",
+            tagName: "a",
+            properties: {
+              href: "#fn-missing",
+              id: "fnref-missing",
+              dataFootnoteRef: true,
+            },
+            children: [{ type: "text", value: "2" }],
+          },
+        ],
+      },
+      {
+        type: "element",
+        tagName: "section",
+        properties: { dataFootnotes: true },
+        children: [
+          {
+            type: "element",
+            tagName: "ol",
+            properties: {},
+            children: [
+              {
+                type: "element",
+                tagName: "li",
+                properties: { id: "fn-source" },
+                children: [{ type: "text", value: "source" }],
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  };
+  const before = structuredClone(tree);
+
+  rehypeMarginNotes()(tree);
+
+  assert.deepEqual(tree, before);
+});
+
+test("a definition without a reference prevents all annotation", () => {
+  const tree = {
+    type: "root",
+    children: [
+      {
+        type: "element",
+        tagName: "p",
+        properties: {},
+        children: [
+          {
+            type: "element",
+            tagName: "a",
+            properties: {
+              href: "#fn-source",
+              id: "fnref-source",
+              dataFootnoteRef: true,
+            },
+            children: [{ type: "text", value: "1" }],
+          },
+        ],
+      },
+      {
+        type: "element",
+        tagName: "section",
+        properties: { dataFootnotes: true },
+        children: [
+          {
+            type: "element",
+            tagName: "ol",
+            properties: {},
+            children: [
+              {
+                type: "element",
+                tagName: "li",
+                properties: { id: "fn-source" },
+                children: [{ type: "text", value: "source" }],
+              },
+              {
+                type: "element",
+                tagName: "li",
+                properties: { id: "fn-orphan" },
+                children: [{ type: "text", value: "orphan" }],
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  };
+  const before = structuredClone(tree);
+
+  rehypeMarginNotes()(tree);
+
+  assert.deepEqual(tree, before);
+});

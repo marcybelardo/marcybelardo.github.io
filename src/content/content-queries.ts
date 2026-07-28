@@ -88,15 +88,13 @@ export function getPublishedBlogPosts<T extends BlogEntry>(
   entries: ReadonlyArray<T>,
   isProduction: boolean,
 ): Array<T> {
-  const posts = sortByDateDescending(filterPublishedEntries(entries, isProduction));
-
-  posts.forEach((post) => {
+  entries.forEach((post) => {
     post.data.tags?.forEach((tag) => {
       assertValidTagSlug(tag);
     });
   });
 
-  return posts;
+  return sortByDateDescending(filterPublishedEntries(entries, isProduction));
 }
 
 export function getUniqueBlogTags<T extends BlogEntry>(

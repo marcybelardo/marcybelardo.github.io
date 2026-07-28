@@ -5,8 +5,9 @@ export default function rehypeMarginNotes() {
   return function transform(tree) {
     const references = [];
     const definitionsById = new Map();
+    let hasInvalidCoverage = false;
 
-    walk(tree, (node) => {
+    walk(tree, (node, context) => {
       if (node.type !== "element" || !isRecord(node.properties)) {
         return;
       }
@@ -24,37 +25,63 @@ export default function rehypeMarginNotes() {
             definitionId: href.slice(1),
             referenceId,
           });
+        } else {
+          hasInvalidCoverage = true;
         }
       }
 
-      if (
-        node.tagName === "li" &&
-        typeof node.properties.id === "string" &&
-        node.properties.id.length > 0
-      ) {
-        definitionsById.set(node.properties.id, node);
+      if (context === "footnote-list" && node.tagName === "li") {
+        const definitionId = getStringProperty(node.properties, "id");
+
+        if (!definitionId || definitionsById.has(definitionId)) {
+          hasInvalidCoverage = true;
+        } else {
+          definitionsById.set(definitionId, node);
+        }
       }
     });
 
-    const firstReferenceByDefinition = new Set();
+    const firstReferenceByDefinition = new Map();
 
-    references.forEach(({ node, definitionId, referenceId }) => {
+    references.forEach(({ definitionId, referenceId }) => {
       const definition = definitionsById.get(definitionId);
 
-      if (
-        !definition ||
-        !isRecord(definition.properties) ||
-        firstReferenceByDefinition.has(definitionId)
-      ) {
-        if (definition && isRecord(definition.properties)) {
-          annotateReference(node, definitionId);
-        }
+      if (!definition) {
+        hasInvalidCoverage = true;
         return;
       }
 
+      if (!firstReferenceByDefinition.has(definitionId)) {
+        firstReferenceByDefinition.set(definitionId, referenceId);
+      }
+    });
+
+    if (
+      new Set(references.map(({ referenceId }) => referenceId)).size !==
+      references.length
+    ) {
+      hasInvalidCoverage = true;
+    }
+
+    if (firstReferenceByDefinition.size !== definitionsById.size) {
+      hasInvalidCoverage = true;
+    }
+
+    if (
+      hasInvalidCoverage ||
+      references.length === 0 ||
+      definitionsById.size === 0
+    ) {
+      return tree;
+    }
+
+    references.forEach(({ node, definitionId }) => {
       annotateReference(node, definitionId);
+    });
+
+    firstReferenceByDefinition.forEach((referenceId, definitionId) => {
+      const definition = definitionsById.get(definitionId);
       definition.properties.dataMarginNoteAnchor = referenceId;
-      firstReferenceByDefinition.add(definitionId);
     });
 
     return tree;
@@ -69,18 +96,30 @@ function annotateReference(node, definitionId) {
   node.properties.dataMarginNoteRef = definitionId;
 }
 
-function walk(node, visit) {
+function walk(node, visit, context = "root") {
   if (!isRecord(node)) {
     return;
   }
 
-  visit(node);
+  visit(node, context);
+
+  let nextContext = context;
+
+  if (node.type === "element" && isRecord(node.properties)) {
+    if (hasProperty(node.properties, "dataFootnotes")) {
+      nextContext = "footnotes";
+    } else if (context === "footnotes" && node.tagName === "ol") {
+      nextContext = "footnote-list";
+    } else if (context === "footnote-list" && node.tagName === "li") {
+      nextContext = "footnote-definition";
+    }
+  }
 
   if (!Array.isArray(node.children)) {
     return;
   }
 
-  node.children.forEach((child) => walk(child, visit));
+  node.children.forEach((child) => walk(child, visit, nextContext));
 }
 
 function hasProperty(properties, key) {
