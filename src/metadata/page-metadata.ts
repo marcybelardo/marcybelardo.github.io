@@ -43,6 +43,26 @@ export function createCanonicalUrl(
   return canonicalUrl.toString();
 }
 
+export function validateCanonicalUrl(
+  canonicalUrl: string,
+  siteOrigin: SiteOrigin = SITE_ORIGIN,
+): string {
+  const configuredOrigin = new URL(siteOrigin);
+  let parsedCanonicalUrl: URL;
+
+  try {
+    parsedCanonicalUrl = new URL(canonicalUrl);
+  } catch {
+    throw new Error("canonical URL must be an absolute URL");
+  }
+
+  if (parsedCanonicalUrl.origin !== configuredOrigin.origin) {
+    throw new Error("canonical URL must use the configured site origin");
+  }
+
+  return parsedCanonicalUrl.toString();
+}
+
 export function createSocialImageUrl(
   imagePath: string,
   siteOrigin: SiteOrigin = SITE_ORIGIN,

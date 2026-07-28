@@ -31,25 +31,23 @@ const { label, posts } = tag;
   title={`Posts tagged: ${label}`}
   description={`Writing by Marceline Belardo tagged with ${label}.`}
 >
-  <section class="py-12 mx-auto max-w-2xl">
-    <a href="/blog/" class="text-sm text-neutral-500 hover:text-neutral-700 no-underline"
-      >&larr; Back to Blog</a
-    >
-    <h1 class="text-3xl font-bold text-neutral-900 mt-4 mb-8">
-      Posts tagged: <span class="text-neutral-500">{label}</span>
-    </h1>
+  <article class="editorial-page editorial-measure">
+    <header class="editorial-page__header">
+      <p class="eyebrow"><a href="/blog/">Blog archive</a></p>
+      <h1>Posts tagged: <span class="accent">{label}</span></h1>
+    </header>
     {
       posts.length === 0 ? (
-        <p class="text-neutral-600">No posts found.</p>
+        <p class="editorial-empty">No posts found.</p>
       ) : (
-        <ul class="space-y-8">
+        <ul class="editorial-list blog-index__list" aria-label={`Posts tagged ${label}`}>
           {posts.map((post) => (
             <li>
               <a href={`/blog/${post.id}/`}>
-                <h2 class="text-xl font-bold mb-1">{post.data.title}</h2>
+                <h2>{post.data.title}</h2>
               </a>
               <time
-                class="text-sm text-neutral-500"
+                class="metadata"
                 datetime={post.data.date.toISOString()}
               >
                 {post.data.date.toLocaleDateString("en-US", {
@@ -59,7 +57,7 @@ const { label, posts } = tag;
                 })}
               </time>
               {post.data.description && (
-                <p class="font-medium text-red-500 mt-1 leading-relaxed">
+                <p class="blog-index__description">
                   {post.data.description}
                 </p>
               )}
@@ -68,5 +66,5 @@ const { label, posts } = tag;
         </ul>
       )
     }
-  </section>
+  </article>
 </BaseLayout>

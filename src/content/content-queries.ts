@@ -167,6 +167,8 @@ export function resolveRelatedWriting<T extends PublishableEntry>(
 export function sortFeaturedProjects<T extends FeaturedProject>(
   entries: ReadonlyArray<T>,
 ): Array<T> {
+  assertUniqueFeaturedOrders(entries);
+
   return [...entries].sort((left, right) => {
     const orderDifference = getFeaturedOrder(left) - getFeaturedOrder(right);
 
@@ -180,12 +182,35 @@ export function sortFeaturedProjects<T extends FeaturedProject>(
   });
 }
 
+export function assertUniqueFeaturedOrders<T extends FeaturedProject>(
+  entries: ReadonlyArray<T>,
+): void {
+  const orderOwners = new Map<number, string>();
+
+  entries.forEach((entry) => {
+    if (entry.data.featured !== true || entry.data.featuredOrder === undefined) {
+      return;
+    }
+
+    const previousOwner = orderOwners.get(entry.data.featuredOrder);
+
+    if (previousOwner !== undefined) {
+      throw new Error(
+        `featuredOrder must be unique for featured projects: ${entry.data.featuredOrder} is used by ${previousOwner} and ${entry.id}`,
+      );
+    }
+
+    orderOwners.set(entry.data.featuredOrder, entry.id);
+  });
+}
+
 export function getFeaturedProjects<T extends FeaturedProject>(
   entries: ReadonlyArray<T>,
   isProduction: boolean,
   limit = 4,
 ): Array<T> {
   assertValidLimit(limit, "featured project");
+  assertUniqueFeaturedOrders(entries);
   const published = filterPublishedEntries(entries, isProduction);
 
   return sortFeaturedProjects(

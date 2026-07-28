@@ -221,6 +221,16 @@ test("robots index directives remain part of the indexable metadata contract", (
   );
 });
 
+test("BaseLayout validates migration canonical URLs against the configured origin", () => {
+  const baseLayoutSource = readFileSync(
+    resolve(repositoryRoot, "src/layouts/BaseLayout.astro"),
+    "utf8",
+  );
+
+  assert.match(baseLayoutSource, /validateCanonicalUrl\(canonicalUrl,\s*SITE_ORIGIN\)/);
+  assert.doesNotMatch(baseLayoutSource, /canonicalUrl\s*\?\?\s*createCanonicalUrl/);
+});
+
 test("production output includes every current route and discovery artifact", () => {
   assert.ok(existsSync(distDirectory), "production output must exist before route assertions");
 

@@ -10,6 +10,7 @@ import {
   createSocialImageUrl,
   serializeJsonLd,
   SITE_ORIGIN,
+  validateCanonicalUrl,
 } from "../metadata/page-metadata.ts";
 
 const path = Astro.url.pathname;
@@ -48,14 +49,15 @@ const {
 } = Astro.props;
 const renderedTitle = composeSiteTitle(title);
 const canonical =
-  canonicalUrl ??
-  createCanonicalUrl(canonicalPath ?? Astro.url.pathname, Astro.site ?? SITE_ORIGIN);
+  canonicalUrl !== undefined
+    ? validateCanonicalUrl(canonicalUrl, SITE_ORIGIN)
+    : createCanonicalUrl(canonicalPath ?? Astro.url.pathname, SITE_ORIGIN);
 if (metaRefreshPath !== undefined) {
-  createCanonicalUrl(metaRefreshPath, Astro.site ?? SITE_ORIGIN);
+  createCanonicalUrl(metaRefreshPath, SITE_ORIGIN);
 }
 const refreshPath = metaRefreshPath ?? null;
 const socialImageUrl = socialImage
-  ? createSocialImageUrl(socialImage, Astro.site ?? SITE_ORIGIN)
+  ? createSocialImageUrl(socialImage, SITE_ORIGIN)
   : null;
 ---
 

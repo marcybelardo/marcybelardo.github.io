@@ -64,43 +64,40 @@ const structuredData = {
   structuredData={structuredData}
 >
   <article
-    class="py-12 mx-auto max-w-2xl blog-article"
+    class="editorial-article editorial-measure blog-article"
     data-margin-note-article
   >
-    <time
-      class="text-sm text-neutral-500"
-      datetime={post.data.date.toISOString()}
-    >
-      {
-        post.data.date.toLocaleDateString("en-US", {
-          year: "numeric",
-          month: "long",
-          day: "numeric",
-        })
-      }
-    </time>
-    <h1 class="text-3xl font-bold text-neutral-900 mt-1 mb-2">
-      {post.data.title}
-    </h1>
-    {post.data.tags && post.data.tags.length > 0 && (
-      <p class="text-sm italic text-neutral-400 mb-6">
-        {post.data.tags.map((tag, i) => [
-          i > 0 && ", ",
-          (() => {
-            const slug = toTagSlug(tag);
+    <header class="editorial-page__header blog-article__header">
+      <p class="eyebrow">Writing</p>
+      <h1>{post.data.title}</h1>
+      <div class="metadata blog-article__metadata">
+        <time datetime={post.data.date.toISOString()}>
+          {
+            post.data.date.toLocaleDateString("en-US", {
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+            })
+          }
+        </time>
+        {post.data.tags && post.data.tags.length > 0 && (
+          <span>
+            {post.data.tags.map((tag, i) => [
+              i > 0 && ", ",
+              (() => {
+                const slug = toTagSlug(tag);
 
-            return slug ? (
-              <a
-                href={`/blog/tags/${slug}/`}
-                class="hover:text-neutral-600 underline"
-              >
-                {tag}
-              </a>
-            ) : null;
-          })(),
-        ])}
-      </p>
-    )}
+                return slug ? (
+                  <a href={`/blog/tags/${slug}/`}>
+                    {tag}
+                  </a>
+                ) : null;
+              })(),
+            ])}
+          </span>
+        )}
+      </div>
+    </header>
     {post.data.image && post.data.imageAlt && (
       <SquareImage
         src={post.data.image}
@@ -108,7 +105,7 @@ const structuredData = {
         class="blog-article__image"
       />
     )}
-    <div class="prose text-neutral-700 leading-relaxed space-y-4">
+    <div class="blog-article__body">
       <Content />
     </div>
     <aside

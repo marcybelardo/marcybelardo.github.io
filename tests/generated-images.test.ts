@@ -6,6 +6,10 @@ import test from "node:test";
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const distDirectory = resolve(repositoryRoot, "dist");
+const squareImageSource = readFileSync(
+  resolve(repositoryRoot, "src/components/SquareImage.astro"),
+  "utf8",
+);
 const bioPath = resolve(distDirectory, "bio", "index.html");
 const representativePaths: ReadonlyArray<string> = [
   resolve(distDirectory, "index.html"),
@@ -85,6 +89,12 @@ test("SquareImage output reserves intrinsic dimensions and responsive sources", 
     /sizes="[^"]*100vw/,
     "Bio image sizing must not overstate the layout width with 100vw",
   );
+});
+
+test("SquareImage requires an explicit decorative classification for empty alt text", () => {
+  assert.match(squareImageSource, /decorative\?: false/);
+  assert.match(squareImageSource, /alt:\s*""[\s\S]*decorative:\s*true/);
+  assert.match(squareImageSource, /alt === "" && decorative !== true/);
 });
 
 test("representative pages contain only valid generated image markup", () => {

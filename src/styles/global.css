@@ -106,6 +106,119 @@ textarea {
     max-width: var(--reading-measure);
 }
 
+.editorial-empty {
+    color: var(--color-muted-ink);
+}
+
+.blog-index__list h2 {
+    margin: 0;
+    font-size: clamp(1.5rem, 3vw, 2.25rem);
+    font-weight: 400;
+    line-height: 1.1;
+}
+
+.blog-index__description {
+    color: var(--color-prussian-blue);
+}
+
+.blog-index__tags {
+    margin-top: 0.75rem;
+}
+
+.blog-index__image {
+    max-width: 16rem;
+}
+
+.blog-article__metadata {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem 1rem;
+    margin-top: 1.25rem;
+}
+
+.blog-article__body {
+    max-width: var(--reading-measure);
+    font-size: 1.08rem;
+}
+
+.blog-article__body > :first-child {
+    margin-top: 0;
+}
+
+.blog-article__body p {
+    margin: 1.25rem 0;
+}
+
+.blog-article__body h2,
+.blog-article__body h3,
+.blog-article__body h4 {
+    margin: 2.75rem 0 0.85rem;
+    font-weight: 400;
+    line-height: 1.15;
+}
+
+.blog-article__body h2 {
+    font-size: clamp(1.75rem, 4vw, 2.5rem);
+}
+
+.blog-article__body h3 {
+    font-size: 1.5rem;
+}
+
+.blog-article__body h4 {
+    font-size: 1.2rem;
+}
+
+.blog-article__body ul,
+.blog-article__body ol {
+    margin: 1.25rem 0;
+    padding-inline-start: 1.5rem;
+}
+
+.blog-article__body li + li {
+    margin-top: 0.5rem;
+}
+
+.blog-article__body blockquote {
+    margin: 2rem 0;
+}
+
+.blog-article__body figure {
+    margin: 2rem 0;
+}
+
+.blog-article__body figcaption {
+    color: var(--color-muted-ink);
+    font-family: var(--font-utility);
+    font-size: 0.875rem;
+}
+
+.blog-article__body img {
+    display: block;
+    max-width: 100%;
+    height: auto;
+}
+
+.blog-article__body hr {
+    margin: 3rem 0;
+    border: 0;
+    border-top: 1px solid var(--color-rule);
+}
+
+.blog-article__body table {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+    border-collapse: collapse;
+}
+
+.blog-article__body th,
+.blog-article__body td {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--color-rule);
+    text-align: left;
+}
+
 .editorial-list {
     margin: 0;
     padding: 0;

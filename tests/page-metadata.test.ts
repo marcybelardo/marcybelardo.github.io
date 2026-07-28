@@ -9,6 +9,7 @@ import {
   NOINDEX_ROBOTS,
   serializeJsonLd,
   SITE_ORIGIN,
+  validateCanonicalUrl,
 } from "../src/metadata/page-metadata.ts";
 
 test("site titles compose page labels with the site name", () => {
@@ -36,6 +37,21 @@ test("canonical paths reject external URLs", () => {
   assert.throws(
     () => createCanonicalUrl("//example.com/elsewhere/", SITE_ORIGIN),
     /canonical path must be an internal absolute path/,
+  );
+});
+
+test("canonical URL overrides preserve migration URLs only on the configured origin", () => {
+  assert.equal(
+    validateCanonicalUrl("https://www.marcelinebelardo.com/projects/", SITE_ORIGIN),
+    "https://www.marcelinebelardo.com/projects/",
+  );
+  assert.throws(
+    () => validateCanonicalUrl("https://malicious.example/projects/", SITE_ORIGIN),
+    /canonical URL must use the configured site origin/,
+  );
+  assert.throws(
+    () => validateCanonicalUrl("/projects/", SITE_ORIGIN),
+    /canonical URL must be an absolute URL/,
   );
 });
 

@@ -117,3 +117,25 @@ test("blog routes contain no untyped any annotations", () => {
     assert.doesNotMatch(source, /\bany\b/);
   });
 });
+
+test("blog routes use the editorial presentation without legacy utility or prose classes", () => {
+  const routeSources = [
+    resolve(repositoryRoot, "src/pages/blog/index.astro"),
+    resolve(repositoryRoot, "src/pages/blog/[...slug]/index.astro"),
+    resolve(repositoryRoot, "src/pages/blog/tags/[tag].astro"),
+  ].map((sourcePath) => readFileSync(sourcePath, "utf8"));
+
+  routeSources.forEach((source) => {
+    assert.doesNotMatch(source, /\b(?:text-red-\d+|font-bold|text-neutral-[^\s"]+|prose)\b/);
+    assert.match(source, /editorial-(?:page|measure|list|article)/);
+  });
+
+  const stylesheet = readFileSync(resolve(repositoryRoot, "src/styles/global.css"), "utf8");
+  assert.match(stylesheet, /\.blog-article__body/);
+  assert.match(stylesheet, /\.blog-article__body\s+h2/);
+  assert.match(stylesheet, /\.blog-article__body\s+blockquote/);
+
+  const detailHtml = readBlogOutput("the-devil-you-know");
+  assert.match(detailHtml, /class="[^"]*blog-article__body[^"]*"/);
+  assert.doesNotMatch(detailHtml, /class="[^"]*\bprose\b/);
+});

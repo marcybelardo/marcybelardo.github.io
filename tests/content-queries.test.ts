@@ -77,6 +77,24 @@ test("featured sorting uses order, date, then ID", () => {
   assert.deepEqual(getFeaturedProjects(entries, true).map((entry) => entry.id), ["alpha", "zeta"]);
 });
 
+test("featured selection rejects duplicate featured orders with the conflicting IDs", () => {
+  const duplicateOrders: ReadonlyArray<TestEntry> = [
+    {
+      id: "first",
+      data: { date: new Date("2026-06-12"), featured: true, featuredOrder: 1 },
+    },
+    {
+      id: "second",
+      data: { date: new Date("2026-06-11"), featured: true, featuredOrder: 1 },
+    },
+  ];
+
+  assert.throws(
+    () => getFeaturedProjects(duplicateOrders, true),
+    /featuredOrder must be unique.*first.*second/i,
+  );
+});
+
 test("featured and recent selections apply deterministic limits after publication filtering", () => {
   const manyFeatured: ReadonlyArray<TestEntry> = [
     ...entries,
