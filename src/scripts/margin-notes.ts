@@ -30,6 +30,10 @@ type MarginNotePosition = {
   readonly nextSibling: Node | null;
 };
 
+type MarginNoteMeasurementPreparation = (
+  definitions: ReadonlyArray<MarginNoteNode>,
+) => (preservePositions: boolean) => boolean;
+
 /**
  * Progressively enhances a semantic footnote section with a desktop rail.
  * Every DOM operation is kept here; the controller receives only injected
@@ -65,29 +69,44 @@ export function initializeMarginNotes(
   function createPlaceholders(
     notes: ReadonlyArray<{ readonly node: object }>,
   ): void {
+    const captured = notes.map(({ node }): {
+      readonly node: MarginNoteNode;
+      readonly parent: Node;
+      readonly index: number;
+      readonly previousSibling: Node | null;
+      readonly nextSibling: Node | null;
+    } => {
+      if (!(node instanceof HTMLElement) || !node.parentNode) {
+        throw new Error("margin-note definition has no list parent");
+      }
+
+      const siblings = Array.from(node.parentNode.childNodes);
+      const index = siblings.indexOf(node);
+
+      if (index < 0) {
+        throw new Error("margin-note definition position is unavailable");
+      }
+
+      return {
+        node,
+        parent: node.parentNode,
+        index,
+        previousSibling: siblings[index - 1] ?? null,
+        nextSibling: siblings[index + 1] ?? null,
+      };
+    });
     const created: Array<MarginNoteNode> = [];
 
     try {
-      notes.forEach(({ node }) => {
-        if (!(node instanceof HTMLElement) || !node.parentNode) {
-          throw new Error("margin-note definition has no list parent");
-        }
-
-        const siblings = Array.from(node.parentNode.childNodes);
-        const index = siblings.indexOf(node);
-
-        if (index < 0) {
-          throw new Error("margin-note definition position is unavailable");
-        }
-
+      captured.forEach(({ node, parent, index, previousSibling, nextSibling }) => {
         const placeholder = browserDocument.createComment("margin-note-position");
-        node.parentNode.insertBefore(placeholder, node);
+        parent.insertBefore(placeholder, node);
         positions.set(node, {
           placeholder,
-          parent: node.parentNode,
+          parent,
           index,
-          previousSibling: siblings[index - 1] ?? null,
-          nextSibling: siblings[index + 1] ?? null,
+          previousSibling,
+          nextSibling,
         });
         created.push(node);
       });
@@ -102,16 +121,84 @@ export function initializeMarginNotes(
     }
   }
 
-  const ports: MarginNoteControllerPorts = {
-    measure: (): MarginNoteMeasureResult => {
-      const result = measureMarginNotes(article, rail);
+  function restoreNodeToList(
+    node: MarginNoteNode,
+    removePosition: boolean,
+  ): boolean {
+    const position = positions.get(node);
 
-      if (result.success) {
-        createPlaceholders(result.notes);
+    if (!position) {
+      return false;
+    }
+
+    let restored = false;
+
+    if (position.parent.isConnected) {
+      try {
+        if (position.placeholder.parentNode === position.parent) {
+          position.parent.insertBefore(node, position.placeholder);
+        } else if (position.nextSibling?.parentNode === position.parent) {
+          position.parent.insertBefore(node, position.nextSibling);
+        } else if (position.previousSibling?.parentNode === position.parent) {
+          const previousIndex = Array.from(position.parent.childNodes).indexOf(
+            position.previousSibling,
+          );
+          const reference = position.parent.childNodes[previousIndex + 1] ?? null;
+          position.parent.insertBefore(node, reference);
+        } else {
+          const reference = position.parent.childNodes[position.index] ?? null;
+          position.parent.insertBefore(node, reference);
+        }
+
+        restored = node.parentNode === position.parent;
+      } catch {
+        restored = false;
       }
+    }
 
-      return result;
-    },
+    if (!restored) {
+      const fallbackList = endnotes.querySelector<HTMLOListElement>("ol");
+
+      if (fallbackList) {
+        const fallbackIndex = Math.min(position.index, fallbackList.childNodes.length);
+        const reference = fallbackList.childNodes[fallbackIndex] ?? null;
+        fallbackList.insertBefore(node, reference);
+        restored = node.parentNode === fallbackList;
+      }
+    }
+
+    if (!restored) {
+      return false;
+    }
+
+    if (removePosition) {
+      position.placeholder.remove();
+      positions.delete(node);
+      node.style.removeProperty("--margin-note-top");
+    }
+
+    return true;
+  }
+
+  const ports: MarginNoteControllerPorts = {
+    measure: (): MarginNoteMeasureResult =>
+      measureMarginNotes(article, rail, (definitions) => {
+        createPlaceholders(definitions.map((node) => ({ node })));
+
+        try {
+          definitions.forEach((node) => railList.append(node));
+        } catch (error) {
+          definitions.forEach((node) => {
+            restoreNodeToList(node, true);
+          });
+          throw error;
+        }
+
+        return (preservePositions) =>
+          definitions.every((node) =>
+            restoreNodeToList(node, !preservePositions),
+          );
+      }),
     moveToRail: (node, top) => {
       if (!(node instanceof HTMLElement)) {
         throw new Error("margin-note node is not an HTMLElement");
@@ -131,56 +218,12 @@ export function initializeMarginNotes(
       }
 
       const note = node;
-      const position = positions.get(note);
 
-      if (!position) {
+      if (!positions.has(note)) {
         return false;
       }
 
-      let restored = false;
-
-      if (position.parent.isConnected) {
-        try {
-          if (position.placeholder.parentNode === position.parent) {
-            position.parent.insertBefore(note, position.placeholder);
-          } else if (position.nextSibling?.parentNode === position.parent) {
-            position.parent.insertBefore(note, position.nextSibling);
-          } else if (position.previousSibling?.parentNode === position.parent) {
-            const previousIndex = Array.from(position.parent.childNodes).indexOf(
-              position.previousSibling,
-            );
-            const reference = position.parent.childNodes[previousIndex + 1] ?? null;
-            position.parent.insertBefore(note, reference);
-          } else {
-            const reference = position.parent.childNodes[position.index] ?? null;
-            position.parent.insertBefore(note, reference);
-          }
-
-          restored = note.parentNode === position.parent;
-        } catch {
-          restored = false;
-        }
-      }
-
-      if (!restored) {
-        const fallbackList = endnotes.querySelector<HTMLOListElement>("ol");
-
-        if (fallbackList) {
-          const fallbackIndex = Math.min(position.index, fallbackList.childNodes.length);
-          const reference = fallbackList.childNodes[fallbackIndex] ?? null;
-          fallbackList.insertBefore(note, reference);
-          restored = note.parentNode === fallbackList;
-        }
-      }
-
-      if (!restored) {
-        return false;
-      }
-
-      position.placeholder.remove();
-      positions.delete(note);
-      note.style.removeProperty("--margin-note-top");
-      return true;
+      return restoreNodeToList(note, true);
     },
     setEnhancedState: (state: MarginNoteState) => {
       delete article.dataset.marginNotesEnhanced;
@@ -325,6 +368,7 @@ export function initializeMarginNotes(
 function measureMarginNotes(
   article: HTMLElement,
   rail: HTMLElement,
+  prepareDefinitionMeasurement?: MarginNoteMeasurementPreparation,
 ): ReturnType<MarginNoteControllerPorts["measure"]> {
   const definitions = Array.from(
     article.querySelectorAll<HTMLElement>("[data-margin-note-anchor]"),
@@ -371,40 +415,53 @@ function measureMarginNotes(
       return { success: false, reason: "margin-note rail measurement failed" };
     }
 
-    for (const definition of definitions) {
-      const definitionId = definition.id;
-      const referenceId = definition.dataset.marginNoteAnchor;
-      const reference = referenceId ? referenceById.get(referenceId) : null;
+    const restoreAfterMeasurement = prepareDefinitionMeasurement?.(definitions);
+    let measurementSucceeded = false;
 
-      if (
-        !definitionId ||
-        definitionIds.has(definitionId) ||
-        !reference ||
-        reference.dataset.marginNoteRef !== definitionId
-      ) {
-        return { success: false, reason: "margin-note reference and definition are unpaired" };
+    try {
+      for (const definition of definitions) {
+        const definitionId = definition.id;
+        const referenceId = definition.dataset.marginNoteAnchor;
+        const reference = referenceId ? referenceById.get(referenceId) : null;
+
+        if (
+          !definitionId ||
+          definitionIds.has(definitionId) ||
+          !reference ||
+          reference.dataset.marginNoteRef !== definitionId
+        ) {
+          return { success: false, reason: "margin-note reference and definition are unpaired" };
+        }
+
+        const referenceRect = reference.getBoundingClientRect();
+        const definitionRect = definition.getBoundingClientRect();
+        const referenceTop = referenceRect.top - railRect.top;
+
+        if (
+          !Number.isFinite(referenceTop) ||
+          !Number.isFinite(definitionRect.height) ||
+          referenceTop < 0 ||
+          definitionRect.height <= 0
+        ) {
+          return { success: false, reason: "margin-note node measurement failed" };
+        }
+
+        definitionIds.add(definitionId);
+        notes.push({
+          id: definitionId,
+          referenceTop,
+          height: definitionRect.height,
+          node: definition,
+        });
       }
-
-      const referenceRect = reference.getBoundingClientRect();
-      const definitionRect = definition.getBoundingClientRect();
-      const referenceTop = referenceRect.top - railRect.top;
-
+      measurementSucceeded = true;
+    } finally {
       if (
-        !Number.isFinite(referenceTop) ||
-        !Number.isFinite(definitionRect.height) ||
-        referenceTop < 0 ||
-        definitionRect.height <= 0
+        restoreAfterMeasurement &&
+        !restoreAfterMeasurement(measurementSucceeded)
       ) {
-        return { success: false, reason: "margin-note node measurement failed" };
+        throw new Error("margin-note measurement restoration failed");
       }
-
-      definitionIds.add(definitionId);
-      notes.push({
-        id: definitionId,
-        referenceTop,
-        height: definitionRect.height,
-        node: definition,
-      });
     }
   } finally {
     delete rail.dataset.marginNoteMeasuring;

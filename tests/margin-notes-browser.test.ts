@@ -57,6 +57,7 @@ class FakeElement extends FakeEventTarget {
   };
   tagName: string;
   rect: Rect = { top: 0, width: 100, height: 20 };
+  railHeight = 0;
   parentNode: FakeElement | null = null;
   attributes = new Map<string, string>();
 
@@ -161,6 +162,18 @@ class FakeElement extends FakeEventTarget {
   }
 
   getBoundingClientRect(): Rect {
+    if (this.tagName === "LI" && this.parentNode) {
+      const parentRect = this.parentNode.getBoundingClientRect();
+
+      return {
+        ...this.rect,
+        width: parentRect.width,
+        height: parentRect.width <= 256 && this.railHeight > 0
+          ? this.railHeight
+          : this.rect.height,
+      };
+    }
+
     return this.rect;
   }
 }
@@ -284,9 +297,13 @@ function createBrowserFixture(fontsReady: Promise<void>): {
   referenceTwo.dataset.marginNoteRef = "fn-two";
   referenceTwo.attributes.set("id", "fnref-two");
   referenceOne.rect = { top: 100, width: 10, height: 10 };
-  referenceTwo.rect = { top: 140, width: 10, height: 10 };
+  referenceTwo.rect = { top: 120, width: 10, height: 10 };
   noteOne.rect = { top: 0, width: 100, height: 20 };
+  noteOne.railHeight = 60;
   noteTwo.rect = { top: 0, width: 100, height: 24 };
+  noteTwo.railHeight = 24;
+  endnoteList.rect = { top: 0, width: 640, height: 500 };
+  railList.rect = { top: 0, width: 256, height: 500 };
   rail.rect = { top: 0, width: 256, height: 500 };
 
   endnoteList.append(noteOne, noteTwo);
@@ -307,14 +324,38 @@ function createBrowserFixture(fontsReady: Promise<void>): {
   };
 }
 
-type VisibilityContext = "narrow" | "print";
+type VisibilityContext = "wide" | "narrow" | "print";
+type VisibilityElement = "endnotes" | "rail";
 
 function getComputedStyle(
   article: FakeElement,
+  element: VisibilityElement,
   context: VisibilityContext,
 ): Readonly<{ display: string; visibility: string }> {
+  if (element === "endnotes") {
+    return {
+      display:
+        context === "print" ||
+        context === "narrow" ||
+        article.dataset.marginNotesEnhanced !== "true"
+          ? "block"
+          : "none",
+      visibility: "visible",
+    };
+  }
+
   if (article.dataset.marginNoteCleanupFailed !== "true") {
-    return { display: "none", visibility: "visible" };
+    return {
+      display:
+        context === "print"
+          ? "none"
+          : context === "narrow"
+            ? "none"
+            : article.dataset.marginNotesEnhanced === "true"
+              ? "block"
+              : "none",
+      visibility: "visible",
+    };
   }
 
   const relevantStyles =
@@ -378,12 +419,28 @@ test("browser shell suppresses pending enhancement during print and resumes afte
     assert.equal(runtime?.controller.isEnhanced(), false);
     assert.equal(fixture.railList.children.length, 0);
     assert.equal(fixture.endnoteList.children.length, 2);
+    assert.deepEqual(getComputedStyle(fixture.article, "endnotes", "print"), {
+      display: "block",
+      visibility: "visible",
+    });
+    assert.deepEqual(getComputedStyle(fixture.article, "rail", "print"), {
+      display: "none",
+      visibility: "visible",
+    });
 
     fixture.window.dispatchEvent("afterprint");
     await flushEnhancement(fixture.window, resolveFonts);
 
     assert.equal(runtime?.controller.isEnhanced(), true);
     assert.deepEqual(fixture.railList.children, fixture.notes);
+    assert.deepEqual(getComputedStyle(fixture.article, "endnotes", "wide"), {
+      display: "none",
+      visibility: "visible",
+    });
+    assert.deepEqual(getComputedStyle(fixture.article, "rail", "wide"), {
+      display: "block",
+      visibility: "visible",
+    });
   } finally {
     restoreGlobals();
   }
@@ -399,22 +456,72 @@ test("browser shell responds to media-query changes and resize scheduling", asyn
     });
     await flushEnhancement(fixture.window, () => {});
     assert.equal(runtime?.controller.isEnhanced(), true);
+    assert.deepEqual(getComputedStyle(fixture.article, "endnotes", "wide"), {
+      display: "none",
+      visibility: "visible",
+    });
+    assert.deepEqual(getComputedStyle(fixture.article, "rail", "wide"), {
+      display: "block",
+      visibility: "visible",
+    });
 
     fixture.window.mediaQuery.matches = false;
     fixture.window.mediaQuery.dispatchEvent("change");
     await flushEnhancement(fixture.window, () => {});
     assert.equal(runtime?.controller.isEnhanced(), false);
     assert.equal(fixture.endnoteList.children.length, 2);
+    assert.deepEqual(getComputedStyle(fixture.article, "endnotes", "narrow"), {
+      display: "block",
+      visibility: "visible",
+    });
+    assert.deepEqual(getComputedStyle(fixture.article, "rail", "narrow"), {
+      display: "none",
+      visibility: "visible",
+    });
 
     fixture.window.mediaQuery.matches = true;
     fixture.window.mediaQuery.dispatchEvent("change");
     await flushEnhancement(fixture.window, () => {});
     assert.equal(runtime?.controller.isEnhanced(), true);
+    assert.deepEqual(getComputedStyle(fixture.article, "endnotes", "wide"), {
+      display: "none",
+      visibility: "visible",
+    });
+    assert.deepEqual(getComputedStyle(fixture.article, "rail", "wide"), {
+      display: "block",
+      visibility: "visible",
+    });
 
     FakeResizeObserver.current?.trigger(900);
     await flushEnhancement(fixture.window, () => {});
     assert.equal(runtime?.controller.isEnhanced(), true);
     assert.deepEqual(fixture.railList.children, fixture.notes);
+    assert.deepEqual(getComputedStyle(fixture.article, "endnotes", "wide"), {
+      display: "none",
+      visibility: "visible",
+    });
+    assert.deepEqual(getComputedStyle(fixture.article, "rail", "wide"), {
+      display: "block",
+      visibility: "visible",
+    });
+  } finally {
+    restoreGlobals();
+  }
+});
+
+test("browser shell measures definitions at rail width before calculating offsets", async () => {
+  const restoreGlobals = installBrowserGlobals();
+  try {
+    const fixture = createBrowserFixture(Promise.resolve());
+    initializeMarginNotes({
+      root: fixture.article,
+      window: fixture.window as unknown as Window,
+    });
+
+    await flushEnhancement(fixture.window, () => {});
+
+    assert.equal(fixture.notes[0]?.style.properties.get("--margin-note-top"), "100px");
+    assert.equal(fixture.notes[1]?.style.properties.get("--margin-note-top"), "176px");
   } finally {
     restoreGlobals();
   }
@@ -496,6 +603,34 @@ test("browser shell falls back to the visible endnote list when the original par
   }
 });
 
+test("browser shell preserves note order in a non-empty fallback list", async () => {
+  const restoreGlobals = installBrowserGlobals();
+  try {
+    const fixture = createBrowserFixture(Promise.resolve());
+    const runtime = initializeMarginNotes({
+      root: fixture.article,
+      window: fixture.window as unknown as Window,
+    });
+    await flushEnhancement(fixture.window, () => {});
+    assert.equal(runtime?.controller.isEnhanced(), true);
+
+    fixture.endnotes.removeChild(fixture.endnoteList);
+    const fallbackList = new FakeElement(fixture.document, "OL");
+    const existingItem = new FakeElement(fixture.document, "LI");
+    fallbackList.append(existingItem);
+    fixture.endnotes.append(fallbackList);
+    fixture.window.dispatchEvent("beforeprint");
+
+    assert.deepEqual(fallbackList.children, [
+      fixture.notes[0],
+      fixture.notes[1],
+      existingItem,
+    ]);
+  } finally {
+    restoreGlobals();
+  }
+});
+
 test("cleanup failure keeps the rail computed-visible in narrow and print contexts", async () => {
   const restoreGlobals = installBrowserGlobals();
   try {
@@ -512,10 +647,14 @@ test("cleanup failure keeps the rail computed-visible in narrow and print contex
 
     assert.equal(runtime?.controller.isEnhanced(), false);
     assert.equal(fixture.article.dataset.marginNoteCleanupFailed, "true");
-    assert.equal(getComputedStyle(fixture.article, "narrow").display, "block");
-    assert.equal(getComputedStyle(fixture.article, "narrow").visibility, "visible");
-    assert.equal(getComputedStyle(fixture.article, "print").display, "block");
-    assert.equal(getComputedStyle(fixture.article, "print").visibility, "visible");
+    assert.equal(getComputedStyle(fixture.article, "rail", "narrow").display, "block");
+    assert.equal(getComputedStyle(fixture.article, "rail", "narrow").visibility, "visible");
+    assert.equal(getComputedStyle(fixture.article, "rail", "print").display, "block");
+    assert.equal(getComputedStyle(fixture.article, "rail", "print").visibility, "visible");
+    assert.equal(getComputedStyle(fixture.article, "endnotes", "narrow").display, "block");
+    assert.equal(getComputedStyle(fixture.article, "endnotes", "narrow").visibility, "visible");
+    assert.equal(getComputedStyle(fixture.article, "endnotes", "print").display, "block");
+    assert.equal(getComputedStyle(fixture.article, "endnotes", "print").visibility, "visible");
     assert.equal(fixture.rail.children.length, 1);
   } finally {
     restoreGlobals();
