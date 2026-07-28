@@ -9,6 +9,10 @@ type MeasuredMarginNote = MarginNoteMeasurement & {
   readonly node: object;
 };
 
+type MarginNoteRestorationNode = {
+  readonly node: object;
+};
+
 export type MarginNoteMeasureResult =
   | {
       readonly success: true;
@@ -17,6 +21,8 @@ export type MarginNoteMeasureResult =
   | {
       readonly success: false;
       readonly reason: string;
+      readonly cleanupFailed?: boolean;
+      readonly cleanupNodes?: Array<object>;
     };
 
 export type MarginNoteState = "baseline" | "enhanced" | "cleanup-failed";
@@ -36,19 +42,20 @@ export type MarginNoteController = {
 
 /**
  * Coordinates an all-or-nothing margin-note enhancement using injected DOM
- * ports. The controller retains the measured document order so restoration
- * does not depend on a second, potentially failed measurement pass.
+ * ports. The controller retains the measured document order of every node
+ * still needing restoration so cleanup does not depend on a second,
+ * potentially failed measurement pass.
  */
 export function createMarginNoteController(
   ports: MarginNoteControllerPorts,
 ): MarginNoteController {
-  let measuredNotes: Array<MeasuredMarginNote> = [];
+  let restorationNodes: Array<MarginNoteRestorationNode> = [];
   let enhanced = false;
 
   function restoreNodes(
-    notes: ReadonlyArray<MeasuredMarginNote>,
-  ): Array<MeasuredMarginNote> {
-    const remaining: Array<MeasuredMarginNote> = [];
+    notes: ReadonlyArray<MarginNoteRestorationNode>,
+  ): Array<MarginNoteRestorationNode> {
+    const remaining: Array<MarginNoteRestorationNode> = [];
 
     notes.forEach((note) => {
       try {
@@ -64,8 +71,8 @@ export function createMarginNoteController(
   }
 
   function restore(): boolean {
-    const remaining = restoreNodes(measuredNotes);
-    measuredNotes = remaining;
+    const remaining = restoreNodes(restorationNodes);
+    restorationNodes = remaining;
     enhanced = false;
 
     if (remaining.length > 0) {
@@ -78,7 +85,7 @@ export function createMarginNoteController(
   }
 
   function enhance(): boolean {
-    if (enhanced || measuredNotes.length > 0) {
+    if (enhanced || restorationNodes.length > 0) {
       if (!restore()) {
         return false;
       }
@@ -89,18 +96,20 @@ export function createMarginNoteController(
     try {
       result = ports.measure();
     } catch {
-      measuredNotes = [];
+      restorationNodes = [];
       ports.setEnhancedState("baseline");
       return false;
     }
 
     if (!result.success) {
-      measuredNotes = [];
-      ports.setEnhancedState("baseline");
+      restorationNodes = (result.cleanupNodes ?? []).map((node) => ({ node }));
+      ports.setEnhancedState(
+        result.cleanupFailed ? "cleanup-failed" : "baseline",
+      );
       return false;
     }
 
-    measuredNotes = [...result.notes];
+    restorationNodes = result.notes.map(({ node }) => ({ node }));
 
     const measurements = result.notes.map(
       ({ id, referenceTop, height }): MarginNoteMeasurement => ({

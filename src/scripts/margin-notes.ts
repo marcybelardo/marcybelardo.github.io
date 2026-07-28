@@ -30,9 +30,14 @@ type MarginNotePosition = {
   readonly nextSibling: Node | null;
 };
 
+type MarginNoteMeasurementCleanupResult = {
+  readonly success: boolean;
+  readonly remaining: Array<MarginNoteNode>;
+};
+
 type MarginNoteMeasurementPreparation = (
   definitions: ReadonlyArray<MarginNoteNode>,
-) => (preservePositions: boolean) => boolean;
+) => (preservePositions: boolean) => MarginNoteMeasurementCleanupResult;
 
 /**
  * Progressively enhances a semantic footnote section with a desktop rail.
@@ -194,10 +199,21 @@ export function initializeMarginNotes(
           throw error;
         }
 
-        return (preservePositions) =>
-          definitions.every((node) =>
-            restoreNodeToList(node, !preservePositions),
-          );
+        return (preservePositions) => {
+          const remaining: Array<MarginNoteNode> = [];
+
+          definitions.forEach((node) => {
+            try {
+              if (!restoreNodeToList(node, !preservePositions)) {
+                remaining.push(node);
+              }
+            } catch {
+              remaining.push(node);
+            }
+          });
+
+          return { success: remaining.length === 0, remaining };
+        };
       }),
     moveToRail: (node, top) => {
       if (!(node instanceof HTMLElement)) {
@@ -417,6 +433,7 @@ function measureMarginNotes(
 
     const restoreAfterMeasurement = prepareDefinitionMeasurement?.(definitions);
     let measurementSucceeded = false;
+    let measurementResult: MarginNoteMeasureResult = { success: true, notes };
 
     try {
       for (const definition of definitions) {
@@ -430,7 +447,11 @@ function measureMarginNotes(
           !reference ||
           reference.dataset.marginNoteRef !== definitionId
         ) {
-          return { success: false, reason: "margin-note reference and definition are unpaired" };
+          measurementResult = {
+            success: false,
+            reason: "margin-note reference and definition are unpaired",
+          };
+          break;
         }
 
         const referenceRect = reference.getBoundingClientRect();
@@ -443,7 +464,11 @@ function measureMarginNotes(
           referenceTop < 0 ||
           definitionRect.height <= 0
         ) {
-          return { success: false, reason: "margin-note node measurement failed" };
+          measurementResult = {
+            success: false,
+            reason: "margin-note node measurement failed",
+          };
+          break;
         }
 
         definitionIds.add(definitionId);
@@ -454,18 +479,27 @@ function measureMarginNotes(
           node: definition,
         });
       }
-      measurementSucceeded = true;
+      measurementSucceeded = measurementResult.success;
+    } catch {
+      measurementResult = {
+        success: false,
+        reason: "margin-note node measurement failed",
+      };
     } finally {
-      if (
-        restoreAfterMeasurement &&
-        !restoreAfterMeasurement(measurementSucceeded)
-      ) {
-        throw new Error("margin-note measurement restoration failed");
+      const cleanup = restoreAfterMeasurement?.(measurementSucceeded);
+
+      if (cleanup && !cleanup.success) {
+        measurementResult = {
+          success: false,
+          reason: "margin-note measurement restoration failed",
+          cleanupFailed: true,
+          cleanupNodes: cleanup.remaining,
+        };
       }
     }
+
+    return measurementResult;
   } finally {
     delete rail.dataset.marginNoteMeasuring;
   }
-
-  return { success: true, notes };
 }

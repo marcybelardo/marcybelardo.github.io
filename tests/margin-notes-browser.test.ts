@@ -60,6 +60,7 @@ class FakeElement extends FakeEventTarget {
   railHeight = 0;
   parentNode: FakeElement | null = null;
   attributes = new Map<string, string>();
+  readonly insertBeforeFailures = new Set<FakeElement>();
 
   constructor(ownerDocument: FakeDocument, tagName: string) {
     super();
@@ -102,6 +103,10 @@ class FakeElement extends FakeEventTarget {
   }
 
   insertBefore(node: Child, reference: Child | null): void {
+    if (node instanceof FakeElement && this.insertBeforeFailures.has(node)) {
+      throw new Error("forced restoration failure");
+    }
+
     if (node instanceof FakeElement) {
       node.parentNode?.removeChild(node);
       node.parentNode = this;
@@ -522,6 +527,31 @@ test("browser shell measures definitions at rail width before calculating offset
 
     assert.equal(fixture.notes[0]?.style.properties.get("--margin-note-top"), "100px");
     assert.equal(fixture.notes[1]?.style.properties.get("--margin-note-top"), "176px");
+  } finally {
+    restoreGlobals();
+  }
+});
+
+test("measurement cleanup attempts every note and preserves cleanup-failed visibility", async () => {
+  const restoreGlobals = installBrowserGlobals();
+  try {
+    const fixture = createBrowserFixture(Promise.resolve());
+    const firstNote = fixture.notes[0];
+    assert.ok(firstNote);
+    fixture.endnoteList.insertBeforeFailures.add(firstNote);
+
+    const runtime = initializeMarginNotes({
+      root: fixture.article,
+      window: fixture.window as unknown as Window,
+    });
+    await flushEnhancement(fixture.window, () => {});
+
+    assert.equal(runtime?.controller.isEnhanced(), false);
+    assert.equal(fixture.article.dataset.marginNoteCleanupFailed, "true");
+    assert.deepEqual(fixture.endnoteList.children, [fixture.notes[1]]);
+    assert.deepEqual(fixture.railList.children, [firstNote]);
+    assert.equal(getComputedStyle(fixture.article, "rail", "narrow").display, "block");
+    assert.equal(getComputedStyle(fixture.article, "rail", "narrow").visibility, "visible");
   } finally {
     restoreGlobals();
   }
