@@ -76,6 +76,21 @@ function getRouteFromHtmlPath(htmlPath: string): string {
   return `/${relativePath.replace(/\/index\.html$/, "")}/`;
 }
 
+function getDuplicateIds(html: string): Array<string> {
+  const ids = [...html.matchAll(/\bid="([^"]+)"/g)].map((match) => match[1]);
+  const counts = new Map<string, number>();
+
+  ids.forEach((id) => {
+    if (id) {
+      counts.set(id, (counts.get(id) ?? 0) + 1);
+    }
+  });
+
+  return [...counts.entries()]
+    .filter(([, count]) => count > 1)
+    .map(([id]) => id);
+}
+
 function isNoindexDocument(html: string): boolean {
   const robotsMatch = html.match(
     /<meta\s+name="robots"\s+content="([^"]*)"\s*\/?\s*>/i,
@@ -286,6 +301,64 @@ test("generated documents expose the accessible primary navigation contract", ()
   assert.match(allHtml, /href="https:\/\/instagram\.com\/marcelinebelardo"[^>]*aria-label="Instagram"/);
   assert.match(allHtml, /href="https:\/\/github\.com\/marcybelardo"[^>]*aria-label="GitHub"/);
   assert.doesNotMatch(getPrimaryNavigation(htmlDocuments[0] ?? ""), /aria-label="(Bluesky|Instagram|GitHub)"/);
+});
+
+test("representative documents preserve one accessible shared shell", () => {
+  assert.ok(existsSync(distDirectory), "production output must exist before shell assertions");
+
+  const representativePages: ReadonlyArray<Readonly<{ label: string; path: string }>> = [
+    { label: "homepage", path: resolve(distDirectory, "index.html") },
+    { label: "blog index", path: resolve(distDirectory, "blog", "index.html") },
+    {
+      label: "blog detail",
+      path: resolve(distDirectory, "blog", "the-devil-you-know", "index.html"),
+    },
+    { label: "tag archive", path: resolve(distDirectory, "blog", "tags", "ai", "index.html") },
+    { label: "Code migration", path: resolve(distDirectory, "code", "index.html") },
+    { label: "Paintings migration", path: resolve(distDirectory, "paintings", "index.html") },
+    { label: "Photography migration", path: resolve(distDirectory, "photography", "index.html") },
+    { label: "404", path: resolve(distDirectory, "404.html") },
+  ];
+
+  const css = getCssFiles(distDirectory)
+    .map((cssPath) => readFileSync(cssPath, "utf8"))
+    .join("\n");
+
+  // Generated output proves static markup contracts only. Manually check 360px,
+  // 768px, and 1280px narrow/wide layout, keyboard-only navigation, print,
+  // JavaScript-disabled navigation, and portrait/landscape composition.
+  assert.match(css, /a:focus-visible/);
+  assert.match(css, /button:focus-visible/);
+
+  representativePages.forEach(({ label, path }) => {
+    assert.ok(existsSync(path), `${label} output must exist`);
+    const html = readFileSync(path, "utf8");
+    const navigationMatches = [
+      ...html.matchAll(/<nav\b[^>]*aria-label="Primary"[^>]*>[\s\S]*?<\/nav>/gi),
+    ];
+
+    assert.equal(navigationMatches.length, 1, `${label} must contain one primary navigation`);
+    assert.deepEqual(getDuplicateIds(html), [], `${label} must not duplicate IDs`);
+    assert.match(
+      html,
+      /href="https:\/\/instagram\.com\/marcelinebelardo"[^>]*aria-label="Instagram"/,
+      `${label} must identify Instagram correctly`,
+    );
+    assert.match(
+      html,
+      /href="https:\/\/github\.com\/marcybelardo"[^>]*aria-label="GitHub"/,
+      `${label} must identify GitHub correctly`,
+    );
+    assert.doesNotMatch(
+      html,
+      /href="https:\/\/instagram\.com\/marcelinebelardo"[^>]*aria-label="GitHub"/,
+    );
+    assert.doesNotMatch(
+      html,
+      /href="https:\/\/github\.com\/marcybelardo"[^>]*aria-label="Instagram"/,
+    );
+    assert.doesNotMatch(html, /data-parallax-speed/);
+  });
 });
 
 test("the tracked blog post keeps its stable published route", () => {

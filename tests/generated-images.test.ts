@@ -7,6 +7,16 @@ import test from "node:test";
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const distDirectory = resolve(repositoryRoot, "dist");
 const codePath = resolve(distDirectory, "code", "index.html");
+const representativePaths: ReadonlyArray<string> = [
+  resolve(distDirectory, "index.html"),
+  resolve(distDirectory, "blog", "index.html"),
+  resolve(distDirectory, "blog", "the-devil-you-know", "index.html"),
+  resolve(distDirectory, "blog", "tags", "ai", "index.html"),
+  codePath,
+  resolve(distDirectory, "paintings", "index.html"),
+  resolve(distDirectory, "photography", "index.html"),
+  resolve(distDirectory, "404.html"),
+];
 
 function getSquareImageWrappers(html: string): Array<string> {
   return [
@@ -52,4 +62,20 @@ test("SquareImage output reserves intrinsic dimensions and responsive sources", 
 
   assert.match(codeHtml, /\s320w/);
   assert.match(codeHtml, /\s1280w/);
+});
+
+test("representative pages contain only valid generated image markup", () => {
+  representativePaths.forEach((htmlPath) => {
+    assert.ok(existsSync(htmlPath), `${htmlPath} must exist before image assertions`);
+    const html = readFileSync(htmlPath, "utf8");
+    const images = [...html.matchAll(/<img\b[^>]*>/g)].map((match) => match[0] ?? "");
+
+    images.forEach((image) => {
+      assert.match(image, /\bwidth="\d+"/);
+      assert.match(image, /\bheight="\d+"/);
+      assert.match(image, /\bsrcset="[^"]+"/);
+      assert.match(image, /\bsizes="[^"]+"/);
+      assert.match(image, /data-astro-image-fit="contain"/);
+    });
+  });
 });
