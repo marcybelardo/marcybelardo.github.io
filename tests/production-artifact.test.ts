@@ -1,3 +1,5 @@
+// pattern: Imperative Shell
+
 import assert from "node:assert/strict";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { dirname, relative, resolve } from "node:path";
@@ -11,7 +13,7 @@ const primaryDestinations = ["/projects/", "/blog/", "/bio/", "/contact/"];
 const migrationRoutes = ["code", "paintings", "photography"];
 const publishedProjectSlugs = ["cmprsr-rs", "lilyhttpd", "osborne", "portfolio-site"];
 const publishedBlogTags = ["ai", "politics", "technology"];
-const draftMarkers = /draft-route-fixture|draft-only-review/i;
+const draftMarkers = /draft-route-fixture|draft-only-review|draft-project-fixture/i;
 
 type JsonLdEntry = Readonly<Record<string, unknown>>;
 
@@ -141,18 +143,25 @@ function assertFootnoteBaseline(html: string): void {
       (match) => match[1] ?? "",
     ),
   );
+  let backlinks = 0;
+
+  assert.ok(references.length > 0, "production fixture must contain a footnote reference");
+  assert.ok(definitions.size > 0, "production fixture must contain a footnote definition");
 
   references.forEach((reference) => {
     const definitionId = reference[1] ?? "";
     const referenceId = reference[2] ?? "";
 
     assert.ok(definitions.has(definitionId), `${referenceId} must target a footnote definition`);
-    assert.match(
-      html,
-      new RegExp(`href="#${referenceId.replaceAll("-", "\\-")}"[^>]*data-footnote-backref`),
-      `${definitionId} must retain a backlink to ${referenceId}`,
+    const backlinkPattern = new RegExp(
+      `href="#${referenceId.replaceAll("-", "\\-")}"[^>]*data-footnote-backref`,
     );
+
+    assert.match(html, backlinkPattern, `${definitionId} must retain a backlink to ${referenceId}`);
+    backlinks += 1;
   });
+
+  assert.ok(backlinks > 0, "production fixture must contain a footnote backlink");
 }
 
 test("portfolio-redesign.AC1.1 production artifact contains the complete static route inventory", () => {
@@ -198,6 +207,7 @@ test("portfolio-redesign.AC1.4 production output contains no draft routes, tags,
     resolve(distDirectory, "rss.xml"),
     resolve(distDirectory, "sitemap-index.xml"),
     resolve(distDirectory, "sitemap-0.xml"),
+    resolve(distDirectory, "robots.txt"),
   ];
 
   artifactPaths.forEach((artifactPath) => {
