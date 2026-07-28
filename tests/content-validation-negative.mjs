@@ -17,11 +17,26 @@ const draftRouteFixturePath = resolve(
   repositoryRoot,
   "src/content/blog/__draft-route-fixture.md",
 );
+const invalidUrlFixtures = [
+  { field: "repositoryUrl", value: '""' },
+  { field: "repositoryUrl", value: '"#"' },
+  { field: "liveUrl", value: '""' },
+  { field: "liveUrl", value: '"#"' },
+  { field: "externalUrl", value: '""' },
+  { field: "externalUrl", value: '"#"' },
+].map((fixture) => ({
+  ...fixture,
+  path: resolve(
+    repositoryRoot,
+    `src/content/projects/__invalid-${fixture.field}-${fixture.value === '""' ? "empty" : "fragment"}.md`,
+  ),
+}));
 
 for (const fixturePath of [
   invalidEntryPath,
   invalidBlogEntryPath,
   draftRouteFixturePath,
+  ...invalidUrlFixtures.map(({ path }) => path),
 ]) {
   if (existsSync(fixturePath)) {
     throw new Error(`refusing to overwrite ${fixturePath}`);
@@ -69,6 +84,21 @@ draft: true
 Temporary draft route fixture.
 `;
 
+function createInvalidUrlFixture(field, value) {
+  return `---
+slug: invalid-${field}-${value === '""' ? "empty" : "fragment"}
+title: Invalid ${field} Fixture
+date: 2026-06-21
+description: Temporary fixture for URL validation
+disciplines:
+  - software
+${field}: ${value}
+---
+
+Temporary URL validation fixture.
+`;
+}
+
 function assertAstroSyncRejects(fixturePath, fixture, message) {
   writeFileSync(fixturePath, fixture, "utf8");
 
@@ -106,6 +136,13 @@ try {
     invalidBlogEntry,
     /imageAlt is required when image is provided/,
   );
+  invalidUrlFixtures.forEach(({ field, value, path }) => {
+    assertAstroSyncRejects(
+      path,
+      createInvalidUrlFixture(field, value),
+      new RegExp(field),
+    );
+  });
 
   writeFileSync(draftRouteFixturePath, draftRouteFixture, "utf8");
   try {

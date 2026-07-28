@@ -15,7 +15,6 @@ type ProjectExpectation = {
   readonly description: string;
   readonly datePublished: string;
   readonly disciplines: ReadonlyArray<string>;
-  readonly tags: ReadonlyArray<string>;
 };
 
 type ProjectJsonLd = {
@@ -30,7 +29,6 @@ const projectExpectations: ReadonlyArray<ProjectExpectation> = [
       "Budget management app for personal and group spending, built with Java Spring Boot and React",
     datePublished: "2026-06-12T00:00:00.000Z",
     disciplines: ["software"],
-    tags: ["Java", "Spring Boot", "React", "API", "Charts"],
   },
   {
     slug: "portfolio-site",
@@ -39,7 +37,6 @@ const projectExpectations: ReadonlyArray<ProjectExpectation> = [
       "This very website — a static personal portfolio built with Astro, React, and TailwindCSS.",
     datePublished: "2026-06-04T00:00:00.000Z",
     disciplines: ["software", "visual"],
-    tags: ["Astro", "React", "TypeScript"],
   },
   {
     slug: "cmprsr-rs",
@@ -47,7 +44,6 @@ const projectExpectations: ReadonlyArray<ProjectExpectation> = [
     description: "Canonical Huffman compression tool written in Rust",
     datePublished: "2026-06-01T00:00:00.000Z",
     disciplines: ["software"],
-    tags: ["Rust", "Compression"],
   },
   {
     slug: "lilyhttpd",
@@ -55,7 +51,6 @@ const projectExpectations: ReadonlyArray<ProjectExpectation> = [
     description: "An HTTP server for static files written in C",
     datePublished: "2025-06-14T00:00:00.000Z",
     disciplines: ["software"],
-    tags: ["C", "HTTP", "Networking"],
   },
 ];
 
@@ -114,6 +109,16 @@ test("the project index renders one ordered editorial list of stable project lin
     (html.match(/class="project-index-entry"/g) ?? []).length,
     4,
   );
+  assert.equal(
+    (html.match(/project-index-entry__body--no-cover/g) ?? []).length,
+    4,
+    "projects without covers must use the full-width index layout",
+  );
+  assert.equal(
+    (html.match(/class="project-index-entry__body project-index-entry__body--has-cover"/g) ?? [])
+      .length,
+    0,
+  );
   assert.match(html, /<ul class="editorial-list" aria-label="Projects">/);
   assert.doesNotMatch(html, /ProjectCard|project-card|border-neutral-900/);
 });
@@ -169,7 +174,7 @@ test("each project detail emits its published metadata and canonical JSON-LD", (
       name: expectedProject.title,
       description: expectedProject.description,
       datePublished: expectedProject.datePublished,
-      keywords: [...expectedProject.disciplines, ...expectedProject.tags],
+      keywords: expectedProject.disciplines,
     });
   });
 });
@@ -216,11 +221,55 @@ test("project output has no empty controls, placeholders, cards, or draft conten
   });
 });
 
-test("project Markdown bodies remain prose-only so images use the square contract", () => {
+type ProjectBodyImagePattern = {
+  readonly label: string;
+  readonly pattern: RegExp;
+};
+
+const projectBodyImagePatterns: ReadonlyArray<ProjectBodyImagePattern> = [
+  { label: "inline Markdown image", pattern: /!\[[^\]]*\]\(\s*[^)]*\)/ },
+  {
+    label: "reference-style Markdown image",
+    pattern: /!\[[^\]]*\](?:\s*\[[^\]]*\])?/,
+  },
+  { label: "HTML or JSX img element", pattern: /<img\b/i },
+];
+
+function getProjectBody(contents: string): string {
+  return contents.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/, "");
+}
+
+function findProjectBodyImage(contents: string): ProjectBodyImagePattern | null {
+  const body = getProjectBody(contents);
+  return projectBodyImagePatterns.find(({ pattern }) => pattern.test(body)) ?? null;
+}
+
+test("project Markdown and MDX bodies remain prose-only so images use the square contract", () => {
   readdirSync(projectsSourceDirectory)
-    .filter((fileName) => fileName.endsWith(".md"))
+    .filter((fileName) => fileName.endsWith(".md") || fileName.endsWith(".mdx"))
     .forEach((fileName) => {
       const contents = readFileSync(resolve(projectsSourceDirectory, fileName), "utf8");
-      assert.doesNotMatch(contents, /!\[[^\]]*\]\([^)]*\)/, `${fileName} contains a raw Markdown image`);
+      const imagePattern = findProjectBodyImage(contents);
+
+      assert.equal(
+        imagePattern,
+        null,
+        `${fileName} contains a ${imagePattern?.label ?? "body image"}`,
+      );
     });
+});
+
+test("the prose-only guard catches every supported project body image form", () => {
+  const fixtures: ReadonlyArray<{ readonly body: string; readonly label: string }> = [
+    { body: "![inline](image.jpg)", label: "inline Markdown image" },
+    { body: "![reference][image]\n\n[image]: image.jpg", label: "reference-style Markdown image" },
+    { body: '<img src="image.jpg" alt="Image">', label: "HTML or JSX img element" },
+    { body: '<img src={image} alt="Image" />', label: "HTML or JSX img element" },
+  ];
+
+  fixtures.forEach(({ body, label }) => {
+    const imagePattern = findProjectBodyImage(`---\ntitle: fixture\n---\n${body}`);
+
+    assert.equal(imagePattern?.label, label, `${label} must be rejected`);
+  });
 });

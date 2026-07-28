@@ -48,7 +48,7 @@ const structuredData = {
   name: data.title,
   description: data.description,
   datePublished: data.date.toISOString(),
-  keywords: [...data.disciplines, ...data.tags],
+  keywords: data.disciplines,
 };
 ---
 

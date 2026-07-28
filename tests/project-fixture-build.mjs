@@ -14,6 +14,10 @@ const optionalFixturePath = resolve(
   repositoryRoot,
   "src/content/projects/__optional-project-fixture.md",
 );
+const noOptionalsFixturePath = resolve(
+  repositoryRoot,
+  "src/content/projects/__no-optionals-project-fixture.md",
+);
 const optionalProjectOutputPath = resolve(
   repositoryRoot,
   "dist/projects/optional-project-fixture/index.html",
@@ -22,8 +26,12 @@ const draftProjectOutputPath = resolve(
   repositoryRoot,
   "dist/projects/draft-project-fixture/index.html",
 );
+const noOptionalsProjectOutputPath = resolve(
+  repositoryRoot,
+  "dist/projects/no-optionals-project-fixture/index.html",
+);
 
-for (const fixturePath of [draftFixturePath, optionalFixturePath]) {
+for (const fixturePath of [draftFixturePath, optionalFixturePath, noOptionalsFixturePath]) {
   if (existsSync(fixturePath)) {
     throw new Error(`refusing to overwrite ${fixturePath}`);
   }
@@ -84,6 +92,33 @@ relatedWriting:
 This fixture exercises the optional project fields without embedding a body image.
 `;
 
+const noOptionalsFixture = `---
+slug: no-optionals-project-fixture
+title: No Optionals Project Fixture
+date: 2026-06-20
+description: Temporary project fixture without optional case-study fields
+disciplines:
+  - software
+---
+
+This fixture exercises the complete absence of optional project fields.
+`;
+
+function getSquareImageWrappers(html) {
+  return [...html.matchAll(/<div class="square-image(?:\s[^>]*)?"[^>]*>[\s\S]*?<\/div>/g)]
+    .map((match) => match[0] ?? "");
+}
+
+function assertSquareImageContract(wrapper, label) {
+  assert.match(wrapper, /style="aspect-ratio:\s*1;"/, `${label} must reserve a square frame`);
+  assert.match(wrapper, /data-astro-image-fit="contain"/, `${label} must preserve the full image`);
+  assert.match(wrapper, /style="object-fit:\s*contain;"/, `${label} must use contain fitting`);
+  assert.match(wrapper, /<img\b[^>]*\bwidth="\d+"/, `${label} must emit intrinsic width`);
+  assert.match(wrapper, /<img\b[^>]*\bheight="\d+"/, `${label} must emit intrinsic height`);
+  assert.match(wrapper, /<img\b[^>]*\bsrcset="[^"]+"/, `${label} must emit responsive sources`);
+  assert.match(wrapper, /<img\b[^>]*\bsizes="[^"]+"/, `${label} must emit responsive sizing`);
+}
+
 function runFixtureBuild() {
   const result = spawnSync("pnpm", ["build"], {
     cwd: repositoryRoot,
@@ -102,6 +137,7 @@ function runFixtureBuild() {
 try {
   writeFileSync(draftFixturePath, draftFixture, "utf8");
   writeFileSync(optionalFixturePath, optionalFixture, "utf8");
+  writeFileSync(noOptionalsFixturePath, noOptionalsFixture, "utf8");
   runFixtureBuild();
 
   assert.equal(
@@ -114,11 +150,19 @@ try {
     true,
     "published optional project detail route was not generated",
   );
+  assert.equal(
+    existsSync(noOptionalsProjectOutputPath),
+    true,
+    "published no-optionals project detail route was not generated",
+  );
 
   const html = readFileSync(optionalProjectOutputPath, "utf8");
-  const squareImageCount = (html.match(/class="square-image"/g) ?? []).length;
+  const squareImageWrappers = getSquareImageWrappers(html);
 
-  assert.equal(squareImageCount, 2, "cover and gallery must use SquareImage");
+  assert.equal(squareImageWrappers.length, 2, "cover and gallery must use SquareImage");
+  squareImageWrappers.forEach((wrapper, index) => {
+    assertSquareImageContract(wrapper, index === 0 ? "cover image" : "gallery image");
+  });
   assert.match(html, /Status[\s\S]*Published fixture/);
   assert.match(html, /Role[\s\S]*Lead developer/);
   assert.match(html, /Collaborators[\s\S]*Marceline Belardo/);
@@ -137,7 +181,19 @@ try {
     false,
     "draft project must not appear in the production sitemap",
   );
+
+  const noOptionalsHtml = readFileSync(noOptionalsProjectOutputPath, "utf8");
+
+  assert.doesNotMatch(noOptionalsHtml, /<section class="project-layout__links\b/);
+  assert.doesNotMatch(noOptionalsHtml, /<dt class="metadata"[^>]*>Status<\/dt>/);
+  assert.doesNotMatch(noOptionalsHtml, /<dt class="metadata"[^>]*>Role<\/dt>/);
+  assert.doesNotMatch(noOptionalsHtml, /<dt class="metadata"[^>]*>Collaborators<\/dt>/);
+  assert.doesNotMatch(noOptionalsHtml, /class="project-layout__cover"/);
+  assert.doesNotMatch(noOptionalsHtml, /class="project-layout__gallery"/);
+  assert.doesNotMatch(noOptionalsHtml, /class="project-layout__related"/);
+  assert.doesNotMatch(noOptionalsHtml, /href="#"|href=""|undefined|null/);
 } finally {
   rmSync(draftFixturePath, { force: true });
   rmSync(optionalFixturePath, { force: true });
+  rmSync(noOptionalsFixturePath, { force: true });
 }
