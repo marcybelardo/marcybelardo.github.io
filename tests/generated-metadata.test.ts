@@ -55,6 +55,14 @@ function getRouteFromHtmlPath(htmlPath: string): string {
   return `/${relativePath.replace(/\/index\.html$/, "")}/`;
 }
 
+function isNoindexDocument(html: string): boolean {
+  const robotsMatch = html.match(
+    /<meta\s+name="robots"\s+content="([^"]*)"\s*\/?\s*>/i,
+  );
+
+  return robotsMatch?.[1]?.toLowerCase().includes("noindex") ?? false;
+}
+
 function getMetadata(html: string): {
   readonly title: string;
   readonly description: string;
@@ -105,12 +113,23 @@ function getMetadata(html: string): {
   };
 }
 
+test("robots index directives remain part of the indexable metadata contract", () => {
+  assert.equal(
+    isNoindexDocument('<meta name="robots" content="index, follow" />'),
+    false,
+  );
+  assert.equal(
+    isNoindexDocument('<meta name="robots" content="noindex, nofollow" />'),
+    true,
+  );
+});
+
 test("every current indexable document has complete, self-referencing metadata", () => {
   assert.ok(existsSync(distDirectory), "production output must exist before metadata tests");
 
   const htmlFiles = getHtmlFiles(distDirectory);
   const indexableFiles = htmlFiles.filter(
-    (htmlPath) => !readFileSync(htmlPath, "utf8").includes('name="robots"'),
+    (htmlPath) => !isNoindexDocument(readFileSync(htmlPath, "utf8")),
   );
   const indexableRoutes = indexableFiles.map(getRouteFromHtmlPath).sort();
 

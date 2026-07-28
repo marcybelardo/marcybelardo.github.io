@@ -28,15 +28,15 @@ No lint or typecheck scripts exist. `pnpm verify` is the validation step.
 
 Two collections are defined in `src/content.config.ts`: the loader-backed `project` collection under `src/content/projects/` and the `blog` collection under `src/content/blog/`.
 
-Projects use explicit stable slugs, validated publication metadata, and optional image/link/relationship fields. Shared publication filtering and ordering rules live in `src/content/content-queries.ts`.
+Projects use explicit stable slugs, validated publication metadata, and optional image/link/relationship fields. Shared publication filtering and ordering rules live in `src/content/content-queries.ts`; production blog detail and tag routes use those filters before generating static paths.
 
 **Blog ID scheme** — IDs use a non-empty explicit frontmatter `slug` when present; otherwise they fall back to the first 4 alphanumeric words of `title`, lowercased and joined with `-` (not from the filename). Drafts (`draft: true`) are excluded in production builds.
 
 Paintings and photography pages are currently placeholder ("Coming soon") — those sections are not yet implemented.
 
-`pnpm test` runs the serial missing-image-alt validation fixture, the production build, and the dependency-free Node test suite. `pnpm verify` aliases `pnpm test`.
+`pnpm test` runs serial missing-image-alt validation for project and blog images, verifies temporary draft routes stay out of production, runs the production build, and executes the dependency-free Node test suite. `pnpm verify` aliases `pnpm test`.
 
-`BaseLayout` owns the canonical metadata contract: every page supplies a title and description, while canonical URLs resolve from the configured `Astro.site`. Current indexable output is checked for distinct self-canonicals and matching Open Graph/Twitter title and description values; the current 404 is the only `noindex` page.
+`BaseLayout` owns the canonical metadata contract: every page supplies a title and description, while canonical paths resolve through the configured `Astro.site`; the shared origin is defined in `src/site-config.ts`. Current indexable output is checked for distinct self-canonicals and matching Open Graph/Twitter title and description values; the current 404 is the only `noindex` page.
 
 ## Coding principles
 

@@ -28,6 +28,17 @@ test("canonical URLs use the configured site origin", () => {
   );
 });
 
+test("canonical paths reject external URLs", () => {
+  assert.throws(
+    () => createCanonicalUrl("https://example.com/elsewhere/", SITE_ORIGIN),
+    /canonical path must be an internal absolute path/,
+  );
+  assert.throws(
+    () => createCanonicalUrl("//example.com/elsewhere/", SITE_ORIGIN),
+    /canonical path must be an internal absolute path/,
+  );
+});
+
 test("social image URLs are absolute at the configured site origin", () => {
   assert.equal(
     createSocialImageUrl("/images/social-card.png", SITE_ORIGIN),

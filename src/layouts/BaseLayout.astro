@@ -6,6 +6,7 @@ import GithubLogo from "../assets/GitHub_Invertocat_Black.svg";
 import InstagramLogo from "../assets/Instagram_Glyph_Black.svg";
 import {
   composeSiteTitle,
+  createCanonicalUrl,
   createSocialImageUrl,
   serializeJsonLd,
   SITE_ORIGIN,
@@ -39,7 +40,7 @@ const {
 const renderedTitle = composeSiteTitle(title);
 const canonical =
   canonicalUrl ??
-  new URL(canonicalPath ?? Astro.url.pathname, Astro.site ?? new URL(SITE_ORIGIN)).toString();
+  createCanonicalUrl(canonicalPath ?? Astro.url.pathname, Astro.site ?? SITE_ORIGIN);
 const socialImageUrl = socialImage
   ? createSocialImageUrl(socialImage, Astro.site ?? SITE_ORIGIN)
   : null;

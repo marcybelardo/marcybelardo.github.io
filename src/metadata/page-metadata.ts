@@ -1,7 +1,9 @@
 // pattern: Functional Core
 
+import { SITE_ORIGIN } from "../site-config.ts";
+
 export const SITE_NAME = "Marceline Belardo";
-export const SITE_ORIGIN = "https://www.marcelinebelardo.com";
+export { SITE_ORIGIN } from "../site-config.ts";
 export const INDEXABLE_ROBOTS = "index, follow";
 export const NOINDEX_ROBOTS = "noindex, nofollow";
 
@@ -23,7 +25,22 @@ export function createCanonicalUrl(
   pathname: string,
   siteOrigin: SiteOrigin = SITE_ORIGIN,
 ): string {
-  return new URL(pathname, siteOrigin).toString();
+  if (
+    !pathname.startsWith("/") ||
+    pathname.startsWith("//") ||
+    pathname.includes("\\")
+  ) {
+    throw new Error("canonical path must be an internal absolute path");
+  }
+
+  const canonicalUrl = new URL(pathname, siteOrigin);
+  const configuredOrigin = new URL(siteOrigin);
+
+  if (canonicalUrl.origin !== configuredOrigin.origin) {
+    throw new Error("canonical path must resolve to the configured site origin");
+  }
+
+  return canonicalUrl.toString();
 }
 
 export function createSocialImageUrl(
