@@ -69,6 +69,7 @@ test("SquareImage output reserves intrinsic dimensions and responsive sources", 
     assert.match(image, /\bheight="\d+"/);
     assert.match(image, /\bsrcset="[^"]+"/);
     assert.match(image, /\bsizes="[^"]+"/);
+    assert.match(image, /\bloading="lazy"/);
     assert.doesNotMatch(image, /20260425_29[^"?]*\.jpg(?:["?]|$)/);
     assert.doesNotMatch(image, /IMG_6936_EDIT[^"?]*\.jpg(?:["?]|$)/);
   });
@@ -77,8 +78,13 @@ test("SquareImage output reserves intrinsic dimensions and responsive sources", 
   assert.match(codeHtml, /\s1280w/);
   assert.match(
     codeHtml,
-    /sizes="\(min-width: 48rem\) calc\(\(min\(100vw - 4rem, 44rem\) - 1rem\) \/ 2\), calc\(100vw - 2rem\)"/,
-    "Code images must declare their two-column rendered width",
+    /sizes="auto"/,
+    "Code images must let the browser use their scrollbar-excluding rendered width",
+  );
+  assert.doesNotMatch(
+    codeHtml,
+    /sizes="[^"]*100vw/,
+    "Code image sizing must not overstate the layout width with 100vw",
   );
 });
 

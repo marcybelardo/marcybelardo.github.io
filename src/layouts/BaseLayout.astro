@@ -198,10 +198,10 @@ const socialImageUrl = socialImage
             menuPanel.dataset.open = String(shouldShowPanel);
             menuPanel.setAttribute("aria-hidden", String(!shouldShowPanel));
             menuPanel.toggleAttribute("inert", !shouldShowPanel);
-            menuButton.setAttribute("aria-expanded", String(open));
+            menuButton.setAttribute("aria-expanded", String(shouldShowPanel));
             menuButton.setAttribute(
               "aria-label",
-              open ? "Close primary navigation" : "Open primary navigation",
+              shouldShowPanel ? "Close primary navigation" : "Open primary navigation",
             );
           };
 
@@ -210,7 +210,9 @@ const socialImageUrl = socialImage
             setPanelState(false);
 
             if (restoreFocus) {
-              menuButton.focus();
+              window.requestAnimationFrame(() => {
+                menuButton.focus();
+              });
             }
           };
 
