@@ -16,4 +16,6 @@ draft: false
 repositoryUrl: https://github.com/marcybelardo/marcybelardo.github.io
 ---
 
+## Summary
+
 This website is a static personal portfolio built with Astro, React, and TailwindCSS.

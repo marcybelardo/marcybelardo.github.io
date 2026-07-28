@@ -14,6 +14,17 @@ type DatedEntry = {
   };
 };
 
+type ResolveRelatedProjectsOptions<T extends PublishableEntry> = {
+  readonly ids: ReadonlyArray<string>;
+  readonly entries: ReadonlyArray<T>;
+  readonly selfId: string;
+};
+
+type ResolveRelatedWritingOptions<T extends PublishableEntry> = {
+  readonly ids: ReadonlyArray<string>;
+  readonly entries: ReadonlyArray<T>;
+};
+
 type FeaturedProject = {
   readonly id: string;
   readonly data: {
@@ -43,6 +54,20 @@ export function sortByDateDescending<T extends DatedEntry>(
 
     return dateDifference === 0 ? compareIds(left.id, right.id) : dateDifference;
   });
+}
+
+export function resolveRelatedProjects<T extends PublishableEntry>(
+  options: ResolveRelatedProjectsOptions<T>,
+): Array<T> {
+  const { ids, entries, selfId } = options;
+
+  return resolveRelatedEntries({ ids, entries, excludedId: selfId });
+}
+
+export function resolveRelatedWriting<T extends PublishableEntry>(
+  options: ResolveRelatedWritingOptions<T>,
+): Array<T> {
+  return resolveRelatedEntries(options);
 }
 
 export function sortFeaturedProjects<T extends FeaturedProject>(
@@ -91,4 +116,30 @@ function compareIds(left: string, right: string): number {
   }
 
   return left < right ? -1 : 1;
+}
+
+function resolveRelatedEntries<T extends PublishableEntry>(options: {
+  readonly ids: ReadonlyArray<string>;
+  readonly entries: ReadonlyArray<T>;
+  readonly excludedId?: string;
+}): Array<T> {
+  const publishedEntries = filterPublishedEntries(options.entries, true);
+  const entriesById = new Map(publishedEntries.map((entry) => [entry.id, entry]));
+  const resolved: Array<T> = [];
+  const seenIds = new Set<string>();
+
+  options.ids.forEach((id) => {
+    if (!id.trim() || id === options.excludedId || seenIds.has(id)) {
+      return;
+    }
+
+    const entry = entriesById.get(id);
+
+    if (entry) {
+      resolved.push(entry);
+      seenIds.add(id);
+    }
+  });
+
+  return resolved;
 }

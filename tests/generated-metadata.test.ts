@@ -197,6 +197,10 @@ test("every current indexable document has complete, self-referencing metadata",
     "/paintings/",
     "/photography/",
     "/projects/",
+    "/projects/cmprsr-rs/",
+    "/projects/lilyhttpd/",
+    "/projects/osborne/",
+    "/projects/portfolio-site/",
   ]);
 
   const metadata = indexableFiles.map((htmlPath) => {

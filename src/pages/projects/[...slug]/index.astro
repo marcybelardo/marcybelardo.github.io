@@ -1,0 +1,50 @@
+---
+// pattern: Imperative Shell
+import { getCollection, render, type CollectionEntry } from "astro:content";
+
+import {
+  filterPublishedEntries,
+  resolveRelatedProjects,
+  resolveRelatedWriting,
+} from "../../../content/content-queries.ts";
+import ProjectLayout from "../../../layouts/ProjectLayout.astro";
+
+type Props = {
+  readonly project: CollectionEntry<"project">;
+  readonly publishedProjects: ReadonlyArray<CollectionEntry<"project">>;
+  readonly publishedWriting: ReadonlyArray<CollectionEntry<"blog">>;
+};
+
+export async function getStaticPaths() {
+  const [projects, posts] = await Promise.all([
+    getCollection("project"),
+    getCollection("blog"),
+  ]);
+  const publishedProjects = filterPublishedEntries(projects, !import.meta.env.DEV);
+  const publishedWriting = filterPublishedEntries(posts, !import.meta.env.DEV);
+
+  return publishedProjects.map((project) => ({
+    params: { slug: project.id },
+    props: { project, publishedProjects, publishedWriting },
+  }));
+}
+
+const { project, publishedProjects, publishedWriting } = Astro.props as Props;
+const { Content } = await render(project);
+const relatedProjects = resolveRelatedProjects({
+  ids: project.data.relatedProjects,
+  entries: publishedProjects,
+  selfId: project.id,
+});
+const relatedWriting = resolveRelatedWriting({
+  ids: project.data.relatedWriting,
+  entries: publishedWriting,
+});
+---
+
+<ProjectLayout
+  project={project}
+  Content={Content}
+  relatedProjects={relatedProjects}
+  relatedWriting={relatedWriting}
+/>

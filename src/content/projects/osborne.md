@@ -17,4 +17,6 @@ draft: false
 repositoryUrl: https://github.com/marcybelardo/osborne
 ---
 
+## Summary
+
 Osborne is a budget management app for personal and group spending, built with Java Spring Boot and React.

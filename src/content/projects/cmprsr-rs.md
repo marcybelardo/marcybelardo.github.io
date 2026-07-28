@@ -14,4 +14,6 @@ draft: false
 repositoryUrl: https://github.com/marcybelardo/cmprsr-rs
 ---
 
+## Summary
+
 cmprsr-rs is a canonical Huffman compression tool written in Rust.
