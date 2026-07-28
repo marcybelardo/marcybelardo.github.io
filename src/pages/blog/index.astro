@@ -3,12 +3,13 @@
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import { getCollection, type CollectionEntry } from "astro:content";
 import {
-  filterPublishedEntries,
-  sortByDateDescending,
+  getPublishedBlogPosts,
+  toTagSlug,
 } from "../../content/content-queries.ts";
 
-const posts: Array<CollectionEntry<"blog">> = sortByDateDescending(
-  filterPublishedEntries(await getCollection("blog"), !import.meta.env.DEV),
+const posts: Array<CollectionEntry<"blog">> = getPublishedBlogPosts(
+  await getCollection("blog"),
+  !import.meta.env.DEV,
 );
 ---
 
@@ -48,14 +49,20 @@ const posts: Array<CollectionEntry<"blog">> = sortByDateDescending(
               )}
               {post.data.tags && post.data.tags.length > 0 && (
                 <p class="text-xs text-neutral-400 mt-1">
-                  {post.data.tags.map((tag: string, i: number) => [
+                  {post.data.tags.map((tag, i) => [
                     i > 0 && ", ",
-                    <a
-                      href={`/blog/tags/${tag.toLowerCase()}/`}
-                      class="hover:text-neutral-600 underline"
-                    >
-                      {tag}
-                    </a>,
+                    (() => {
+                      const slug = toTagSlug(tag);
+
+                      return slug ? (
+                        <a
+                          href={`/blog/tags/${slug}/`}
+                          class="hover:text-neutral-600 underline"
+                        >
+                          {tag}
+                        </a>
+                      ) : null;
+                    })(),
                   ])}
                 </p>
               )}

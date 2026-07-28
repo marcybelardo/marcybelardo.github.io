@@ -14,6 +14,22 @@ type DatedEntry = {
   };
 };
 
+type BlogEntry = PublishableEntry &
+  DatedEntry & {
+    readonly data: {
+      readonly tags?: ReadonlyArray<string>;
+    };
+  };
+
+export type BlogTag = {
+  readonly label: string;
+  readonly slug: string;
+};
+
+export type BlogTagArchive<T extends BlogEntry> = BlogTag & {
+  readonly posts: Array<T>;
+};
+
 type ResolveRelatedProjectsOptions<T extends PublishableEntry> = {
   readonly ids: ReadonlyArray<string>;
   readonly entries: ReadonlyArray<T>;
@@ -54,6 +70,86 @@ export function sortByDateDescending<T extends DatedEntry>(
 
     return dateDifference === 0 ? compareIds(left.id, right.id) : dateDifference;
   });
+}
+
+export function toTagSlug(tag: string): string | null {
+  const normalizedTag = tag
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "-")
+    .replace(/[^a-z0-9-]/g, "")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+
+  return normalizedTag.length > 0 ? normalizedTag : null;
+}
+
+export function getPublishedBlogPosts<T extends BlogEntry>(
+  entries: ReadonlyArray<T>,
+  isProduction: boolean,
+): Array<T> {
+  const posts = sortByDateDescending(filterPublishedEntries(entries, isProduction));
+
+  posts.forEach((post) => {
+    post.data.tags?.forEach((tag) => {
+      assertValidTagSlug(tag);
+    });
+  });
+
+  return posts;
+}
+
+export function getUniqueBlogTags<T extends BlogEntry>(
+  entries: ReadonlyArray<T>,
+  isProduction: boolean,
+): Array<BlogTag> {
+  return getBlogTagArchives(entries, isProduction).map(({ label, slug }) => ({
+    label,
+    slug,
+  }));
+}
+
+export function getBlogTagArchives<T extends BlogEntry>(
+  entries: ReadonlyArray<T>,
+  isProduction: boolean,
+): Array<BlogTagArchive<T>> {
+  const archivesBySlug = new Map<
+    string,
+    {
+      readonly label: string;
+      readonly slug: string;
+      readonly posts: Array<T>;
+      readonly postIds: Set<string>;
+    }
+  >();
+
+  getPublishedBlogPosts(entries, isProduction).forEach((post) => {
+    post.data.tags?.forEach((label) => {
+      const slug = assertValidTagSlug(label);
+      const existingArchive = archivesBySlug.get(slug);
+
+      if (existingArchive) {
+        if (!existingArchive.postIds.has(post.id)) {
+          existingArchive.posts.push(post);
+          existingArchive.postIds.add(post.id);
+        }
+        return;
+      }
+
+      archivesBySlug.set(slug, {
+        label,
+        slug,
+        posts: [post],
+        postIds: new Set([post.id]),
+      });
+    });
+  });
+
+  return [...archivesBySlug.values()].map(({ label, slug, posts }) => ({
+    label,
+    slug,
+    posts,
+  }));
 }
 
 export function resolveRelatedProjects<T extends PublishableEntry>(
@@ -122,6 +218,16 @@ function assertValidLimit(limit: number, label: string): void {
   if (!Number.isInteger(limit) || limit < 0) {
     throw new RangeError(`${label} limit must be a non-negative integer`);
   }
+}
+
+function assertValidTagSlug(tag: string): string {
+  const slug = toTagSlug(tag);
+
+  if (slug === null) {
+    throw new Error(`blog tag must normalize to a non-empty slug: ${tag}`);
+  }
+
+  return slug;
 }
 
 function getFeaturedOrder(entry: FeaturedProject): number {

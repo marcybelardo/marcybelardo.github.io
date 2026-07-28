@@ -6,14 +6,18 @@ import test from "node:test";
 
 import { generateProjectId } from "../src/content/content-identifiers.ts";
 import {
+  getBlogTagArchives,
   filterPublishedEntries,
   getFeaturedProjects,
+  getPublishedBlogPosts,
   getRecentPosts,
+  getUniqueBlogTags,
   limitRecentPosts,
   resolveRelatedProjects,
   resolveRelatedWriting,
   sortByDateDescending,
   sortFeaturedProjects,
+  toTagSlug,
 } from "../src/content/content-queries.ts";
 
 type TestEntry = {
@@ -141,6 +145,81 @@ test("related writing resolution preserves author order and excludes drafts and 
   });
 
   assert.deepEqual(resolved.map((entry) => entry.id), ["self", "alpha"]);
+});
+
+type BlogTestEntry = {
+  readonly id: string;
+  readonly data: {
+    readonly date: Date;
+    readonly draft?: boolean;
+    readonly tags?: ReadonlyArray<string>;
+  };
+};
+
+const blogEntries: ReadonlyArray<BlogTestEntry> = [
+  {
+    id: "zeta",
+    data: { date: new Date("2026-06-12"), tags: ["Technology"] },
+  },
+  {
+    id: "alpha",
+    data: { date: new Date("2026-06-12"), tags: ["ai", "AI", "C++", "C#"] },
+  },
+  {
+    id: "draft",
+    data: { date: new Date("2026-06-14"), draft: true, tags: ["Draft Only"] },
+  },
+  {
+    id: "older",
+    data: { date: new Date("2025-06-14"), tags: [" c++ ", "Politics"] },
+  },
+];
+
+test("tag slugs normalize labels and reject labels with no safe characters", () => {
+  assert.equal(toTagSlug("  Hello, World!  "), "hello-world");
+  assert.equal(toTagSlug("C++"), "c");
+  assert.equal(toTagSlug("!!!"), null);
+  assert.equal(toTagSlug("   "), null);
+});
+
+test("published blog queries exclude drafts and sort deterministically", () => {
+  const published = getPublishedBlogPosts(blogEntries, true);
+
+  assert.deepEqual(published.map((entry) => entry.id), ["alpha", "zeta", "older"]);
+  assert.deepEqual(blogEntries.map((entry) => entry.id), ["zeta", "alpha", "draft", "older"]);
+});
+
+test("unique blog tags merge normalized collisions and deduplicate posts", () => {
+  const tags = getUniqueBlogTags(blogEntries, true);
+  const archives = getBlogTagArchives(blogEntries, true);
+
+  assert.deepEqual(tags, [
+    { label: "ai", slug: "ai" },
+    { label: "C++", slug: "c" },
+    { label: "Technology", slug: "technology" },
+    { label: "Politics", slug: "politics" },
+  ]);
+  assert.deepEqual(
+    archives.find((archive) => archive.slug === "c"),
+    {
+      label: "C++",
+      slug: "c",
+      posts: [blogEntries[1], blogEntries[3]],
+    },
+  );
+  assert.equal(archives.filter((archive) => archive.slug === "c").length, 1);
+});
+
+test("blog tag queries reject authored labels that normalize to an empty slug", () => {
+  assert.throws(
+    () => getUniqueBlogTags([
+      {
+        id: "invalid",
+        data: { date: new Date("2026-06-15"), tags: ["!!!"] },
+      },
+    ], true),
+    /tag.*slug/i,
+  );
 });
 
 const projectsDirectory = resolve(
