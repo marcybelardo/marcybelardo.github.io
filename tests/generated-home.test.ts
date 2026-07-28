@@ -8,6 +8,7 @@ import { getFeaturedProjects, getRecentPosts } from "../src/content/content-quer
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const homepagePath = resolve(repositoryRoot, "dist", "index.html");
+const bioPath = resolve(repositoryRoot, "dist", "bio", "index.html");
 const homepageSourcePath = resolve(repositoryRoot, "src", "pages", "index.astro");
 const configuredOrigin = "https://www.marcelinebelardo.com";
 const profileUrls = [
@@ -21,6 +22,11 @@ type JsonLdEntry = Readonly<Record<string, unknown>>;
 function readHomepage(): string {
   assert.ok(existsSync(homepagePath), "homepage output must exist before generated assertions");
   return readFileSync(homepagePath, "utf8");
+}
+
+function readBio(): string {
+  assert.ok(existsSync(bioPath), "Bio output must exist before generated assertions");
+  return readFileSync(bioPath, "utf8");
 }
 
 function getJsonLd(html: string): Readonly<Record<string, unknown>> {
@@ -87,4 +93,19 @@ test("empty featured and recent fixtures have no optional section to render", ()
     source,
     /recentPosts\.length > 0 && \(\s*<section[\s\S]*?recent-writing-heading/,
   );
+});
+
+test("Bio uses verified copy and the square portrait without résumé placeholders", () => {
+  const html = readBio();
+
+  assert.match(html, /Software Developer/);
+  assert.match(html, /Building maintainable, friendly, and performant programs\./);
+  assert.match(html, /C · Rust · Java · TypeScript · React · Python · PostgreSQL/);
+  assert.match(html, /alt="Marceline Belardo holding a camera, taking a selfie"/);
+  assert.match(html, /<div class="square-image[\s\S]*?<img\b[^>]*width="\d+"[^>]*height="\d+"/);
+  assert.match(
+    html,
+    /<meta name="description" content="About Marceline Belardo, a software developer working across software, visual culture, research, and writing\."/,
+  );
+  assert.doesNotMatch(html, /<h[1-6][^>]*>\s*(?:Résumé|Resume)\s*<\/h[1-6]>/i);
 });

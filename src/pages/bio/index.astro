@@ -1,21 +1,62 @@
 ---
 // pattern: Imperative Shell
+import SquareImage from "../../components/SquareImage.astro";
+import portraitImage from "../../assets/20260425_29.jpg";
 import BaseLayout from "../../layouts/BaseLayout.astro";
+
+const bioContent = {
+  label: "Software Developer",
+  statement: "Building maintainable, friendly, and performant programs.",
+  skills: [
+    "C",
+    "Rust",
+    "Java",
+    "TypeScript",
+    "React",
+    "Python",
+    "PostgreSQL",
+  ],
+  portraitAlt: "Marceline Belardo holding a camera, taking a selfie",
+};
 ---
 
 <BaseLayout
   title="Bio"
-  description="About Marceline Belardo, a software developer."
+  description="About Marceline Belardo, a software developer working across software, visual culture, research, and writing."
 >
   <article class="editorial-page editorial-measure">
     <header class="editorial-page__header">
       <p class="eyebrow">About</p>
       <h1>Bio</h1>
-      <p>Software Developer</p>
+      <p>{bioContent.label}</p>
     </header>
 
     <section class="editorial-section">
-      <p class="accent">Building maintainable, friendly, and performant programs.</p>
+      <div class="bio-introduction">
+        <SquareImage
+          src={portraitImage}
+          alt={bioContent.portraitAlt}
+          class="bio-portrait"
+          priority
+        />
+        <p class="accent">{bioContent.statement}</p>
+      </div>
+    </section>
+
+    <section class="editorial-section" aria-labelledby="skills-heading">
+      <h2 id="skills-heading">Tools and languages</h2>
+      <p class="accent">{bioContent.skills.join(" · ")}</p>
     </section>
   </article>
 </BaseLayout>
+
+<style>
+  .bio-introduction {
+    display: grid;
+    gap: 1.5rem;
+  }
+
+  .bio-portrait {
+    max-width: 22rem;
+  }
+</style>
