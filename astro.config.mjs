@@ -8,10 +8,21 @@ import tailwindcss from "@tailwindcss/vite";
 import { SITE_ORIGIN } from "./src/site-config.ts";
 import rehypeMarginNotes from "./src/markdown/rehype-margin-notes.mjs";
 
+const excludedSitemapUrls = new Set(
+  ["/code/", "/paintings/", "/photography/"].map((path) =>
+    new URL(path, SITE_ORIGIN).toString(),
+  ),
+);
+
 // https://astro.build/config
 export default defineConfig({
   site: SITE_ORIGIN,
-  integrations: [react(), sitemap()],
+  integrations: [
+    react(),
+    sitemap({
+      filter: (page) => !excludedSitemapUrls.has(page),
+    }),
+  ],
   markdown: {
     processor: unified({ rehypePlugins: [rehypeMarginNotes] }),
   },

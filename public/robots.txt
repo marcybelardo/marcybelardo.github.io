@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://www.marcelinebelardo.com/sitemap-index.xml
