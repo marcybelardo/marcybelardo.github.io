@@ -10,7 +10,7 @@
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
-    "test": "pnpm build && node --experimental-strip-types --test --test-concurrency=1 tests/*.test.ts",
+    "test": "node tests/content-validation-negative.mjs && pnpm build && node --experimental-strip-types --test --test-concurrency=1 tests/*.test.ts",
     "verify": "pnpm test"
   },
   "dependencies": {

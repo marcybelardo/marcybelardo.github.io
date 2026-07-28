@@ -9,9 +9,11 @@ pnpm dev       # localhost:4321
 pnpm build     # production to ./dist/
 pnpm preview   # preview production build
 pnpm astro     # Astro CLI
+pnpm test      # negative content validation, build, and Node tests
+pnpm verify    # alias for pnpm test
 ```
 
-No lint, typecheck, or test scripts exist. `pnpm build` is the only validation step.
+No lint or typecheck scripts exist. `pnpm verify` is the validation step.
 
 ## Repo details an agent might miss
 
@@ -24,11 +26,15 @@ No lint, typecheck, or test scripts exist. `pnpm build` is the only validation s
 
 ## Content collections (`src/content/`)
 
-Four collections: `blog`, `project`, `painting`, `photograph`. Defined in `src/content.config.ts`.
+Two collections are defined in `src/content.config.ts`: the loader-backed `project` collection under `src/content/projects/` and the `blog` collection under `src/content/blog/`.
 
-**Blog ID scheme** — IDs are generated from the first 4 alphanumeric words of the frontmatter `title`, lowercased and joined with `-` (not from the filename). Drafts (`draft: true`) are excluded in production builds.
+Projects use explicit stable slugs, validated publication metadata, and optional image/link/relationship fields. Shared publication filtering and ordering rules live in `src/content/content-queries.ts`.
+
+**Blog ID scheme** — IDs use a non-empty explicit frontmatter `slug` when present; otherwise they fall back to the first 4 alphanumeric words of `title`, lowercased and joined with `-` (not from the filename). Drafts (`draft: true`) are excluded in production builds.
 
 Paintings and photography pages are currently placeholder ("Coming soon") — those sections are not yet implemented.
+
+`pnpm test` runs the serial missing-image-alt validation fixture, the production build, and the dependency-free Node test suite. `pnpm verify` aliases `pnpm test`.
 
 ## Coding principles
 
