@@ -3,6 +3,7 @@
 import BaseLayout from "../../../layouts/BaseLayout.astro";
 import { getCollection, render, type CollectionEntry } from "astro:content";
 import { filterPublishedEntries } from "../../../content/content-queries.ts";
+import { SITE_ORIGIN } from "../../../site-config.ts";
 
 type Props = {
   readonly post: CollectionEntry<"blog">;
@@ -21,9 +22,30 @@ export async function getStaticPaths() {
 
 const { post } = Astro.props as Props;
 const { Content } = await render(post);
+const description = post.data.description ?? "";
+const canonicalUrl = new URL(
+  `/blog/${post.id}/`,
+  Astro.site ?? SITE_ORIGIN,
+).toString();
+const structuredData = {
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "@id": canonicalUrl,
+  url: canonicalUrl,
+  headline: post.data.title,
+  description,
+  datePublished: post.data.date.toISOString(),
+  keywords: post.data.tags,
+};
 ---
 
-<BaseLayout title={post.data.title} description={post.data.description ?? ""} socialType="article">
+<BaseLayout
+  title={post.data.title}
+  description={description}
+  canonicalUrl={canonicalUrl}
+  socialType="article"
+  structuredData={structuredData}
+>
   <article class="py-12 mx-auto max-w-2xl">
     <time
       class="text-sm text-neutral-500"

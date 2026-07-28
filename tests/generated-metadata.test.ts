@@ -7,6 +7,12 @@ import test from "node:test";
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const distDirectory = resolve(repositoryRoot, "dist");
 const configuredOrigin = "https://www.marcelinebelardo.com";
+const blogDetailPath = resolve(
+  distDirectory,
+  "blog",
+  "the-devil-you-know",
+  "index.html",
+);
 const primaryDestinations = ["/projects/", "/blog/", "/bio/", "/contact/"];
 const requiredHtmlArtifacts = [
   "404.html",
@@ -309,6 +315,38 @@ test("the current 404 is noindex and the homepage emits required JSON-LD", () =>
   );
   assert.doesNotMatch(indexHtml, /<meta name="robots"/);
   assert.match(indexHtml, /application\/ld\+json/);
+});
+
+test("blog detail JSON-LD matches its visible article metadata and tags", () => {
+  assert.ok(existsSync(blogDetailPath), "blog detail output must exist");
+
+  const html = readFileSync(blogDetailPath, "utf8");
+  const jsonLd = getStructuredData(html, "blog detail");
+  const canonical = `${configuredOrigin}/blog/the-devil-you-know/`;
+  const headline = getSingleMatch(html, /<h1[^>]*>([^<]+)<\/h1>/g, "blog headline").trim();
+  const description = getSingleMatch(
+    html,
+    /<meta name="description" content="([^"]*)"\s*\/?\s*>/g,
+    "blog description",
+  );
+  const datePublished = getSingleMatch(
+    html,
+    /<time[^>]*datetime="([^"]+)"[^>]*>/g,
+    "blog publication date",
+  );
+  const visibleTags = [...html.matchAll(
+    /<a href="\/blog\/tags\/[^/]+\/"[^>]*>([^<]+)<\/a>/g,
+  )].map((match) => decodeHtmlEntities(match[1] ?? "").trim());
+
+  assert.equal(jsonLd["@context"], "https://schema.org");
+  assert.equal(jsonLd["@type"], "BlogPosting");
+  assert.equal(jsonLd["@id"], canonical);
+  assert.equal(jsonLd.url, canonical);
+  assert.equal(jsonLd.headline, headline);
+  assert.equal(jsonLd.description, description);
+  assert.equal(jsonLd.datePublished, datePublished);
+  assert.deepEqual(jsonLd.keywords, visibleTags);
+  assert.deepEqual(visibleTags, ["AI", "Technology", "Politics"]);
 });
 
 test("generated output uses the editorial visual system without parallax or cards", () => {
