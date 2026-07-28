@@ -14,6 +14,7 @@ const migrationRoutes = ["code", "paintings", "photography"];
 const publishedProjectSlugs = ["cmprsr-rs", "lilyhttpd", "osborne", "portfolio-site"];
 const publishedBlogTags = ["ai", "politics", "technology"];
 const draftMarkers = /draft-route-fixture|draft-only-review|draft-project-fixture/i;
+const footnoteFixtureMarker = "A source with";
 
 type JsonLdEntry = Readonly<Record<string, unknown>>;
 
@@ -132,36 +133,6 @@ function getSquareImageWrappers(html: string): Array<string> {
       /<div class="square-image(?:\s[^>]*)?"[^>]*>[\s\S]*?<\/div>/g,
     ),
   ].map((match) => match[0] ?? "");
-}
-
-function assertFootnoteBaseline(html: string): void {
-  const references = [...html.matchAll(
-    /<a\b[^>]*href="#([^"]+)"[^>]*id="([^"]+)"[^>]*data-footnote-ref/g,
-  )];
-  const definitions = new Set(
-    [...html.matchAll(/<li\b[^>]*id="([^"]+)"[^>]*>/g)].map(
-      (match) => match[1] ?? "",
-    ),
-  );
-  let backlinks = 0;
-
-  assert.ok(references.length > 0, "production fixture must contain a footnote reference");
-  assert.ok(definitions.size > 0, "production fixture must contain a footnote definition");
-
-  references.forEach((reference) => {
-    const definitionId = reference[1] ?? "";
-    const referenceId = reference[2] ?? "";
-
-    assert.ok(definitions.has(definitionId), `${referenceId} must target a footnote definition`);
-    const backlinkPattern = new RegExp(
-      `href="#${referenceId.replaceAll("-", "\\-")}"[^>]*data-footnote-backref`,
-    );
-
-    assert.match(html, backlinkPattern, `${definitionId} must retain a backlink to ${referenceId}`);
-    backlinks += 1;
-  });
-
-  assert.ok(backlinks > 0, "production fixture must contain a footnote backlink");
 }
 
 test("portfolio-redesign.AC1.1 production artifact contains the complete static route inventory", () => {
@@ -435,10 +406,12 @@ test("portfolio-redesign.AC5.8 generated discovery and JSON-LD output contains n
   assert.doesNotMatch(jsonLdOutput, /marcybelardo\.github\.io/i);
 });
 
-test("production artifact preserves baseline footnote links and backlinks when notes are present", () => {
-  const blogHtml = readArtifact("blog/the-devil-you-know/index.html");
-
-  assert.match(blogHtml, /data-margin-note-article/);
-  assert.match(blogHtml, /data-margin-note-rail/);
-  assertFootnoteBaseline(blogHtml);
+test("production artifact excludes temporary footnote fixture content", () => {
+  getHtmlFiles(distDirectory).forEach((htmlPath) => {
+    assert.doesNotMatch(
+      readFileSync(htmlPath, "utf8"),
+      new RegExp(footnoteFixtureMarker),
+      `${relative(distDirectory, htmlPath)} must not expose the temporary footnote fixture`,
+    );
+  });
 });

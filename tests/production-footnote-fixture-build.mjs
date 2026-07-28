@@ -37,6 +37,36 @@ function runFixtureBuild() {
   assert.equal(result.status, 0, `production footnote fixture build failed:\n${output}`);
 }
 
+function assertFootnoteBaseline(html) {
+  const references = [...html.matchAll(
+    /<a\b[^>]*href="#([^"]+)"[^>]*id="([^"]+)"[^>]*data-footnote-ref/g,
+  )];
+  const definitions = new Set(
+    [...html.matchAll(/<li\b[^>]*id="([^"]+)"[^>]*>/g)].map(
+      (match) => match[1] ?? "",
+    ),
+  );
+  let backlinks = 0;
+
+  assert.ok(references.length > 0, "fixture must contain a footnote reference");
+  assert.ok(definitions.size > 0, "fixture must contain a footnote definition");
+
+  references.forEach((reference) => {
+    const definitionId = reference[1] ?? "";
+    const referenceId = reference[2] ?? "";
+
+    assert.ok(definitions.has(definitionId), `${referenceId} must target a footnote definition`);
+    assert.match(
+      html,
+      new RegExp(`href="#${referenceId.replaceAll("-", "\\-")}"[^>]*data-footnote-backref`),
+      `${definitionId} must retain a backlink to ${referenceId}`,
+    );
+    backlinks += 1;
+  });
+
+  assert.ok(backlinks > 0, "fixture must contain a footnote backlink");
+}
+
 try {
   writeFileSync(publishedPostPath, fixturePost, "utf8");
   runFixtureBuild();
@@ -44,9 +74,11 @@ try {
   assert.ok(existsSync(fixtureOutputPath), "published post fixture route was not generated");
   const html = readFileSync(fixtureOutputPath, "utf8");
 
+  assert.match(html, /A source with/);
   assert.match(html, /data-footnote-ref/);
   assert.match(html, /<li\b[^>]*id="[^"]+"[^>]*>/);
   assert.match(html, /data-footnote-backref/);
+  assertFootnoteBaseline(html);
 } finally {
   writeFileSync(publishedPostPath, originalPost, "utf8");
 }
