@@ -159,6 +159,23 @@ test("portfolio-redesign.AC1.1 production artifact contains the complete static 
   );
 });
 
+test("production artifact uses the MB monogram SVG favicon", () => {
+  const favicon = readArtifact("favicon.svg");
+  const homepage = readArtifact("index.html");
+
+  assert.match(favicon, /viewBox="0 0 128 128"/);
+  assert.match(favicon, /<title\b[^>]*>\s*MB\s*<\/title>/i);
+  assert.match(favicon, /#003153/i);
+  assert.match(favicon, /#f6f4ee/i);
+  assert.doesNotMatch(favicon, /<text\b/i);
+  assert.match(
+    homepage,
+    /<link rel="icon" type="image\/svg\+xml" href="\/favicon\.svg"\s*\/?>/,
+  );
+  assert.doesNotMatch(homepage, /href="\/favicon\.ico"/);
+  assert.equal(existsSync(resolve(distDirectory, "favicon.ico")), false);
+});
+
 test("portfolio-redesign.AC1.3 primary navigation exposes only the integrated sections", () => {
   getHtmlFiles(distDirectory).forEach((htmlPath) => {
     const html = readFileSync(htmlPath, "utf8");
