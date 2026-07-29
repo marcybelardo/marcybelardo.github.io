@@ -371,6 +371,18 @@ test("generated output uses the editorial visual system without parallax or card
   assert.match(css, /--color-ink:\s*#171717/);
   assert.match(css, /--color-muted-ink:\s*#68655f/);
   assert.match(css, /--color-rule:\s*#c9c4b8/);
+  assert.match(
+    css,
+    /\.site-header\{[^}]*border-bottom:\s*1px solid var\(--color-rule\)/,
+  );
+  assert.match(
+    css,
+    /\.editorial-list>li\{[^}]*border-top:\s*1px solid var\(--color-rule\)/,
+  );
+  assert.match(
+    css,
+    /\.editorial-list>li:last-child\{[^}]*border-bottom:\s*1px solid var\(--color-rule\)/,
+  );
   assert.match(css, /--color-prussian-blue:\s*#003153/);
   assert.match(css, /--font-reading:Georgia/);
   assert.match(css, /--font-utility:"Helvetica Neue"/);

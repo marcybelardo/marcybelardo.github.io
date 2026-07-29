@@ -45,6 +45,16 @@ function getJsonLd(html: string): Readonly<Record<string, unknown>> {
   return JSON.parse(match[1]) as Readonly<Record<string, unknown>>;
 }
 
+function getVisibleH1Text(html: string): string {
+  const matches = [...html.matchAll(/<h1\b[^>]*>([^<]+)<\/h1>/g)];
+
+  assert.equal(matches.length, 1, "homepage must contain one visible h1");
+  const visibleText = matches[0]?.[1]?.trim() ?? "";
+
+  assert.ok(visibleText, "homepage visible h1 must contain text");
+  return visibleText;
+}
+
 function getSelectedProjectIds(html: string): Array<string> {
   return [...html.matchAll(/href="\/projects\/([^/]+)\/"/g)].map(
     (match) => match[1] ?? "",
@@ -77,6 +87,7 @@ test("homepage renders the practice, mixed selected work, writing, and contact p
 test("homepage JSON-LD matches visible identity and verified profiles", () => {
   const html = readHomepage();
   const jsonLd = getJsonLd(html);
+  const visibleName = getVisibleH1Text(html);
   const graph = jsonLd["@graph"];
 
   assert.equal(jsonLd["@context"], "https://schema.org");
@@ -92,21 +103,21 @@ test("homepage JSON-LD matches visible identity and verified profiles", () => {
 
   assert.ok(website, "homepage JSON-LD must contain a WebSite");
   assert.ok(person, "homepage JSON-LD must contain a Person");
-  assert.equal(website.name, "Marceline Belardo");
+  assert.equal(website.name, visibleName);
   assert.equal(website.url, canonical);
-  assert.equal(person.name, "Marceline Belardo");
+  assert.equal(person.name, visibleName);
   assert.equal(person.url, canonical);
   assert.deepEqual(person.sameAs, profileUrls);
   assert.deepEqual(website, {
     "@id": canonical,
     "@type": "WebSite",
-    name: "Marceline Belardo",
+    name: visibleName,
     url: canonical,
   });
   assert.deepEqual(person, {
     "@id": `${canonical}#person`,
     "@type": "Person",
-    name: "Marceline Belardo",
+    name: visibleName,
     sameAs: profileUrls,
     url: canonical,
   });
