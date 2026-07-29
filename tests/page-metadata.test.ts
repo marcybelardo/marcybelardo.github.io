@@ -20,8 +20,8 @@ test("site titles compose page labels with the site name", () => {
 
 test("canonical URLs use the configured site origin", () => {
   assert.equal(
-    createCanonicalUrl("/code/", SITE_ORIGIN),
-    "https://www.marcelinebelardo.com/code/",
+    createCanonicalUrl("/retired-example/", SITE_ORIGIN),
+    "https://www.marcelinebelardo.com/retired-example/",
   );
   assert.equal(
     createCanonicalUrl("/blog/the-devil-you-know/", SITE_ORIGIN),
@@ -40,7 +40,7 @@ test("canonical paths reject external URLs", () => {
   );
 });
 
-test("canonical URL overrides preserve migration URLs only on the configured origin", () => {
+test("canonical URL overrides remain limited to the configured origin", () => {
   assert.equal(
     validateCanonicalUrl("https://www.marcelinebelardo.com/projects/", SITE_ORIGIN),
     "https://www.marcelinebelardo.com/projects/",

@@ -6,16 +6,16 @@ This checklist records the repository checks and the operational checks required
 
 - Verification date: 2026-07-29
 - Operator: Codex (repository checks only)
-- Deployment: not performed in this task
+- Deployment: production deployment completed successfully before the current content cleanup
 - Repository artifact gate: **passed — `CI=true pnpm verify`, 103 tests passed, exit status 0**
 - AC5.7 (GitHub Pages, DNS, HTTPS redirects, and TLS): **not verified; post-deploy evidence required**
 
 ## Repository-verifiable checks
 
-- [x] Run `CI=true pnpm verify` from the `portfolio-redesign` worktree: 103 tests passed, exit status 0.
+- [x] Run `CI=true pnpm verify` after the project and retired-route contract updates: 103 tests passed, exit status 0.
 - [x] Run `git diff --check` and confirm it exits successfully before commit.
-- [x] Confirm the build emits the current route tree, published project/blog routes, tags, RSS, sitemap, robots, migrations, and 404 through `tests/production-artifact.test.ts`.
-- [x] Confirm indexable-page metadata, structured data, draft exclusion, canonical-origin restrictions, image markup, and migration contracts through the production artifact test.
+- [x] Confirm the build emits the current route tree, every discovered published project/blog route, tags, RSS, sitemap, robots, and 404 through `tests/production-artifact.test.ts`.
+- [x] Confirm indexable-page metadata, structured data, draft exclusion, canonical-origin restrictions, image markup, and retired-route absence through the production artifact test.
 - [x] Confirm the deploy workflow invokes `pnpm verify` before the Pages deployment job can proceed.
 
 ## Post-deploy GitHub Pages and DNS gate
@@ -52,7 +52,7 @@ Certificate result: **not verified — no deployed TLS handshake was performed.*
 
 After deployment, inspect each page at 360px, 768px, and 1280px viewport widths. Mark a row only after checking the page at all three widths.
 
-Pages: Home, Projects, one project detail, Blog, one footnoted post, Bio, Contact, one migration document, and 404.
+Pages: Home, Projects, one project detail, Blog, one footnoted post, Bio, Contact, and 404.
 
 The current published blog post is not footnoted, so the footnoted-post row and the footnote-specific checks below remain pending until a deployed footnoted post is available.
 
@@ -65,7 +65,6 @@ The current published blog post is not footnoted, so the footnoted-post row and 
 | Footnoted post | [ ] | [ ] | [ ] | Not verified — post-deploy browser check required. |
 | Bio | [ ] | [ ] | [ ] | Not verified — post-deploy browser check required. |
 | Contact | [ ] | [ ] | [ ] | Not verified — post-deploy browser check required. |
-| Migration | [ ] | [ ] | [ ] | Not verified — post-deploy browser check required. |
 | 404 | [ ] | [ ] | [ ] | Not verified — post-deploy browser check required. |
 
 Confirm that no page has horizontal overflow, clipped copy, empty controls, broken links, or inaccessible content at any width.
@@ -78,7 +77,7 @@ Use keyboard only, with no pointer input:
 - [ ] Open and dismiss the compact navigation with the menu control and Escape.
 - [ ] Confirm focus remains visible and returns to the menu control after dismissal.
 - [ ] Activate every project, contact, repository/live/external, tag, and footnote link.
-- [ ] Confirm keyboard focus remains visible across the header, page content, footer, and migration fallback.
+- [ ] Confirm keyboard focus remains visible across the header, page content, and footer.
 
 Status: **Not verified — post-deploy browser/keyboard check required.**
 

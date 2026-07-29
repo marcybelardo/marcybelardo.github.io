@@ -1,6 +1,6 @@
 // pattern: Imperative Shell
 import assert from "node:assert/strict";
-import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -30,6 +30,30 @@ const noOptionalsProjectOutputPath = resolve(
   repositoryRoot,
   "dist/projects/no-optionals-project-fixture/index.html",
 );
+const projectsDirectory = resolve(repositoryRoot, "src/content/projects");
+
+function getRelatedProjectSlug() {
+  const projectFiles = readdirSync(projectsDirectory)
+    .filter((fileName) => /\.(?:md|mdx)$/.test(fileName))
+    .sort();
+
+  for (const fileName of projectFiles) {
+    const contents = readFileSync(resolve(projectsDirectory, fileName), "utf8");
+
+    if (/^draft:\s*true\s*$/m.test(contents)) {
+      continue;
+    }
+
+    const slug = contents.match(/^slug:\s*(\S+)\s*$/m)?.[1] ?? "";
+    if (slug) {
+      return slug;
+    }
+  }
+
+  throw new Error("at least one published project is required for relationship fixtures");
+}
+
+const relatedProjectSlug = getRelatedProjectSlug();
 
 for (const fixturePath of [draftFixturePath, optionalFixturePath, noOptionalsFixturePath]) {
   if (existsSync(fixturePath)) {
@@ -82,7 +106,7 @@ collaborators:
   - Marceline Belardo
 role: Lead developer
 relatedProjects:
-  - osborne
+  - ${relatedProjectSlug}
   - missing-project
 relatedWriting:
   - the-devil-you-know
@@ -171,7 +195,10 @@ try {
   assert.match(html, /href="https:\/\/example\.com\/optional-project-reference"/);
   assert.match(html, /Gallery/);
   assert.match(html, /Optional gallery caption\./);
-  assert.match(html, /Related projects[\s\S]*href="\/projects\/osborne\/"/);
+  assert.match(
+    html,
+    new RegExp(`Related projects[\\s\\S]*href="/projects/${relatedProjectSlug}/"`),
+  );
   assert.match(html, /Related writing[\s\S]*href="\/blog\/the-devil-you-know\/"/);
   assert.doesNotMatch(html, /missing-project|missing-writing|href="#"|href=""|<p>\s*<img\b/);
   assert.equal(

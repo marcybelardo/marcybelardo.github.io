@@ -6,10 +6,12 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 
+import { getGeneratedProjectRoutes } from "./generated-project-artifacts.ts";
+
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const distDirectory = resolve(repositoryRoot, "dist");
 const configuredOrigin = "https://www.marcelinebelardo.com";
-const excludedRoutes = ["/code/", "/paintings/", "/photography/"];
+const retiredRoutes = ["/code/", "/paintings/", "/photography/"];
 const requiredRoutes = [
   "/",
   "/bio/",
@@ -20,10 +22,7 @@ const requiredRoutes = [
   "/blog/the-devil-you-know/",
   "/contact/",
   "/projects/",
-  "/projects/cmprsr-rs/",
-  "/projects/lilyhttpd/",
-  "/projects/osborne/",
-  "/projects/portfolio-site/",
+  ...getGeneratedProjectRoutes(distDirectory),
 ];
 
 function readDiscoveryArtifact(relativePath: string): string {
@@ -56,7 +55,7 @@ test("production discovery output contains required routes and artifacts", () =>
   );
 });
 
-test("sitemap contains canonical published routes and excludes migrations, 404, and drafts", () => {
+test("sitemap contains canonical published routes and excludes retired routes, 404, and drafts", () => {
   const sitemap = readDiscoveryArtifact("sitemap-0.xml");
   const sitemapUrls = getSitemapUrls(sitemap);
   const sitemapRoutes = sitemapUrls.map((url) => new URL(url).pathname).sort();
@@ -66,7 +65,7 @@ test("sitemap contains canonical published routes and excludes migrations, 404, 
     assert.equal(new URL(url).origin, configuredOrigin);
     assert.doesNotMatch(url, /marcybelardo\.github\.io/i);
   });
-  excludedRoutes.forEach((route) => {
+  retiredRoutes.forEach((route) => {
     assert.doesNotMatch(sitemap, new RegExp(`${configuredOrigin}${route}`));
   });
   assert.doesNotMatch(sitemap, /(?:404|draft-route-fixture|draft-only-review)/i);

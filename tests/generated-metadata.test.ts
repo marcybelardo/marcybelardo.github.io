@@ -4,9 +4,15 @@ import { dirname, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 
+import {
+  getGeneratedProjectRoutes,
+  getGeneratedProjectSlugs,
+} from "./generated-project-artifacts.ts";
+
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const distDirectory = resolve(repositoryRoot, "dist");
 const configuredOrigin = "https://www.marcelinebelardo.com";
+const projectSlugs = getGeneratedProjectSlugs(distDirectory);
 const blogDetailPath = resolve(
   distDirectory,
   "blog",
@@ -22,16 +28,10 @@ const requiredHtmlArtifacts = [
   "blog/tags/politics/index.html",
   "blog/tags/technology/index.html",
   "blog/the-devil-you-know/index.html",
-  "code/index.html",
   "contact/index.html",
   "index.html",
-  "paintings/index.html",
-  "photography/index.html",
-  "projects/cmprsr-rs/index.html",
   "projects/index.html",
-  "projects/lilyhttpd/index.html",
-  "projects/osborne/index.html",
-  "projects/portfolio-site/index.html",
+  ...projectSlugs.map((slug) => `projects/${slug}/index.html`),
 ];
 const requiredNonHtmlArtifacts = ["rss.xml", "sitemap-0.xml", "sitemap-index.xml"];
 
@@ -221,7 +221,7 @@ test("robots index directives remain part of the indexable metadata contract", (
   );
 });
 
-test("BaseLayout validates migration canonical URLs against the configured origin", () => {
+test("BaseLayout validates explicit canonical URLs against the configured origin", () => {
   const baseLayoutSource = readFileSync(
     resolve(repositoryRoot, "src/layouts/BaseLayout.astro"),
     "utf8",
@@ -280,10 +280,7 @@ test("every current indexable document has complete, self-referencing metadata",
     "/blog/the-devil-you-know/",
     "/contact/",
     "/projects/",
-    "/projects/cmprsr-rs/",
-    "/projects/lilyhttpd/",
-    "/projects/osborne/",
-    "/projects/portfolio-site/",
+    ...getGeneratedProjectRoutes(distDirectory),
   ]);
 
   const metadata = indexableFiles.map((htmlPath) => {
@@ -365,7 +362,6 @@ test("generated output uses the editorial visual system without parallax or card
   const html = getHtmlFiles(distDirectory)
     .map((htmlPath) => readFileSync(htmlPath, "utf8"))
     .join("\n");
-  const codeHtml = readFileSync(resolve(distDirectory, "code", "index.html"), "utf8");
 
   assert.match(css, /--color-paper:\s*#f6f4ee/);
   assert.match(css, /--color-ink:\s*#171717/);
@@ -391,7 +387,7 @@ test("generated output uses the editorial visual system without parallax or card
   assert.match(css, /a:focus-visible/);
   assert.match(css, /button:focus-visible/);
   assert.doesNotMatch(html, /data-parallax-speed/);
-  assert.doesNotMatch(codeHtml, /ProjectCard|grid-cols-|border-neutral-900/);
+  assert.doesNotMatch(html, /ProjectCard|grid-cols-|border-neutral-900/);
 });
 
 test("generated documents expose the accessible primary navigation contract", () => {
@@ -470,7 +466,7 @@ test("homepage and project JSON-LD contain only visible fields", () => {
     url: canonical,
   });
 
-  ["cmprsr-rs", "lilyhttpd", "osborne", "portfolio-site"].forEach((slug) => {
+  projectSlugs.forEach((slug) => {
     const projectPath = resolve(distDirectory, "projects", slug, "index.html");
     const projectHtml = readFileSync(projectPath, "utf8");
     const projectData = getStructuredData(projectHtml, `${slug} project`);
@@ -541,9 +537,10 @@ test("representative documents preserve one accessible shared shell", () => {
       path: resolve(distDirectory, "blog", "the-devil-you-know", "index.html"),
     },
     { label: "tag archive", path: resolve(distDirectory, "blog", "tags", "ai", "index.html") },
-    { label: "Code migration", path: resolve(distDirectory, "code", "index.html") },
-    { label: "Paintings migration", path: resolve(distDirectory, "paintings", "index.html") },
-    { label: "Photography migration", path: resolve(distDirectory, "photography", "index.html") },
+    ...projectSlugs.map((slug) => ({
+      label: `${slug} project detail`,
+      path: resolve(distDirectory, "projects", slug, "index.html"),
+    })),
     { label: "404", path: resolve(distDirectory, "404.html") },
   ];
 

@@ -9,12 +9,12 @@ import {
 
 test("project IDs are derived from explicit slugs, not titles", () => {
   assert.equal(
-    generateProjectId({ slug: "lilyhttpd", title: "Lily HTTPD" }),
-    "lilyhttpd",
+    generateProjectId({ slug: "stable-project", title: "Original Project Title" }),
+    "stable-project",
   );
   assert.equal(
-    generateProjectId({ slug: "lilyhttpd", title: "A Completely New Title" }),
-    "lilyhttpd",
+    generateProjectId({ slug: "stable-project", title: "A Completely New Title" }),
+    "stable-project",
   );
 });
 

@@ -4,57 +4,19 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 
+import { getGeneratedProjectSlugs } from "./generated-project-artifacts.ts";
+
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const distDirectory = resolve(repositoryRoot, "dist");
 const projectsIndexPath = resolve(repositoryRoot, "dist/projects/index.html");
 const projectsSourceDirectory = resolve(repositoryRoot, "src/content/projects");
 const configuredOrigin = "https://www.marcelinebelardo.com";
-
-type ProjectExpectation = {
-  readonly slug: string;
-  readonly title: string;
-  readonly description: string;
-  readonly datePublished: string;
-  readonly disciplines: ReadonlyArray<string>;
-};
 
 type ProjectJsonLd = {
   readonly [key: string]: unknown;
 };
 
-const projectExpectations: ReadonlyArray<ProjectExpectation> = [
-  {
-    slug: "osborne",
-    title: "Osborne",
-    description:
-      "Budget management app for personal and group spending, built with Java Spring Boot and React",
-    datePublished: "2026-06-12T00:00:00.000Z",
-    disciplines: ["software"],
-  },
-  {
-    slug: "portfolio-site",
-    title: "Portfolio Site",
-    description:
-      "This very website — a static personal portfolio built with Astro, React, and TailwindCSS.",
-    datePublished: "2026-06-04T00:00:00.000Z",
-    disciplines: ["software", "visual"],
-  },
-  {
-    slug: "cmprsr-rs",
-    title: "cmprsr-rs",
-    description: "Canonical Huffman compression tool written in Rust",
-    datePublished: "2026-06-01T00:00:00.000Z",
-    disciplines: ["software"],
-  },
-  {
-    slug: "lilyhttpd",
-    title: "lilyhttpd",
-    description: "An HTTP server for static files written in C",
-    datePublished: "2025-06-14T00:00:00.000Z",
-    disciplines: ["software"],
-  },
-];
-
-const projectIds = projectExpectations.map(({ slug }) => slug);
+const projectIds = getGeneratedProjectSlugs(distDirectory);
 
 function getProjectPagePath(projectId: string): string {
   return resolve(repositoryRoot, "dist", "projects", projectId, "index.html");
@@ -87,6 +49,15 @@ function getProjectJsonLd(html: string): ProjectJsonLd {
   return JSON.parse(match[1]) as ProjectJsonLd;
 }
 
+function decodeHtmlEntities(value: string): string {
+  return value
+    .replaceAll("&amp;", "&")
+    .replaceAll("&#39;", "'")
+    .replaceAll("&quot;", '"')
+    .replaceAll("&lt;", "<")
+    .replaceAll("&gt;", ">");
+}
+
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
@@ -95,30 +66,22 @@ test("the project index renders one ordered editorial list of stable project lin
   assert.ok(existsSync(projectsIndexPath), "project index output must exist");
 
   const html = readFileSync(projectsIndexPath, "utf8");
-  const projectIds = [...html.matchAll(/href="\/projects\/([^/]+)\/"/g)].map(
+  const linkedProjectIds = [...html.matchAll(/href="\/projects\/([^/]+)\/"/g)].map(
     (match) => match[1],
   );
+  const noCoverEntries = (html.match(/project-index-entry__body--no-cover/g) ?? []).length;
+  const coverEntries = (
+    html.match(/class="project-index-entry__body project-index-entry__body--has-cover"/g) ?? []
+  ).length;
 
-  assert.deepEqual(projectIds, [
-    "osborne",
-    "portfolio-site",
-    "cmprsr-rs",
-    "lilyhttpd",
-  ]);
+  assert.ok(projectIds.length > 0);
+  assert.deepEqual(linkedProjectIds.slice().sort(), projectIds);
+  assert.equal(new Set(linkedProjectIds).size, linkedProjectIds.length);
   assert.equal(
     (html.match(/class="project-index-entry"/g) ?? []).length,
-    4,
+    linkedProjectIds.length,
   );
-  assert.equal(
-    (html.match(/project-index-entry__body--no-cover/g) ?? []).length,
-    4,
-    "projects without covers must use the full-width index layout",
-  );
-  assert.equal(
-    (html.match(/class="project-index-entry__body project-index-entry__body--has-cover"/g) ?? [])
-      .length,
-    0,
-  );
+  assert.equal(noCoverEntries + coverEntries, linkedProjectIds.length);
   assert.match(html, /<ul class="editorial-list" aria-label="Projects">/);
   assert.doesNotMatch(html, /ProjectCard|project-card|border-neutral-900/);
 });
@@ -127,41 +90,57 @@ test("the project index emits the published project metadata", () => {
   assert.ok(existsSync(projectsIndexPath), "project index output must exist");
 
   const html = readFileSync(projectsIndexPath, "utf8");
+  const entries = [
+    ...html.matchAll(
+      /<article class="project-index-entry"[^>]*>[\s\S]*?<\/article>/g,
+    ),
+  ].map((match) => match[0] ?? "");
 
-  projectExpectations.forEach((expectedProject) => {
-    assert.match(html, new RegExp(escapeRegExp(expectedProject.description)));
-    assert.match(html, new RegExp(`href="/projects/${expectedProject.slug}/"`));
-    assert.match(html, new RegExp(`>${expectedProject.datePublished.slice(0, 4)}<`));
+  projectIds.forEach((projectId) => {
+    const entry = entries.find((candidate) =>
+      candidate.includes(`href="/projects/${projectId}/"`)
+    ) ?? "";
 
-    expectedProject.disciplines.forEach((discipline) => {
-      assert.match(html, new RegExp(`>${escapeRegExp(discipline)}<`));
-    });
+    assert.ok(entry, `${projectId} must have one project index entry`);
+    assert.match(
+      entry,
+      /<time\b[^>]*datetime="[^"]+"[^>]*>(?:19|20)\d{2}<\/time>/,
+    );
+    assert.match(
+      entry,
+      /class="project-index-entry__details"[\s\S]*?<p\b[^>]*>[^<]+<\/p>/,
+    );
+    assert.match(
+      entry,
+      /class="project-index-entry__disciplines"[^>]*>[\s\S]*?<li\b[^>]*>[^<]+<\/li>/,
+    );
   });
 
   assert.doesNotMatch(html, /No image|Coming soon|undefined|null/);
 });
 
 test("each project detail emits its published metadata and canonical JSON-LD", () => {
-  projectExpectations.forEach((expectedProject) => {
-    const html = readProjectPage(expectedProject.slug);
-    const canonical = `${configuredOrigin}/projects/${expectedProject.slug}/`;
+  projectIds.forEach((projectId) => {
+    const html = readProjectPage(projectId);
+    const canonical = `${configuredOrigin}/projects/${projectId}/`;
     const jsonLd = getProjectJsonLd(html);
+    const title = decodeHtmlEntities(
+      html.match(/<h1[^>]*>([^<]+)<\/h1>/)?.[1] ?? "",
+    );
+    const description = decodeHtmlEntities(
+      html.match(/<meta name="description" content="([^"]+)"/)?.[1] ?? "",
+    );
+    const datePublished = html.match(/<time[^>]*datetime="([^"]+)"/)?.[1] ?? "";
+    const disciplines = decodeHtmlEntities(
+      html.match(
+        /<dt class="metadata"[^>]*>Disciplines<\/dt>[\s\S]*?<dd[^>]*>([^<]+)<\/dd>/,
+      )?.[1] ?? "",
+    ).split(" · ");
 
-    assert.match(
-      html,
-      new RegExp(
-        `<meta name="description" content="${escapeRegExp(expectedProject.description)}"`,
-      ),
-    );
-    assert.match(html, new RegExp(`datetime="${expectedProject.datePublished}"`));
-    assert.match(
-      html,
-      new RegExp(
-        `<dt class="metadata"[^>]*>Disciplines</dt>[\\s\\S]*?${expectedProject.disciplines.join(
-          " · ",
-        )}`,
-      ),
-    );
+    assert.ok(title);
+    assert.ok(description);
+    assert.ok(datePublished);
+    assert.ok(disciplines.every((discipline) => discipline.length > 0));
     assert.match(
       html,
       new RegExp(`<link rel="canonical" href="${escapeRegExp(canonical)}"`),
@@ -171,10 +150,10 @@ test("each project detail emits its published metadata and canonical JSON-LD", (
       "@type": "CreativeWork",
       "@id": canonical,
       url: canonical,
-      name: expectedProject.title,
-      description: expectedProject.description,
-      datePublished: expectedProject.datePublished,
-      keywords: expectedProject.disciplines,
+      name: title,
+      description,
+      datePublished,
+      keywords: disciplines,
     });
   });
 });

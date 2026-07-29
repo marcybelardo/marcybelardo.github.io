@@ -4,6 +4,8 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 
+import { getGeneratedProjectSlugs } from "./generated-project-artifacts.ts";
+
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const distDirectory = resolve(repositoryRoot, "dist");
 const squareImageSource = readFileSync(
@@ -17,8 +19,9 @@ const representativePaths: ReadonlyArray<string> = [
   resolve(distDirectory, "blog", "the-devil-you-know", "index.html"),
   resolve(distDirectory, "blog", "tags", "ai", "index.html"),
   bioPath,
-  resolve(distDirectory, "paintings", "index.html"),
-  resolve(distDirectory, "photography", "index.html"),
+  ...getGeneratedProjectSlugs(distDirectory).map((slug) =>
+    resolve(distDirectory, "projects", slug, "index.html")
+  ),
   resolve(distDirectory, "404.html"),
 ];
 

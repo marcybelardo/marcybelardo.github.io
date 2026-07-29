@@ -43,7 +43,7 @@ The generated route tree is:
 └── 404.html
 ```
 
-`/code/`, `/paintings/`, and `/photography/` remain static noindex migration documents pointing to `/projects/`; they are not primary sections and are excluded from the sitemap.
+`/code/`, `/paintings/`, and `/photography/` are retired. The build does not generate those routes or include them in the sitemap.
 
 ## Commands
 
@@ -62,7 +62,7 @@ Tests use Node 22's built-in `node:test` runner with TypeScript stripping. No te
 
 ## Adding a project
 
-Create `src/content/projects/<filename>.md` or `.mdx`. The filename is not the public identifier: set an immutable explicit lowercase `slug`; the resulting URL is `/projects/<slug>/`. Once published, never change a slug without creating a migration document for the old URL.
+Create `src/content/projects/<filename>.md` or `.mdx`. The filename is not the public identifier: set an immutable explicit lowercase `slug`; the resulting URL is `/projects/<slug>/`. The build and tests discover published projects from the collection, so adding or removing a project does not require updating a fixed route list.
 
 Use this complete frontmatter shape as a starting point. Image paths are relative to this Markdown file, so replace the example files with real assets before building.
 

@@ -6,12 +6,14 @@ import { dirname, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 
+import { getGeneratedProjectSlugs } from "./generated-project-artifacts.ts";
+
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const distDirectory = resolve(repositoryRoot, "dist");
 const configuredOrigin = "https://www.marcelinebelardo.com";
 const primaryDestinations = ["/projects/", "/blog/", "/bio/", "/contact/"];
-const migrationRoutes = ["code", "paintings", "photography"];
-const publishedProjectSlugs = ["cmprsr-rs", "lilyhttpd", "osborne", "portfolio-site"];
+const retiredRoutes = ["code", "paintings", "photography"];
+const publishedProjectSlugs = getGeneratedProjectSlugs(distDirectory);
 const publishedBlogTags = ["ai", "politics", "technology"];
 const draftMarkers = /draft-route-fixture|draft-only-review|draft-project-fixture/i;
 const footnoteFixtureMarker = "A source with";
@@ -45,10 +47,6 @@ function getRouteFromHtmlPath(htmlPath: string): string {
   }
 
   return `/${relativePath.replace(/\/index\.html$/, "")}/`;
-}
-
-function getMigrationPath(route: string): string {
-  return `${route}/index.html`;
 }
 
 function isNoindexDocument(html: string): boolean {
@@ -147,7 +145,6 @@ test("portfolio-redesign.AC1.1 production artifact contains the complete static 
     "/blog/the-devil-you-know/",
     ...publishedBlogTags.map((tag) => `/blog/tags/${tag}/`),
     ...publishedProjectSlugs.map((slug) => `/projects/${slug}/`),
-    ...migrationRoutes.map((route) => `/${route}/`),
   ];
 
   requiredHtmlRoutes.forEach((route) => {
@@ -342,7 +339,14 @@ test("portfolio-redesign.AC5.3 RSS and sitemap expose only canonical published U
   ].map((match) => match[1] ?? "");
 
   assert.match(rss, /the-devil-you-know/);
-  assert.match(sitemap, /<loc>https:\/\/www\.marcelinebelardo\.com\/projects\/portfolio-site\/<\/loc>/);
+  publishedProjectSlugs.forEach((slug) => {
+    assert.match(
+      sitemap,
+      new RegExp(
+        `<loc>${configuredOrigin.replaceAll(".", "\\.")}\\/projects\\/${slug}\\/</loc>`,
+      ),
+    );
+  });
   discoveredUrls.forEach((url) => {
     assert.equal(new URL(url).origin, configuredOrigin);
     assert.doesNotMatch(url, /marcybelardo\.github\.io/i);
@@ -369,17 +373,15 @@ test("portfolio-redesign.AC5.5 preserves the published blog detail URL in HTML a
   assert.match(rss, new RegExp(`<guid isPermaLink="true">${canonicalPostUrl.replaceAll(".", "\\.")}<\/guid>`));
 });
 
-test("portfolio-redesign.AC5.6 migrations retain noindex refresh and visible fallback contracts", () => {
-  const projectsCanonical = `${configuredOrigin}/projects/`;
+test("portfolio-redesign.AC5.6 retired section routes remain absent", () => {
   const sitemap = readArtifact("sitemap-0.xml");
 
-  migrationRoutes.forEach((route) => {
-    const html = readArtifact(getMigrationPath(route));
-
-    assert.match(html, /<meta name="robots" content="noindex,follow"/);
-    assert.match(html, new RegExp(`<link rel="canonical" href="${projectsCanonical}"`));
-    assert.match(html, /<meta http-equiv="refresh" content="0; url=\/projects\/"/);
-    assert.match(html, /<a href="\/projects\/"[^>]*>\s*Continue to Projects\s*<\/a>/);
+  retiredRoutes.forEach((route) => {
+    assert.equal(
+      existsSync(resolve(distDirectory, route, "index.html")),
+      false,
+      `${route} output must remain absent`,
+    );
     assert.doesNotMatch(sitemap, new RegExp(`${configuredOrigin}\/${route}\/`));
   });
 });

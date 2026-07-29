@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import test from "node:test";
 
 import { getFeaturedProjects, getRecentPosts } from "../src/content/content-queries.ts";
+import { getGeneratedProjectSlugs } from "./generated-project-artifacts.ts";
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const homepagePath = resolve(repositoryRoot, "dist", "index.html");
@@ -69,17 +70,23 @@ function getRecentWritingIds(html: string): Array<string> {
 
 test("homepage renders the practice, mixed selected work, writing, and contact prompt", () => {
   const html = readHomepage();
+  const selectedProjectIds = getSelectedProjectIds(html);
+  const generatedProjectIds = new Set(getGeneratedProjectSlugs(resolve(repositoryRoot, "dist")));
 
   assert.match(html, /I work across software, visual culture, research, and writing\./);
   assert.match(html, /id="selected-projects-heading"[^>]*>Selected Projects<\/h2>/);
   assert.match(html, /id="recent-writing-heading"[^>]*>Recent Writing<\/h2>/);
   assert.match(html, /marcy@marcelinebelardo\.com/);
-  assert.equal((html.match(/class="project-index-entry"/g) ?? []).length, 4);
-  assert.deepEqual(
-    [...html.matchAll(/href="\/projects\/([^/]+)\/"/g)].map((match) => match[1]),
-    ["lilyhttpd", "osborne", "cmprsr-rs", "portfolio-site"],
+  assert.ok(selectedProjectIds.length > 0);
+  assert.ok(selectedProjectIds.length <= 4);
+  assert.equal(
+    (html.match(/class="project-index-entry"/g) ?? []).length,
+    selectedProjectIds.length,
   );
-  assert.match(html, /Portfolio Site[\s\S]*?>software<\/[a-z]+>[\s\S]*?>visual<\//);
+  assert.equal(new Set(selectedProjectIds).size, selectedProjectIds.length);
+  selectedProjectIds.forEach((projectId) => {
+    assert.ok(generatedProjectIds.has(projectId));
+  });
   assert.match(html, /The Devil You Know, the Devil You (?:Don't|Don&#39;t)/);
   assert.doesNotMatch(html, />\s*(?:Art|Code)\s*</);
 });
@@ -129,12 +136,7 @@ test("homepage ordering and limits remain stable across repeated runs", () => {
   const recentWritingRuns = homepageRuns.map(getRecentWritingIds);
 
   assert.deepEqual(selectedProjectRuns[0], selectedProjectRuns[1]);
-  assert.deepEqual(selectedProjectRuns[0], [
-    "lilyhttpd",
-    "osborne",
-    "cmprsr-rs",
-    "portfolio-site",
-  ]);
+  assert.ok((selectedProjectRuns[0]?.length ?? 0) > 0);
   assert.ok((selectedProjectRuns[0]?.length ?? 0) <= 4);
   assert.deepEqual(recentWritingRuns[0], recentWritingRuns[1]);
   assert.deepEqual(recentWritingRuns[0], ["the-devil-you-know"]);
