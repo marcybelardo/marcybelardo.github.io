@@ -7,12 +7,12 @@ This checklist records the repository checks and the operational checks required
 - Verification date: 2026-07-29
 - Operator: Codex (repository checks only)
 - Deployment: not performed in this task
-- Repository artifact gate: **passed — `CI=true pnpm verify`, 98 tests passed, exit status 0**
+- Repository artifact gate: **passed — `CI=true pnpm verify`, 103 tests passed, exit status 0**
 - AC5.7 (GitHub Pages, DNS, HTTPS redirects, and TLS): **not verified; post-deploy evidence required**
 
 ## Repository-verifiable checks
 
-- [x] Run `CI=true pnpm verify` from the `portfolio-redesign` worktree: 98 tests passed, exit status 0.
+- [x] Run `CI=true pnpm verify` from the `portfolio-redesign` worktree: 103 tests passed, exit status 0.
 - [x] Run `git diff --check` and confirm it exits successfully before commit.
 - [x] Confirm the build emits the current route tree, published project/blog routes, tags, RSS, sitemap, robots, migrations, and 404 through `tests/production-artifact.test.ts`.
 - [x] Confirm indexable-page metadata, structured data, draft exclusion, canonical-origin restrictions, image markup, and migration contracts through the production artifact test.
