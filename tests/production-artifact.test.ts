@@ -11,6 +11,7 @@ import { getGeneratedProjectSlugs } from "./generated-project-artifacts.ts";
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const distDirectory = resolve(repositoryRoot, "dist");
 const configuredOrigin = "https://www.marcelinebelardo.com";
+const googleTagManagerContainerId = "GTM-N4JNKN2H";
 const primaryDestinations = ["/projects/", "/blog/", "/bio/", "/contact/"];
 const retiredRoutes = ["code", "paintings", "photography"];
 const publishedProjectSlugs = getGeneratedProjectSlugs(distDirectory);
@@ -174,6 +175,46 @@ test("production artifact uses the MB monogram SVG favicon", () => {
   );
   assert.doesNotMatch(homepage, /href="\/favicon\.ico"/);
   assert.equal(existsSync(resolve(distDirectory, "favicon.ico")), false);
+});
+
+test("production artifact includes Google Tag Manager in every document shell", () => {
+  getHtmlFiles(distDirectory).forEach((htmlPath) => {
+    const relativePath = relative(distDirectory, htmlPath);
+    const html = readFileSync(htmlPath, "utf8");
+    const headMatch = html.match(/<head>([\s\S]*?)<\/head>/i);
+    const bodyMatch = html.match(/<body\b[^>]*>([\s\S]*?)<\/body>/i);
+
+    assert.ok(headMatch?.[1], `${relativePath} must contain a head`);
+    assert.ok(bodyMatch?.[1], `${relativePath} must contain a body`);
+
+    const headGtmScripts = [
+      ...headMatch[1].matchAll(
+        new RegExp(
+          `<script\\b[^>]*>[\\s\\S]*?googletagmanager\\.com/gtm\\.js\\?id=[\\s\\S]*?${googleTagManagerContainerId}[\\s\\S]*?<\\/script>`,
+          "gi",
+        ),
+      ),
+    ];
+    const bodyGtmNoscripts = [
+      ...bodyMatch[1].matchAll(
+        new RegExp(
+          `<noscript>\\s*<iframe\\b[^>]*src="https://www\\.googletagmanager\\.com/ns\\.html\\?id=${googleTagManagerContainerId}"`,
+          "gi",
+        ),
+      ),
+    ];
+
+    assert.equal(
+      headGtmScripts.length,
+      1,
+      `${relativePath} must contain exactly one GTM head script for ${googleTagManagerContainerId}`,
+    );
+    assert.equal(
+      bodyGtmNoscripts.length,
+      1,
+      `${relativePath} must contain exactly one GTM noscript iframe for ${googleTagManagerContainerId}`,
+    );
+  });
 });
 
 test("portfolio-redesign.AC1.3 primary navigation exposes only the integrated sections", () => {
