@@ -208,6 +208,11 @@ test("Bio uses verified copy and the square portrait without résumé placeholde
   assert.match(html, /Building maintainable, friendly, and performant programs\./);
   assert.match(html, /C · Rust · Java · TypeScript · React · Python · PostgreSQL/);
   assert.match(html, /alt="Marceline Belardo holding a camera, taking a selfie"/);
+  assert.match(
+    html,
+    /<a href="\/marceline-belardo-cv\.pdf" target="_blank" rel="noopener noreferrer"[^>]*>View CV \(PDF\)<\/a>/,
+  );
+  assert.doesNotMatch(html, /<a href="\/marceline-belardo-cv\.pdf"[^>]*download(?:\s|=|>)/);
   assert.match(html, /<div class="square-image[\s\S]*?<img\b[^>]*width="\d+"[^>]*height="\d+"/);
   assert.match(
     html,

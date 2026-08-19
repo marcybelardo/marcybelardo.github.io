@@ -7,6 +7,8 @@ import test from "node:test";
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const distDirectory = resolve(repositoryRoot, "dist");
 const configuredOrigin = "https://www.marcelinebelardo.com";
+const approvedSignature =
+  "Marceline Belardo is a stay-at-home software developer, conceptual artist, and reluctant content creator. She is based in Makati City, Philippines. She writes these blogs as a public service, and you can see new posts by following her on BlueSky @marcelinebelardo.com, or by using the RSS feed with your favorite reader. If you'd like to support her, consider some words of encouragement, or if your company is hiring, find out how to contact her at the Bio page.";
 
 function readBlogOutput(...segments: ReadonlyArray<string>): string {
   const outputPath = resolve(distDirectory, "blog", ...segments, "index.html");
@@ -50,6 +52,50 @@ test("production blog output preserves the published post and tag routes", () =>
   assert.match(detailHtml, /data-margin-note-rail/);
   assert.match(detailHtml, /data-margin-note-rail[\s\S]*<ol aria-label="Margin notes"><\/ol>/);
   assert.doesNotMatch(detailHtml, /data-margin-notes-enhanced="true"/);
+});
+
+test("blog detail renders one shared author signature between the body and margin-note rail", () => {
+  const html = readBlogOutput("the-devil-you-know");
+  const signatureMatches = [
+    ...html.matchAll(/<footer class="blog-author-signature">([\s\S]*?)<\/footer>/g),
+  ];
+
+  assert.equal(signatureMatches.length, 1, "blog detail must render one author signature");
+  const signature = signatureMatches[0]?.[0] ?? "";
+  const bodyStart = html.indexOf('<div class="blog-article__body">');
+  const signatureStart = html.indexOf('<footer class="blog-author-signature">');
+  const railStart = html.indexOf('<aside class="margin-note-rail"');
+  const bodyEnd = html.indexOf("</div>", bodyStart);
+
+  assert.ok(bodyStart >= 0, "blog detail must contain the article body");
+  assert.ok(bodyEnd >= 0, "blog detail article body must close");
+  assert.ok(signatureStart > bodyEnd, "signature must follow the article body");
+  assert.ok(railStart > signatureStart, "signature must precede the margin-note rail");
+  assert.equal((signature.match(/<hr\s*\/?\s*>/g) ?? []).length, 1);
+  assert.equal((signature.match(/<p\b/g) ?? []).length, 1);
+  assert.equal((signature.match(/<em>/g) ?? []).length, 1);
+  assert.match(signature, /<p>\s*<em>[\s\S]*<\/em>\s*<\/p>/);
+
+  const visibleText = signature
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&#39;|&#x27;/g, "'")
+    .replace(/&quot;/g, '"')
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/\s+/g, " ")
+    .replace(/\s+([,.])/g, "$1")
+    .trim();
+  assert.equal(visibleText, approvedSignature);
+
+  const links = [...signature.matchAll(/<a href="([^"]+)">([^<]+)<\/a>/g)].map(
+    (match) => [match[1] ?? "", match[2] ?? ""] as const,
+  );
+  assert.deepEqual(links, [
+    ["https://bsky.app/profile/marcelinebelardo.com", "BlueSky @marcelinebelardo.com"],
+    ["/rss.xml", "RSS feed"],
+    ["/bio/", "Bio page"],
+  ]);
 });
 
 test("margin-note CSS positions list items beneath the semantic rail wrapper", () => {

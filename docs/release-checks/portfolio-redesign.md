@@ -99,6 +99,21 @@ Status: **Not verified — post-deploy browser/print/JavaScript-mode checks requ
 
 Status: **Repository markup is covered by the production artifact test; visual image behavior is not verified until the deployed browser check.**
 
+## Standard.site manual publication gate
+
+The Standard.site records are manually maintained outside this repository. Do not mark a row complete from local registry edits alone; record the remote URI, live verification response, validator result, and timestamp after the first manual import or any subsequent update.
+
+| Check | Expected result | Status/evidence |
+| --- | --- | --- |
+| Publication URI | `at://did:plc:fakq3c4v2fvivhoc3cgom3nc/site.standard.publication/<tid>` recorded in the public registry. | **Not verified — manual PDS creation pending.** |
+| Document URIs | Each mapped explicit blog slug has its returned `site.standard.document` AT-URI; unmapped posts are noted. | **Not verified — manual document creation pending.** |
+| Standard.site validator | Publication and each document pass validation, with any `validationStatus: unknown` limitation recorded. | **Not run — manual first-import check required.** |
+| Live publication verification | `curl -fsS https://www.marcelinebelardo.com/.well-known/site.standard.publication` returns exactly the publication AT-URI plus one newline. | **Not run — post-deploy check required.** |
+| Publication discovery link | Homepage head contains exactly one `rel="site.standard.publication"` link when registered. | **Not run — post-deploy check required.** |
+| Document verification links | Each mapped blog detail head contains only its own `rel="site.standard.document"` link; unmapped and unrelated pages contain none. | **Not run — post-deploy check required.** |
+| Deployment timestamp | Registry and `.well-known` change deployed at a recorded UTC timestamp. | **Not recorded.** |
+| Discovery/indexing | Any Standard.site reader/index result and indexing delay are recorded without treating absence as a protocol failure. | **Not checked.** |
+
 ## Release decision
 
 The redesign is not ready for an AC5.7-complete declaration until the GitHub Pages settings, DNS answers, redirect chains, certificate result, responsive matrix, keyboard path, footnote/print fallbacks, and image checks above have durable post-deploy evidence. Before that point, this document records the release gate as **pending**, not passed.

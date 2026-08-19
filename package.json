@@ -10,7 +10,7 @@
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
-    "test": "node tests/content-validation-negative.mjs && node tests/project-fixture-build.mjs && node tests/homepage-fixture-build.mjs && pnpm build && node tests/production-footnote-fixture-build.mjs && pnpm build && node --experimental-strip-types --test --test-concurrency=1 tests/*.test.ts",
+    "test": "node tests/content-validation-negative.mjs && node tests/project-fixture-build.mjs && node tests/homepage-fixture-build.mjs && node tests/standard-site-fixture-build.mjs && pnpm build && node tests/production-footnote-fixture-build.mjs && node tests/production-rss-fixture-build.mjs && pnpm build && node --experimental-strip-types --test --test-concurrency=1 tests/*.test.ts",
     "verify": "pnpm run test"
   },
   "dependencies": {

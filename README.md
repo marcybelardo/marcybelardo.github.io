@@ -149,6 +149,16 @@ Blog rules:
 
 Run `pnpm verify` after adding or editing a post.
 
+## Standard.site manual publication
+
+Standard.site is an external metadata mirror maintained manually. The site stores only public opaque AT-URI mappings and emits verification/discovery metadata; it never writes to a PDS during builds, tests, CI, or deployment. Adding or editing a blog post does not automatically publish or update its Standard.site record. Follow the [manual Standard.site runbook](docs/standard-site-manual.md) after creating or changing records.
+
+## RSS, author signature, and CV asset
+
+The production RSS feed includes the full rendered article content for every published post, including formatted Markdown, footnotes, and the shared author signature from `src/components/BlogAuthorSignature.astro`. Relative root `href` and `src` values in rendered article HTML are normalized to absolute URLs at `https://www.marcelinebelardo.com`; external, mail, fragment, and protocol-relative targets remain unchanged.
+
+The real CV upload path is `public/marceline-belardo-cv.pdf`, which is served at `/marceline-belardo-cv.pdf`. Preserve that filename when uploading the binary; this documentation describes the intended asset path and does not imply that the binary currently exists in the repository.
+
 ## Editing Bio and Contact
 
 Bio copy lives in the small `bioContent` block in [`src/pages/bio/index.astro`](src/pages/bio/index.astro). Edit the factual `label`, `statement`, `skills`, and `portraitAlt` values; keep the portrait alt text meaningful.

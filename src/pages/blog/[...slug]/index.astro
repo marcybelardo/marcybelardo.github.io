@@ -1,5 +1,6 @@
 ---
 // pattern: Imperative Shell
+import BlogAuthorSignature from "../../../components/BlogAuthorSignature.astro";
 import SquareImage from "../../../components/SquareImage.astro";
 import BaseLayout from "../../../layouts/BaseLayout.astro";
 import { getCollection, render, type CollectionEntry } from "astro:content";
@@ -7,6 +8,7 @@ import {
   getPublishedBlogPosts,
   toTagSlug,
 } from "../../../content/content-queries.ts";
+import { loadStandardSiteState } from "../../../standard-site/index.ts";
 import { SITE_ORIGIN } from "../../../site-config.ts";
 
 type Props = {
@@ -25,6 +27,15 @@ export async function getStaticPaths() {
 }
 
 const { post } = Astro.props as Props;
+const standardSiteBlogEntries = await getCollection("blog");
+const standardSiteState = loadStandardSiteState({
+  blogEntries: standardSiteBlogEntries.filter(
+    (entry) => !import.meta.env.PROD || entry.data.draft !== true,
+  ),
+});
+const standardSiteDocumentUri = standardSiteState.documents.find(
+  (document) => document.id === post.id,
+)?.uri;
 const { Content } = await render(post);
 const description = post.data.description;
 
@@ -62,6 +73,7 @@ const structuredData = {
   canonicalUrl={canonicalUrl}
   socialType="article"
   structuredData={structuredData}
+  standardSiteDocumentUri={standardSiteDocumentUri}
 >
   <article
     class="editorial-article editorial-measure blog-article"
@@ -108,6 +120,7 @@ const structuredData = {
     <div class="blog-article__body">
       <Content />
     </div>
+    <BlogAuthorSignature />
     <aside
       class="margin-note-rail"
       data-margin-note-rail
