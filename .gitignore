@@ -23,3 +23,8 @@ pnpm-debug.log*
 
 # jetbrains setting folder
 .idea/
+
+# disposable Standard.site metadata conversion output
+generated/standard-site/
+__pycache__/
+tests/__pycache__/

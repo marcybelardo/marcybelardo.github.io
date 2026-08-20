@@ -12,12 +12,6 @@ import {
   SITE_ORIGIN,
   validateCanonicalUrl,
 } from "../metadata/page-metadata.ts";
-import {
-  assertAtUri,
-  STANDARD_SITE_DOCUMENT_COLLECTION,
-  STANDARD_SITE_PUBLICATION_COLLECTION,
-} from "../standard-site/index.ts";
-
 const path = Astro.url.pathname;
 
 const primaryLinks = [
@@ -38,8 +32,6 @@ type Props = {
   readonly socialImageAlt?: string;
   readonly socialType?: "website" | "article";
   readonly structuredData?: Readonly<Record<string, unknown>>;
-  readonly standardSitePublicationUri?: string;
-  readonly standardSiteDocumentUri?: string;
 };
 
 const {
@@ -53,24 +45,7 @@ const {
   socialImageAlt,
   socialType = "website",
   structuredData,
-  standardSitePublicationUri,
-  standardSiteDocumentUri,
 } = Astro.props;
-
-if (standardSitePublicationUri !== undefined) {
-  assertAtUri(
-    standardSitePublicationUri,
-    STANDARD_SITE_PUBLICATION_COLLECTION,
-    "standardSitePublicationUri",
-  );
-}
-if (standardSiteDocumentUri !== undefined) {
-  assertAtUri(
-    standardSiteDocumentUri,
-    STANDARD_SITE_DOCUMENT_COLLECTION,
-    "standardSiteDocumentUri",
-  );
-}
 const renderedTitle = composeSiteTitle(title);
 const canonical =
   canonicalUrl !== undefined
@@ -115,12 +90,6 @@ const socialImageUrl = socialImage
     <title>{renderedTitle}</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={canonical} />
-    {standardSitePublicationUri && (
-      <link rel="site.standard.publication" href={standardSitePublicationUri} />
-    )}
-    {standardSiteDocumentUri && (
-      <link rel="site.standard.document" href={standardSiteDocumentUri} />
-    )}
     <meta property="og:type" content={socialType} />
     <meta property="og:title" content={renderedTitle} />
     <meta property="og:description" content={description} />

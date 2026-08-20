@@ -6,8 +6,6 @@ import test from "node:test";
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const documentationFiles = ["README.md", "AGENTS.md"];
-const standardSiteManualPath = resolve(repositoryRoot, "docs/standard-site-manual.md");
-
 const requiredDocumentation = [
   "src/components/BlogAuthorSignature.astro",
   "public/marceline-belardo-cv.pdf",
@@ -38,39 +36,4 @@ test("documentation records the RSS signature, full-content, and CV asset contra
       `${filename} must not imply that the CV binary is present`,
     );
   });
-});
-
-test("Standard.site manual documents the manual-only credential-safe operating contract", () => {
-  const documentation = readFileSync(standardSiteManualPath, "utf8");
-  const requiredPhrases = [
-    "site.standard.publication",
-    "site.standard.document",
-    "metadata-only",
-    "com.atproto.repo.createRecord",
-    "com.atproto.repo.getRecord",
-    "com.atproto.repo.putRecord",
-    "com.atproto.repo.deleteRecord",
-    "swapRecord",
-    "InvalidSwap",
-    "did:plc:fakq3c4v2fvivhoc3cgom3nc",
-    "com.atproto.identity.resolveHandle",
-    "#atproto_pds",
-    "ATPROTO_APP_PASSWORD",
-    "read -s",
-    "export ATPROTO_APP_PASSWORD",
-    "env.ATPROTO_APP_PASSWORD",
-    "--data-binary @-",
-    "OAuth",
-    "/.well-known/site.standard.publication",
-  ];
-
-  requiredPhrases.forEach((phrase) => {
-    assert.match(
-      documentation,
-      new RegExp(phrase.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i"),
-      `standard-site-manual.md must document ${phrase}`,
-    );
-  });
-  assert.doesNotMatch(documentation, /jq\s+--arg\s+[^\n]*password/i);
-  assert.doesNotMatch(documentation, /curl[^\n]*--data[^\n]*ATPROTO_APP_PASSWORD/i);
 });

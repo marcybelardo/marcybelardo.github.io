@@ -149,9 +149,9 @@ Blog rules:
 
 Run `pnpm verify` after adding or editing a post.
 
-## Standard.site manual publication
+## Standard.site metadata converter
 
-Standard.site is an external metadata mirror maintained manually. The site stores only public opaque AT-URI mappings and emits verification/discovery metadata; it never writes to a PDS during builds, tests, CI, or deployment. Adding or editing a blog post does not automatically publish or update its Standard.site record. Follow the [manual Standard.site runbook](docs/standard-site-manual.md) after creating or changing records.
+The optional Standard.site metadata converter requires Python 3.11+ and runs with `python3 scripts/generate_standard_site.py`. It writes ignored outputs to `generated/standard-site/publication.json` and `generated/standard-site/documents/<slug>.json`, mapping published-only blog metadata. After manual publication, pass the returned URI with `--publication-uri` when regenerating. The converter has no authentication, PDS access, network, synchronization, verification, or Astro-link behavior; it never performs auth, PDS, network, sync, verification, or Astro publication-link work.
 
 ## RSS, author signature, and CV asset
 

@@ -8,7 +8,6 @@ import {
   getRecentPosts,
 } from "../content/content-queries.ts";
 import BaseLayout from "../layouts/BaseLayout.astro";
-import { loadStandardSiteState } from "../standard-site/index.ts";
 import { SITE_ORIGIN } from "../site-config.ts";
 
 const isProduction = !import.meta.env.DEV;
@@ -26,9 +25,6 @@ const recentPosts: Array<CollectionEntry<"blog">> = getRecentPosts(
   isProduction,
   3,
 );
-const standardSiteState = loadStandardSiteState({
-  blogEntries: blogEntries.filter((entry) => !isProduction || entry.data.draft !== true),
-});
 const canonicalUrl = new URL("/", Astro.site ?? SITE_ORIGIN).toString();
 const profileUrls = [
   "https://github.com/marcybelardo",
@@ -59,7 +55,6 @@ const structuredData = {
   title="Marceline Belardo"
   description="Marceline Belardo is a software developer, photographer, and painter."
   structuredData={structuredData}
-  standardSitePublicationUri={standardSiteState.publication ?? undefined}
 >
   <article class="editorial-page editorial-measure">
     <header class="editorial-page__header">

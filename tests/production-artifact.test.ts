@@ -475,3 +475,20 @@ test("production artifact excludes temporary footnote fixture content", () => {
     );
   });
 });
+
+test("production artifact contains no Standard.site integration or publication well-known output", () => {
+  getHtmlFiles(distDirectory).forEach((htmlPath) => {
+    const relativePath = relative(distDirectory, htmlPath);
+    const html = readFileSync(htmlPath, "utf8");
+
+    assert.doesNotMatch(html, /rel=["']site\.standard\.(?:publication|document)["']/i, `${relativePath} must not advertise Standard.site records`);
+    assert.doesNotMatch(html, /at:\/\/[^\s"'<>]*(?:site\.standard\.(?:publication|document)|standard\.site)[^\s"'<>]*/i, `${relativePath} must not contain Standard.site AT-URIs`);
+    assert.doesNotMatch(html, /site\.standard\.(?:publication|document)/i, `${relativePath} must not contain Standard.site integration markup`);
+  });
+
+  assert.equal(
+    existsSync(resolve(distDirectory, ".well-known", "site.standard.publication")),
+    false,
+    "publication well-known output must remain absent",
+  );
+});
