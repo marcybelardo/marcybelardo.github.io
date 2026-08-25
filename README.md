@@ -47,7 +47,7 @@ The generated route tree is:
 
 ## Commands
 
-Run commands from the project root with `pnpm`:
+Run commands from the project root with `pnpm`. For a reproducible Node, pnpm, and Python toolchain, enter the Nix development shell first with `nix develop`:
 
 | Command | Action |
 | --- | --- |

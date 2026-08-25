@@ -11,9 +11,10 @@ pnpm preview   # preview production build
 pnpm astro     # Astro CLI
 pnpm test      # negative content validation, build, and Node tests
 pnpm verify    # alias for pnpm test
+nix develop    # reproducible Node, pnpm, and Python development shell
 ```
 
-No lint or typecheck scripts exist. `pnpm verify` is the validation step.
+No lint or typecheck scripts exist. `pnpm verify` is the validation step. The repository also provides a pinned Nix flake for development; use `nix develop` to enter its shell.
 
 ## Repo details an agent might miss
 
