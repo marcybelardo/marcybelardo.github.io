@@ -8,7 +8,10 @@ import {
   getPublishedBlogPosts,
   toTagSlug,
 } from "../../../content/content-queries.ts";
-import { SITE_ORIGIN } from "../../../site-config.ts";
+import {
+  createStandardSiteDocumentUri,
+  SITE_ORIGIN,
+} from "../../../site-config.ts";
 
 type Props = {
   readonly post: CollectionEntry<"blog">;
@@ -37,6 +40,11 @@ const canonicalUrl = new URL(
   `/blog/${post.id}/`,
   Astro.site ?? SITE_ORIGIN,
 ).toString();
+// The publisher requires an explicit immutable slug. Legacy title-derived
+// route IDs remain renderable, but are not advertised as Standard.site docs.
+const standardSiteDocument = post.data.slug
+  ? createStandardSiteDocumentUri(post.data.slug)
+  : null;
 const structuredData = {
   "@context": "https://schema.org",
   "@type": "BlogPosting",
@@ -62,6 +70,7 @@ const structuredData = {
   description={description}
   canonicalUrl={canonicalUrl}
   socialType="article"
+  standardSiteDocument={standardSiteDocument}
   structuredData={structuredData}
 >
   <article

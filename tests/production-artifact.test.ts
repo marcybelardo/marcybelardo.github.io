@@ -7,6 +7,10 @@ import { fileURLToPath } from "node:url";
 import test from "node:test";
 
 import { getGeneratedProjectSlugs } from "./generated-project-artifacts.ts";
+import {
+  createStandardSiteDocumentUri,
+  getStandardSitePublicationUri,
+} from "../src/site-config.ts";
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const distDirectory = resolve(repositoryRoot, "dist");
@@ -476,19 +480,68 @@ test("production artifact excludes temporary footnote fixture content", () => {
   });
 });
 
-test("production artifact contains no Standard.site integration or publication well-known output", () => {
-  getHtmlFiles(distDirectory).forEach((htmlPath) => {
-    const relativePath = relative(distDirectory, htmlPath);
-    const html = readFileSync(htmlPath, "utf8");
+test("production artifact exposes the configured Standard.site publication and document links", () => {
+  const publicationPath = resolve(
+    distDirectory,
+    ".well-known",
+    "site.standard.publication",
+  );
+  const publicationUri = getStandardSitePublicationUri();
 
-    assert.doesNotMatch(html, /rel=["']site\.standard\.(?:publication|document)["']/i, `${relativePath} must not advertise Standard.site records`);
-    assert.doesNotMatch(html, /at:\/\/[^\s"'<>]*(?:site\.standard\.(?:publication|document)|standard\.site)[^\s"'<>]*/i, `${relativePath} must not contain Standard.site AT-URIs`);
-    assert.doesNotMatch(html, /site\.standard\.(?:publication|document)/i, `${relativePath} must not contain Standard.site integration markup`);
+  if (publicationUri === null) {
+    assert.equal(
+      existsSync(publicationPath),
+      false,
+      "unconfigured Standard.site publication output must be omitted",
+    );
+
+    getHtmlFiles(distDirectory).forEach((htmlPath) => {
+      const relativePath = relative(distDirectory, htmlPath);
+      assert.doesNotMatch(
+        readFileSync(htmlPath, "utf8"),
+        /rel=["']site\.standard\.document["']/i,
+        `${relativePath} must not advertise an unconfigured Standard.site document`,
+      );
+    });
+    return;
+  }
+
+  assert.ok(existsSync(publicationPath), "Standard.site publication endpoint must be generated");
+  const publicationOutput = readFileSync(publicationPath, "utf8");
+  assert.equal(publicationOutput, `${publicationUri}\n`);
+
+  const detailPages = getHtmlFiles(distDirectory).filter((htmlPath) =>
+    /\/blog\/[^/]+\/index\.html$/.test(htmlPath),
+  );
+  assert.ok(detailPages.length > 0, "configured Standard.site output needs published blog details");
+
+  detailPages.forEach((htmlPath) => {
+    const html = readFileSync(htmlPath, "utf8");
+    const slug = htmlPath.match(/\/blog\/([^/]+)\/index\.html$/)?.[1];
+
+    assert.ok(slug, `${relative(distDirectory, htmlPath)} must have a blog slug`);
+    const expectedUri = createStandardSiteDocumentUri(slug);
+    assert.ok(expectedUri, `${slug} must have a Standard.site document URI`);
+    assert.equal(
+      [...html.matchAll(/<link rel="site\.standard\.document" href="([^"]+)"\s*\/?>(?:<\/link>)?/g)].length,
+      1,
+      `${slug} must advertise exactly one Standard.site document`,
+    );
+    assert.match(
+      html,
+      new RegExp(
+        `<link rel="site\\.standard\\.document" href="${expectedUri.replaceAll(".", "\\.")}"`,
+      ),
+    );
   });
 
-  assert.equal(
-    existsSync(resolve(distDirectory, ".well-known", "site.standard.publication")),
-    false,
-    "publication well-known output must remain absent",
-  );
+  getHtmlFiles(distDirectory)
+    .filter((htmlPath) => !detailPages.includes(htmlPath))
+    .forEach((htmlPath) => {
+      assert.doesNotMatch(
+        readFileSync(htmlPath, "utf8"),
+        /rel=["']site\.standard\.document["']/i,
+        `${relative(distDirectory, htmlPath)} must not claim to be a Standard.site document`,
+      );
+    });
 });

@@ -12,6 +12,7 @@ import {
   SITE_ORIGIN,
   validateCanonicalUrl,
 } from "../metadata/page-metadata.ts";
+import { validateStandardSiteDocumentUri } from "../site-config.ts";
 const path = Astro.url.pathname;
 
 const primaryLinks = [
@@ -31,6 +32,7 @@ type Props = {
   readonly socialImage?: string;
   readonly socialImageAlt?: string;
   readonly socialType?: "website" | "article";
+  readonly standardSiteDocument?: string | null;
   readonly structuredData?: Readonly<Record<string, unknown>>;
 };
 
@@ -44,6 +46,7 @@ const {
   socialImage,
   socialImageAlt,
   socialType = "website",
+  standardSiteDocument,
   structuredData,
 } = Astro.props;
 const renderedTitle = composeSiteTitle(title);
@@ -57,6 +60,9 @@ if (metaRefreshPath !== undefined) {
 const refreshPath = metaRefreshPath ?? null;
 const socialImageUrl = socialImage
   ? createSocialImageUrl(socialImage, SITE_ORIGIN)
+  : null;
+const standardSiteDocumentUri = standardSiteDocument
+  ? validateStandardSiteDocumentUri(standardSiteDocument)
   : null;
 ---
 
@@ -90,6 +96,9 @@ const socialImageUrl = socialImage
     <title>{renderedTitle}</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={canonical} />
+    {standardSiteDocumentUri && (
+      <link rel="site.standard.document" href={standardSiteDocumentUri} />
+    )}
     <meta property="og:type" content={socialType} />
     <meta property="og:title" content={renderedTitle} />
     <meta property="og:description" content={description} />

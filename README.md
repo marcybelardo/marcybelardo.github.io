@@ -55,6 +55,8 @@ Run commands from the project root with `pnpm`. For a reproducible Node, pnpm, a
 | `pnpm build` | Build the static production site to `./dist/` |
 | `pnpm preview` | Preview the production build locally |
 | `pnpm astro` | Run Astro CLI commands |
+| `pnpm standard-site:publish` | Convert published blog posts, authenticate with loopback OAuth, and show a Standard.site dry-run plan |
+| `pnpm standard-site:publish --write` | Apply the planned Standard.site publication/document creates and updates with compare-and-swap writes |
 | `pnpm test` | Run validation fixtures, build the site, and run Node tests |
 | `pnpm verify` | Alias for `pnpm test`; use this as the quality gate |
 
@@ -152,6 +154,14 @@ Run `pnpm verify` after adding or editing a post.
 ## Standard.site metadata converter
 
 The optional Standard.site metadata converter requires Python 3.11+ and runs with `python3 scripts/generate_standard_site.py`. It writes ignored outputs to `generated/standard-site/publication.json` and `generated/standard-site/documents/<slug>.json`, mapping published-only blog metadata. After manual publication, pass the returned URI with `--publication-uri` when regenerating. The converter has no authentication, PDS access, network, synchronization, verification, or Astro-link behavior; it never performs auth, PDS, network, sync, verification, or Astro publication-link work.
+
+## Standard.site publisher
+
+The TypeScript publisher in `scripts/standard-site/publisher.ts` is the supported end-to-end path. It reads `src/content/blog/`, applies the same published/draft rules as the site, converts Markdown/MDX to plaintext `site.standard.document` records, and validates records with atcute's Standard.site schemas. Publication and document record keys are deterministic TIDs derived from the immutable publication seed and each explicit blog slug; a slug change is therefore a migration.
+
+The command starts atcute's OAuth loopback flow on `127.0.0.1`, requests the Standard.site `site.standard.authFull` scope, and prints an authorization URL. It is a dry run unless `--write` is supplied. The write path creates or updates the publication first, then documents in slug order, using `swapRecord` CIDs and a read-back verification after every write. Remote lexicon validation is left optimistic because records are validated locally against the pinned Standard.site schemas; this allows PDSs that do not have the community lexicons registered locally to accept them. Discovery requests use bounded retries for transient network failures. The publisher never deletes records, uploads media, or mutates the source Markdown. By default OAuth resolves the configured publication DID directly; set `STANDARD_SITE_ACCOUNT` when authorizing a different handle and `PUBLIC_STANDARD_SITE_DID` when intentionally publishing under a migrated DID.
+
+The website advertises the publication at `/.well-known/site.standard.publication` and adds a `rel="site.standard.document"` link to each published blog detail page. The default owner is the DID currently resolved from `marcelinebelardo.com`; set the public DID override during a planned identity migration.
 
 ## RSS, author signature, and CV asset
 
