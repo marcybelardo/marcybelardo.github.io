@@ -6,8 +6,12 @@
  * can be tested without a PDS, OAuth, or an atcute installation.
  */
 
-export const PUBLICATION_COLLECTION = "site.standard.publication" as const;
-export const DOCUMENT_COLLECTION = "site.standard.document" as const;
+import {
+  DOCUMENT_COLLECTION,
+  PUBLICATION_COLLECTION,
+} from "../../src/standard-site/identity.ts";
+
+export { DOCUMENT_COLLECTION, PUBLICATION_COLLECTION } from "../../src/standard-site/identity.ts";
 
 export interface PublicationRecord {
   readonly $type: typeof PUBLICATION_COLLECTION;

@@ -1,10 +1,12 @@
 // pattern: Functional Core
 
 import {
+  DOCUMENT_COLLECTION,
+  PUBLICATION_COLLECTION,
   documentAtUri,
   isTid,
   publicationRecordKey,
-} from "./standard-site/converter.ts";
+} from "./standard-site/identity.ts";
 
 export const SITE_ORIGIN = "https://www.marcelinebelardo.com";
 
@@ -88,7 +90,7 @@ export function getStandardSitePublicationUri(): string | null {
 
   return did === null
     ? null
-    : `at://${did}/site.standard.publication/${STANDARD_SITE_PUBLICATION_RECORD_KEY}`;
+    : `at://${did}/${PUBLICATION_COLLECTION}/${STANDARD_SITE_PUBLICATION_RECORD_KEY}`;
 }
 
 /**
@@ -123,12 +125,12 @@ export function validateStandardSiteDocumentUri(
 
   if (
     parts.length !== 3 ||
-    parts[1] !== "site.standard.document" ||
+    parts[1] !== DOCUMENT_COLLECTION ||
     !parts[0] ||
     !isTid(parts[2])
   ) {
     throw new Error(
-      "Standard.site document URI must match at://DID/site.standard.document/RKEY",
+      `Standard.site document URI must match at://DID/${DOCUMENT_COLLECTION}/RKEY`,
     );
   }
 
