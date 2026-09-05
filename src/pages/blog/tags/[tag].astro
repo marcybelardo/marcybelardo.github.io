@@ -1,6 +1,7 @@
 ---
 // pattern: Imperative Shell
 import BaseLayout from "../../../layouts/BaseLayout.astro";
+import BlogIndexEntry from "../../../components/BlogIndexEntry.astro";
 import { getCollection, type CollectionEntry } from "astro:content";
 import {
   getBlogTagArchives,
@@ -37,34 +38,11 @@ const { label, posts } = tag;
       <h1>Posts tagged: <span class="accent">{label}</span></h1>
     </header>
     {
-      posts.length === 0 ? (
-        <p class="editorial-empty">No posts found.</p>
-      ) : (
-        <ul class="editorial-list blog-index__list" aria-label={`Posts tagged ${label}`}>
-          {posts.map((post) => (
-            <li>
-              <a href={`/blog/${post.id}/`}>
-                <h2>{post.data.title}</h2>
-              </a>
-              <time
-                class="metadata"
-                datetime={post.data.date.toISOString()}
-              >
-                {post.data.date.toLocaleDateString("en-US", {
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                })}
-              </time>
-              {post.data.description && (
-                <p class="blog-index__description">
-                  {post.data.description}
-                </p>
-              )}
-            </li>
-          ))}
-        </ul>
-      )
+      <ul class="editorial-list blog-index__list" aria-label={`Posts tagged ${label}`}>
+        {posts.map((post) => (
+          <li><BlogIndexEntry post={post} /></li>
+        ))}
+      </ul>
     }
   </article>
 </BaseLayout>

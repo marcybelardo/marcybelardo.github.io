@@ -5,6 +5,7 @@ import type { AstroComponentFactory } from "astro/runtime/server/index.js";
 
 import SquareImage from "../components/SquareImage.astro";
 import BaseLayout from "./BaseLayout.astro";
+import { formatDisplayDate } from "../utils/format-date.ts";
 
 type Props = {
   readonly project: CollectionEntry<"project">;
@@ -31,14 +32,6 @@ const projectLinks = [
 );
 const hasCollaborators = (data.collaborators?.length ?? 0) > 0;
 const hasGallery = (data.gallery?.length ?? 0) > 0;
-
-function formatDate(date: Date): string {
-  return date.toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
-}
 
 const structuredData = {
   "@context": "https://schema.org",
@@ -67,7 +60,7 @@ const structuredData = {
       <dl class="project-layout__metadata">
         <div>
           <dt class="metadata">Date</dt>
-          <dd><time datetime={data.date.toISOString()}>{formatDate(data.date)}</time></dd>
+          <dd><time datetime={data.date.toISOString()}>{formatDisplayDate(data.date)}</time></dd>
         </div>
         <div>
           <dt class="metadata">Disciplines</dt>

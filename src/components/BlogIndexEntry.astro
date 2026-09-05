@@ -1,0 +1,21 @@
+---
+import type { CollectionEntry } from "astro:content";
+
+import { formatDisplayDate } from "../utils/format-date.ts";
+
+type Props = {
+  readonly post: CollectionEntry<"blog">;
+};
+
+const { post } = Astro.props;
+---
+
+<a href={`/blog/${post.id}/`}>
+  <h2>{post.data.title}</h2>
+</a>
+<time class="metadata" datetime={post.data.date.toISOString()}>
+  {formatDisplayDate(post.data.date)}
+</time>
+{post.data.description && (
+  <p class="blog-index__description">{post.data.description}</p>
+)}

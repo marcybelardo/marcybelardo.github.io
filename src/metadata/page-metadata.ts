@@ -63,13 +63,6 @@ export function validateCanonicalUrl(
   return parsedCanonicalUrl.toString();
 }
 
-export function createSocialImageUrl(
-  imagePath: string,
-  siteOrigin: SiteOrigin = SITE_ORIGIN,
-): string {
-  return new URL(imagePath, siteOrigin).toString();
-}
-
 export function getRobotsValue(isIndexable: boolean): string {
   return isIndexable ? INDEXABLE_ROBOTS : NOINDEX_ROBOTS;
 }

@@ -11,12 +11,8 @@ import {
   getFeaturedProjects,
   getPublishedBlogPosts,
   getRecentPosts,
-  getUniqueBlogTags,
-  limitRecentPosts,
-  resolveRelatedProjects,
-  resolveRelatedWriting,
+  resolveRelatedEntries,
   sortByDateDescending,
-  sortFeaturedProjects,
   toTagSlug,
 } from "../src/content/content-queries.ts";
 
@@ -70,10 +66,7 @@ test("date sorting uses descending dates and ascending IDs for ties", () => {
   assert.notEqual(sorted, entries);
 });
 
-test("featured sorting uses order, date, then ID", () => {
-  const sorted = sortFeaturedProjects(entries);
-
-  assert.deepEqual(sorted.map((entry) => entry.id), ["draft", "alpha", "zeta", "older"]);
+test("featured selection uses configured order", () => {
   assert.deepEqual(getFeaturedProjects(entries, true).map((entry) => entry.id), ["alpha", "zeta"]);
 });
 
@@ -92,6 +85,29 @@ test("featured selection rejects duplicate featured orders with the conflicting 
   assert.throws(
     () => getFeaturedProjects(duplicateOrders, true),
     /featuredOrder must be unique.*first.*second/i,
+  );
+});
+
+test("featured selection validates authored draft orders before production filtering", () => {
+  const duplicateDraftOrder: ReadonlyArray<TestEntry> = [
+    {
+      id: "published",
+      data: { date: new Date("2026-06-12"), featured: true, featuredOrder: 1 },
+    },
+    {
+      id: "draft",
+      data: {
+        date: new Date("2026-06-11"),
+        draft: true,
+        featured: true,
+        featuredOrder: 1,
+      },
+    },
+  ];
+
+  assert.throws(
+    () => getFeaturedProjects(duplicateDraftOrder, true),
+    /featuredOrder must be unique.*published.*draft/i,
   );
 });
 
@@ -119,7 +135,7 @@ test("featured and recent selections apply deterministic limits after publicatio
 });
 
 test("recent post limiting sorts a copy before slicing", () => {
-  const recent = limitRecentPosts(entries, 2);
+  const recent = getRecentPosts(entries, false, 2);
 
   assert.deepEqual(recent.map((entry) => entry.id), ["draft", "alpha"]);
   assert.deepEqual(entries.map((entry) => entry.id), ["zeta", "alpha", "draft", "older"]);
@@ -141,10 +157,10 @@ const relationEntries: ReadonlyArray<RelationEntry> = [
 ];
 
 test("related project resolution preserves author order and drops invalid IDs", () => {
-  const resolved = resolveRelatedProjects({
+  const resolved = resolveRelatedEntries({
     ids: ["beta", "missing", "draft", "self", "alpha", "beta"],
     entries: relationEntries,
-    selfId: "self",
+    excludedId: "self",
   });
 
   assert.deepEqual(resolved.map((entry) => entry.id), ["beta", "alpha"]);
@@ -157,7 +173,7 @@ test("related project resolution preserves author order and drops invalid IDs", 
 });
 
 test("related writing resolution preserves author order and excludes drafts and missing IDs", () => {
-  const resolved = resolveRelatedWriting({
+  const resolved = resolveRelatedEntries({
     ids: ["self", "draft", "missing", "alpha"],
     entries: relationEntries,
   });
@@ -220,8 +236,8 @@ test("authored invalid tags fail validation before production filtering", () => 
 });
 
 test("unique blog tags merge normalized collisions and deduplicate posts", () => {
-  const tags = getUniqueBlogTags(blogEntries, true);
   const archives = getBlogTagArchives(blogEntries, true);
+  const tags = archives.map(({ label, slug }) => ({ label, slug }));
 
   assert.deepEqual(tags, [
     { label: "ai", slug: "ai" },
@@ -242,7 +258,7 @@ test("unique blog tags merge normalized collisions and deduplicate posts", () =>
 
 test("blog tag queries reject authored labels that normalize to an empty slug", () => {
   assert.throws(
-    () => getUniqueBlogTags([
+    () => getBlogTagArchives([
       {
         id: "invalid",
         data: { date: new Date("2026-06-15"), tags: ["!!!"] },

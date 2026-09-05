@@ -9,6 +9,7 @@ import {
 } from "../content/content-queries.ts";
 import BaseLayout from "../layouts/BaseLayout.astro";
 import { SITE_ORIGIN } from "../site-config.ts";
+import { formatDisplayDate } from "../utils/format-date.ts";
 
 const isProduction = !import.meta.env.DEV;
 const [projectEntries, blogEntries] = await Promise.all([
@@ -91,11 +92,7 @@ const structuredData = {
                 <article class="editorial-article">
                   <h3><a href={`/blog/${post.id}/`}>{post.data.title}</a></h3>
                   <time class="metadata" datetime={post.data.date.toISOString()}>
-                    {post.data.date.toLocaleDateString("en-US", {
-                      year: "numeric",
-                      month: "long",
-                      day: "numeric",
-                    })}
+                    {formatDisplayDate(post.data.date)}
                   </time>
                   {post.data.description && <p>{post.data.description}</p>}
                 </article>

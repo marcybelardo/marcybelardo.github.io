@@ -30,15 +30,10 @@ export type BlogTagArchive<T extends BlogEntry> = BlogTag & {
   readonly posts: Array<T>;
 };
 
-type ResolveRelatedProjectsOptions<T extends PublishableEntry> = {
+type ResolveRelatedEntriesOptions<T extends PublishableEntry> = {
   readonly ids: ReadonlyArray<string>;
   readonly entries: ReadonlyArray<T>;
-  readonly selfId: string;
-};
-
-type ResolveRelatedWritingOptions<T extends PublishableEntry> = {
-  readonly ids: ReadonlyArray<string>;
-  readonly entries: ReadonlyArray<T>;
+  readonly excludedId?: string;
 };
 
 type FeaturedProject = {
@@ -97,16 +92,6 @@ export function getPublishedBlogPosts<T extends BlogEntry>(
   return sortByDateDescending(filterPublishedEntries(entries, isProduction));
 }
 
-export function getUniqueBlogTags<T extends BlogEntry>(
-  entries: ReadonlyArray<T>,
-  isProduction: boolean,
-): Array<BlogTag> {
-  return getBlogTagArchives(entries, isProduction).map(({ label, slug }) => ({
-    label,
-    slug,
-  }));
-}
-
 export function getBlogTagArchives<T extends BlogEntry>(
   entries: ReadonlyArray<T>,
   isProduction: boolean,
@@ -150,25 +135,33 @@ export function getBlogTagArchives<T extends BlogEntry>(
   }));
 }
 
-export function resolveRelatedProjects<T extends PublishableEntry>(
-  options: ResolveRelatedProjectsOptions<T>,
+export function resolveRelatedEntries<T extends PublishableEntry>(
+  options: ResolveRelatedEntriesOptions<T>,
 ): Array<T> {
-  const { ids, entries, selfId } = options;
+  const publishedEntries = filterPublishedEntries(options.entries, true);
+  const entriesById = new Map(publishedEntries.map((entry) => [entry.id, entry]));
+  const resolved: Array<T> = [];
+  const seenIds = new Set<string>();
 
-  return resolveRelatedEntries({ ids, entries, excludedId: selfId });
+  options.ids.forEach((id) => {
+    if (!id.trim() || id === options.excludedId || seenIds.has(id)) {
+      return;
+    }
+
+    const entry = entriesById.get(id);
+
+    if (entry) {
+      resolved.push(entry);
+      seenIds.add(id);
+    }
+  });
+
+  return resolved;
 }
 
-export function resolveRelatedWriting<T extends PublishableEntry>(
-  options: ResolveRelatedWritingOptions<T>,
-): Array<T> {
-  return resolveRelatedEntries(options);
-}
-
-export function sortFeaturedProjects<T extends FeaturedProject>(
+function sortFeaturedProjects<T extends FeaturedProject>(
   entries: ReadonlyArray<T>,
 ): Array<T> {
-  assertUniqueFeaturedOrders(entries);
-
   return [...entries].sort((left, right) => {
     const orderDifference = getFeaturedOrder(left) - getFeaturedOrder(right);
 
@@ -228,7 +221,7 @@ export function getRecentPosts<T extends PublishableEntry & DatedEntry>(
   return limitRecentPosts(published, limit);
 }
 
-export function limitRecentPosts<T extends DatedEntry>(
+function limitRecentPosts<T extends DatedEntry>(
   entries: ReadonlyArray<T>,
   limit: number,
 ): Array<T> {
@@ -263,30 +256,4 @@ function compareIds(left: string, right: string): number {
   }
 
   return left < right ? -1 : 1;
-}
-
-function resolveRelatedEntries<T extends PublishableEntry>(options: {
-  readonly ids: ReadonlyArray<string>;
-  readonly entries: ReadonlyArray<T>;
-  readonly excludedId?: string;
-}): Array<T> {
-  const publishedEntries = filterPublishedEntries(options.entries, true);
-  const entriesById = new Map(publishedEntries.map((entry) => [entry.id, entry]));
-  const resolved: Array<T> = [];
-  const seenIds = new Set<string>();
-
-  options.ids.forEach((id) => {
-    if (!id.trim() || id === options.excludedId || seenIds.has(id)) {
-      return;
-    }
-
-    const entry = entriesById.get(id);
-
-    if (entry) {
-      resolved.push(entry);
-      seenIds.add(id);
-    }
-  });
-
-  return resolved;
 }

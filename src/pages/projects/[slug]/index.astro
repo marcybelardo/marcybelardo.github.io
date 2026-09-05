@@ -4,8 +4,7 @@ import { getCollection, render, type CollectionEntry } from "astro:content";
 
 import {
   filterPublishedEntries,
-  resolveRelatedProjects,
-  resolveRelatedWriting,
+  resolveRelatedEntries,
 } from "../../../content/content-queries.ts";
 import ProjectLayout from "../../../layouts/ProjectLayout.astro";
 
@@ -31,12 +30,12 @@ export async function getStaticPaths() {
 
 const { project, publishedProjects, publishedWriting } = Astro.props as Props;
 const { Content } = await render(project);
-const relatedProjects = resolveRelatedProjects({
+const relatedProjects = resolveRelatedEntries({
   ids: project.data.relatedProjects,
   entries: publishedProjects,
-  selfId: project.id,
+  excludedId: project.id,
 });
-const relatedWriting = resolveRelatedWriting({
+const relatedWriting = resolveRelatedEntries({
   ids: project.data.relatedWriting,
   entries: publishedWriting,
 });

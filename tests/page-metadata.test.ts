@@ -4,7 +4,6 @@ import test from "node:test";
 import {
   composeSiteTitle,
   createCanonicalUrl,
-  createSocialImageUrl,
   getRobotsValue,
   NOINDEX_ROBOTS,
   serializeJsonLd,
@@ -52,13 +51,6 @@ test("canonical URL overrides remain limited to the configured origin", () => {
   assert.throws(
     () => validateCanonicalUrl("/projects/", SITE_ORIGIN),
     /canonical URL must be an absolute URL/,
-  );
-});
-
-test("social image URLs are absolute at the configured site origin", () => {
-  assert.equal(
-    createSocialImageUrl("/images/social-card.png", SITE_ORIGIN),
-    "https://www.marcelinebelardo.com/images/social-card.png",
   );
 });
 
