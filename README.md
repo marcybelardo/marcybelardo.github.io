@@ -1,6 +1,6 @@
 # Marceline Portfolio
 
-Personal portfolio website for Marceline Belardo — a static site built with Astro, React, TypeScript, and TailwindCSS.
+Personal portfolio website for Marceline Belardo — a static site built with Astro and TypeScript.
 
 The canonical origin is `https://www.marcelinebelardo.com`. The site is deployed as a static GitHub Pages artifact; there is no SSR or on-demand routing.
 
