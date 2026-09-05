@@ -5,6 +5,7 @@ dist/
 
 # dependencies
 node_modules/
+.pnpm-store/
 .worktrees/
 
 # logs
@@ -13,7 +14,7 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
-# flake stuff
+# Nix and direnv state
 /.direnv
 
 # environment variables
