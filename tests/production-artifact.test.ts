@@ -1,11 +1,25 @@
 // pattern: Imperative Shell
 
 import assert from "node:assert/strict";
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { dirname, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 
+import {
+  assertGeneratedImageContract,
+  decodeHtmlEntities,
+  getGraphEntries,
+  getHtmlFiles,
+  getImages,
+  getImagesInsideSquareWrappers,
+  getPrimaryDestinationHrefs,
+  getPrimaryNavigation,
+  getRouteFromHtmlPath,
+  getSingleMatch,
+  getStructuredData,
+  isNoindexDocument,
+} from "./generated-artifact-helpers.ts";
 import { getGeneratedProjectSlugs } from "./generated-project-artifacts.ts";
 import {
   createStandardSiteDocumentUri,
@@ -23,119 +37,11 @@ const publishedBlogTags = ["ai", "politics", "technology"];
 const draftMarkers = /draft-route-fixture|draft-only-review|draft-project-fixture/i;
 const footnoteFixtureMarker = "A source with";
 
-type JsonLdEntry = Readonly<Record<string, unknown>>;
-
-function getHtmlFiles(directory: string): Array<string> {
-  return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
-    const entryPath = resolve(directory, entry.name);
-
-    if (entry.isDirectory()) {
-      return getHtmlFiles(entryPath);
-    }
-
-    return entry.name.endsWith(".html") ? [entryPath] : [];
-  });
-}
-
 function readArtifact(relativePath: string): string {
   const artifactPath = resolve(distDirectory, relativePath);
 
   assert.ok(existsSync(artifactPath), `${relativePath} must be generated`);
   return readFileSync(artifactPath, "utf8");
-}
-
-function getRouteFromHtmlPath(htmlPath: string): string {
-  const relativePath = relative(distDirectory, htmlPath);
-
-  if (relativePath === "index.html") {
-    return "/";
-  }
-
-  return `/${relativePath.replace(/\/index\.html$/, "")}/`;
-}
-
-function isNoindexDocument(html: string): boolean {
-  return /<meta\s+name="robots"\s+content="[^"]*noindex/i.test(html);
-}
-
-function decodeHtmlEntities(value: string): string {
-  return value.replace(
-    /&(amp|quot|#39|#x27|lt|gt);/g,
-    (entity, name: string) => {
-      const entities: Readonly<Record<string, string>> = {
-        amp: "&",
-        quot: '"',
-        "#39": "'",
-        "#x27": "'",
-        lt: "<",
-        gt: ">",
-      };
-
-      return entities[name] ?? entity;
-    },
-  );
-}
-
-function getSingleMatch(html: string, pattern: RegExp, label: string): string {
-  const matches = [...html.matchAll(pattern)];
-
-  assert.equal(matches.length, 1, `${label} must appear exactly once`);
-  return decodeHtmlEntities(matches[0]?.[1] ?? "");
-}
-
-function getMetaValue(html: string, pattern: RegExp, label: string): string {
-  return getSingleMatch(html, pattern, label);
-}
-
-function getStructuredData(html: string, label: string): JsonLdEntry {
-  const serialized = getSingleMatch(
-    html,
-    /<script type="application\/ld\+json">([\s\S]*?)<\/script>/g,
-    `${label} JSON-LD`,
-  );
-
-  return JSON.parse(serialized) as JsonLdEntry;
-}
-
-function getGraphEntries(structuredData: JsonLdEntry, label: string): Array<JsonLdEntry> {
-  const graph = structuredData["@graph"];
-
-  assert.ok(Array.isArray(graph), `${label} JSON-LD must expose a graph`);
-  return graph.filter(
-    (entry): entry is JsonLdEntry =>
-      typeof entry === "object" && entry !== null && !Array.isArray(entry),
-  );
-}
-
-function getPrimaryNavigation(html: string): string {
-  return getSingleMatch(
-    html,
-    /<nav\b[^>]*aria-label="Primary"[^>]*>([\s\S]*?)<\/nav>/g,
-    "primary navigation",
-  );
-}
-
-function getPrimaryDestinationHrefs(navigation: string): Array<string> {
-  const panelMatch = navigation.match(
-    /<div class="primary-navigation__panel"[^>]*>([\s\S]*?)<\/div>/,
-  );
-
-  assert.ok(panelMatch?.[1], "primary navigation must contain its destination panel");
-  return [...panelMatch[1].matchAll(/<a\b[^>]*href="([^"]+)"/g)].map(
-    (match) => match[1] ?? "",
-  );
-}
-
-function getImages(html: string): Array<string> {
-  return [...html.matchAll(/<img\b[^>]*>/g)].map((match) => match[0] ?? "");
-}
-
-function getSquareImageWrappers(html: string): Array<string> {
-  return [
-    ...html.matchAll(
-      /<div class="square-image(?:\s[^>]*)?"[^>]*>[\s\S]*?<\/div>/g,
-    ),
-  ].map((match) => match[0] ?? "");
 }
 
 test("portfolio-redesign.AC1.1 production artifact contains the complete static route inventory", () => {
@@ -257,14 +163,14 @@ test("portfolio-redesign.AC5.1 every indexable HTML document has distinct self-r
     }))
     .filter(({ html }) => !isNoindexDocument(html));
   const metadata = indexableDocuments.map(({ htmlPath, html }) => {
-    const route = getRouteFromHtmlPath(htmlPath);
+    const route = getRouteFromHtmlPath(htmlPath, distDirectory);
     const title = getSingleMatch(html, /<title>([^<]+)<\/title>/g, `${route} title`);
-    const description = getMetaValue(
+    const description = getSingleMatch(
       html,
       /<meta name="description" content="([^"]+)"\s*\/?\s*>/g,
       `${route} description`,
     );
-    const canonical = getMetaValue(
+    const canonical = getSingleMatch(
       html,
       /<link rel="canonical" href="([^"]+)"\s*\/?\s*>/g,
       `${route} canonical`,
@@ -273,15 +179,15 @@ test("portfolio-redesign.AC5.1 every indexable HTML document has distinct self-r
     assert.equal(canonical, `${configuredOrigin}${route}`);
     assert.doesNotMatch(html, /<meta name="robots"[^>]*noindex/i);
     assert.equal(
-      getMetaValue(html, /<meta property="og:type" content="([^"]+)"/g, `${route} og:type`).length > 0,
+      getSingleMatch(html, /<meta property="og:type" content="([^"]+)"/g, `${route} og:type`).length > 0,
       true,
     );
     assert.equal(
-      getMetaValue(html, /<meta property="og:title" content="([^"]+)"/g, `${route} og:title`),
+      getSingleMatch(html, /<meta property="og:title" content="([^"]+)"/g, `${route} og:title`),
       title,
     );
     assert.equal(
-      getMetaValue(
+      getSingleMatch(
         html,
         /<meta property="og:description" content="([^"]+)"/g,
         `${route} og:description`,
@@ -289,19 +195,19 @@ test("portfolio-redesign.AC5.1 every indexable HTML document has distinct self-r
       description,
     );
     assert.equal(
-      getMetaValue(html, /<meta property="og:url" content="([^"]+)"/g, `${route} og:url`),
+      getSingleMatch(html, /<meta property="og:url" content="([^"]+)"/g, `${route} og:url`),
       canonical,
     );
     assert.equal(
-      getMetaValue(html, /<meta name="twitter:card" content="([^"]+)"/g, `${route} twitter:card`).length > 0,
+      getSingleMatch(html, /<meta name="twitter:card" content="([^"]+)"/g, `${route} twitter:card`).length > 0,
       true,
     );
     assert.equal(
-      getMetaValue(html, /<meta name="twitter:title" content="([^"]+)"/g, `${route} twitter:title`),
+      getSingleMatch(html, /<meta name="twitter:title" content="([^"]+)"/g, `${route} twitter:title`),
       title,
     );
     assert.equal(
-      getMetaValue(
+      getSingleMatch(
         html,
         /<meta name="twitter:description" content="([^"]+)"/g,
         `${route} twitter:description`,
@@ -341,7 +247,7 @@ test("portfolio-redesign.AC5.2 structured data and visible media contracts remai
   );
   assert.equal(
     blogData.description,
-    getMetaValue(blogHtml, /<meta name="description" content="([^"]+)"/g, "blog description"),
+    getSingleMatch(blogHtml, /<meta name="description" content="([^"]+)"/g, "blog description"),
   );
   assert.deepEqual(
     blogData.keywords,
@@ -363,7 +269,7 @@ test("portfolio-redesign.AC5.2 structured data and visible media contracts remai
     );
     assert.equal(
       projectData.description,
-      getMetaValue(
+      getSingleMatch(
         projectHtml,
         /<meta name="description" content="([^"]+)"/g,
         `${slug} project description`,
@@ -376,16 +282,15 @@ test("portfolio-redesign.AC5.2 structured data and visible media contracts remai
     const images = getImages(html);
 
     images.forEach((image) => {
-      assert.match(image, /\bwidth="\d+"/);
-      assert.match(image, /\bheight="\d+"/);
-      assert.match(image, /\bsrcset="[^"]+"/);
-      assert.match(image, /\bsizes="[^"]+"/);
-      assert.match(image, /data-astro-image-fit="contain"/);
+      assertGeneratedImageContract(
+        image,
+        `${getRouteFromHtmlPath(htmlPath, distDirectory)} image`,
+      );
     });
     assert.equal(
-      getSquareImageWrappers(html).flatMap((wrapper) => getImages(wrapper)).length,
+      getImagesInsideSquareWrappers(html).length,
       images.length,
-      `${getRouteFromHtmlPath(htmlPath)} images must remain inside square frames`,
+      `${getRouteFromHtmlPath(htmlPath, distDirectory)} images must remain inside square frames`,
     );
   });
 });

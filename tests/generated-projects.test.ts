@@ -4,6 +4,10 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 
+import {
+  decodeHtmlEntities,
+  getStructuredData,
+} from "./generated-artifact-helpers.ts";
 import { getGeneratedProjectSlugs } from "./generated-project-artifacts.ts";
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -11,10 +15,6 @@ const distDirectory = resolve(repositoryRoot, "dist");
 const projectsIndexPath = resolve(repositoryRoot, "dist/projects/index.html");
 const projectsSourceDirectory = resolve(repositoryRoot, "src/content/projects");
 const configuredOrigin = "https://www.marcelinebelardo.com";
-
-type ProjectJsonLd = {
-  readonly [key: string]: unknown;
-};
 
 const projectIds = getGeneratedProjectSlugs(distDirectory);
 
@@ -38,24 +38,6 @@ function getProjectOutputFiles(directory: string): Array<string> {
 
     return [entryPath];
   });
-}
-
-function getProjectJsonLd(html: string): ProjectJsonLd {
-  const match = html.match(
-    /<script type="application\/ld\+json">([\s\S]*?)<\/script>/,
-  );
-
-  assert.ok(match?.[1], "project detail must contain JSON-LD");
-  return JSON.parse(match[1]) as ProjectJsonLd;
-}
-
-function decodeHtmlEntities(value: string): string {
-  return value
-    .replaceAll("&amp;", "&")
-    .replaceAll("&#39;", "'")
-    .replaceAll("&quot;", '"')
-    .replaceAll("&lt;", "<")
-    .replaceAll("&gt;", ">");
 }
 
 function escapeRegExp(value: string): string {
@@ -123,7 +105,7 @@ test("each project detail emits its published metadata and canonical JSON-LD", (
   projectIds.forEach((projectId) => {
     const html = readProjectPage(projectId);
     const canonical = `${configuredOrigin}/projects/${projectId}/`;
-    const jsonLd = getProjectJsonLd(html);
+    const jsonLd = getStructuredData(html, `${projectId} project`);
     const title = decodeHtmlEntities(
       html.match(/<h1[^>]*>([^<]+)<\/h1>/)?.[1] ?? "",
     );

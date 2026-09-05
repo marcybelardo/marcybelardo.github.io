@@ -1,9 +1,21 @@
 import assert from "node:assert/strict";
-import { existsSync, readdirSync, readFileSync } from "node:fs";
-import { dirname, relative, resolve } from "node:path";
+import { existsSync, readFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 
+import {
+  decodeHtmlEntities,
+  getCssFiles,
+  getGraphEntries,
+  getHtmlFiles,
+  getPrimaryDestinationHrefs,
+  getPrimaryNavigation,
+  getRouteFromHtmlPath,
+  getSingleMatch,
+  getStructuredData,
+  isNoindexDocument,
+} from "./generated-artifact-helpers.ts";
 import {
   getGeneratedProjectRoutes,
   getGeneratedProjectSlugs,
@@ -35,108 +47,6 @@ const requiredHtmlArtifacts = [
 ];
 const requiredNonHtmlArtifacts = ["rss.xml", "sitemap-0.xml", "sitemap-index.xml"];
 
-type JsonLdEntry = Readonly<Record<string, unknown>>;
-
-function getHtmlFiles(directory: string): Array<string> {
-  return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
-    const entryPath = resolve(directory, entry.name);
-
-    if (entry.isDirectory()) {
-      return getHtmlFiles(entryPath);
-    }
-
-    return entry.name.endsWith(".html") ? [entryPath] : [];
-  });
-}
-
-function getCssFiles(directory: string): Array<string> {
-  return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
-    const entryPath = resolve(directory, entry.name);
-
-    if (entry.isDirectory()) {
-      return getCssFiles(entryPath);
-    }
-
-    return entry.name.endsWith(".css") ? [entryPath] : [];
-  });
-}
-
-function getPrimaryNavigation(html: string): string {
-  const matches = [
-    ...html.matchAll(/<nav\b[^>]*aria-label="Primary"[^>]*>[\s\S]*?<\/nav>/gi),
-  ];
-
-  assert.equal(matches.length, 1, "each document must contain one primary navigation");
-  return matches[0]?.[0] ?? "";
-}
-
-function getPrimaryDestinationHrefs(navigation: string): Array<string> {
-  const panelMatch = navigation.match(
-    /<div class="primary-navigation__panel"[^>]*>([\s\S]*?)<\/div>/,
-  );
-
-  assert.ok(panelMatch?.[1], "primary navigation must contain its destination panel");
-  return [...panelMatch[1].matchAll(/<a\b[^>]*href="([^"]+)"/g)].map(
-    (match) => match[1] ?? "",
-  );
-}
-
-function getSingleMatch(html: string, pattern: RegExp, label: string): string {
-  const matches = [...html.matchAll(pattern)];
-
-  assert.equal(matches.length, 1, `${label} must appear exactly once`);
-  return decodeHtmlEntities(matches[0]?.[1] ?? "");
-}
-
-function getStructuredData(html: string, label: string): JsonLdEntry {
-  const matches = [
-    ...html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g),
-  ];
-
-  assert.equal(matches.length, 1, `${label} must contain one JSON-LD script`);
-  const serialized = matches[0]?.[1];
-  assert.ok(serialized, `${label} JSON-LD must contain data`);
-  return JSON.parse(serialized) as JsonLdEntry;
-}
-
-function getGraphEntries(structuredData: JsonLdEntry, label: string): Array<JsonLdEntry> {
-  const graph = structuredData["@graph"];
-
-  assert.ok(Array.isArray(graph), `${label} JSON-LD must expose a graph`);
-  return graph.filter(
-    (entry): entry is JsonLdEntry =>
-      typeof entry === "object" && entry !== null && !Array.isArray(entry),
-  );
-}
-
-function decodeHtmlEntities(value: string): string {
-  return value.replace(
-    /&(amp|quot|#39|#x27|lt|gt);/g,
-    (entity, name: string) => {
-      const entities: Readonly<Record<string, string>> = {
-        amp: "&",
-        quot: '"',
-        "#39": "'",
-        "#x27": "'",
-        lt: "<",
-        gt: ">",
-      };
-
-      return entities[name] ?? entity;
-    },
-  );
-}
-
-function getRouteFromHtmlPath(htmlPath: string): string {
-  const relativePath = relative(distDirectory, htmlPath);
-
-  if (relativePath === "index.html") {
-    return "/";
-  }
-
-  return `/${relativePath.replace(/\/index\.html$/, "")}/`;
-}
-
 function getDuplicateIds(html: string): Array<string> {
   const ids = [...html.matchAll(/\bid="([^"]+)"/g)].map((match) => match[1]);
   const counts = new Map<string, number>();
@@ -150,14 +60,6 @@ function getDuplicateIds(html: string): Array<string> {
   return [...counts.entries()]
     .filter(([, count]) => count > 1)
     .map(([id]) => id);
-}
-
-function isNoindexDocument(html: string): boolean {
-  const robotsMatch = html.match(
-    /<meta\s+name="robots"\s+content="([^"]*)"\s*\/?\s*>/i,
-  );
-
-  return robotsMatch?.[1]?.toLowerCase().includes("noindex") ?? false;
 }
 
 function getMetadata(html: string): {
@@ -268,7 +170,9 @@ test("every current indexable document has complete, self-referencing metadata",
   const indexableFiles = htmlFiles.filter(
     (htmlPath) => !isNoindexDocument(readFileSync(htmlPath, "utf8")),
   );
-  const indexableRoutes = indexableFiles.map(getRouteFromHtmlPath).sort();
+  const indexableRoutes = indexableFiles
+    .map((htmlPath) => getRouteFromHtmlPath(htmlPath, distDirectory))
+    .sort();
 
   assert.deepEqual(indexableRoutes, [
     "/",
@@ -286,7 +190,7 @@ test("every current indexable document has complete, self-referencing metadata",
   const metadata = indexableFiles.map((htmlPath) => {
     const html = readFileSync(htmlPath, "utf8");
     const pageMetadata = getMetadata(html);
-    const route = getRouteFromHtmlPath(htmlPath);
+    const route = getRouteFromHtmlPath(htmlPath, distDirectory);
 
     assert.equal(pageMetadata.canonical, `${configuredOrigin}${route}`);
     assert.equal(pageMetadata.openGraphUrl, pageMetadata.canonical);
@@ -380,8 +284,8 @@ test("generated output uses the editorial visual system without parallax or card
     /\.editorial-list>li:last-child\{[^}]*border-bottom:\s*1px solid var\(--color-rule\)/,
   );
   assert.match(css, /--color-prussian-blue:\s*#003153/);
-  assert.match(css, /--font-reading:Georgia/);
-  assert.match(css, /--font-utility:"Helvetica Neue"/);
+  assert.match(css, /--font-reading:\s*Georgia/);
+  assert.match(css, /--font-utility:\s*"Helvetica Neue"/);
   assert.match(css, /@media\s*\(prefers-reduced-motion:\s*reduce\)/);
   assert.match(css, /@media\s*print/);
   assert.match(css, /a:focus-visible/);
@@ -589,5 +493,8 @@ test("the tracked blog post keeps its stable published route", () => {
   const blogPath = resolve(distDirectory, "blog", "the-devil-you-know", "index.html");
 
   assert.ok(existsSync(blogPath));
-  assert.equal(getRouteFromHtmlPath(blogPath), "/blog/the-devil-you-know/");
+  assert.equal(
+    getRouteFromHtmlPath(blogPath, distDirectory),
+    "/blog/the-devil-you-know/",
+  );
 });

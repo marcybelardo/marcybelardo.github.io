@@ -4,6 +4,8 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 
+import { getStructuredData } from "./generated-artifact-helpers.ts";
+
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const distDirectory = resolve(repositoryRoot, "dist");
 const configuredOrigin = "https://www.marcelinebelardo.com";
@@ -22,15 +24,6 @@ function readRssOutput(): string {
 
   assert.ok(existsSync(outputPath), "RSS output must exist");
   return readFileSync(outputPath, "utf8");
-}
-
-function getJsonLd(html: string): Readonly<Record<string, unknown>> {
-  const match = html.match(
-    /<script type="application\/ld\+json">([\s\S]*?)<\/script>/,
-  );
-
-  assert.ok(match?.[1], "blog detail must contain JSON-LD");
-  return JSON.parse(match[1]) as Readonly<Record<string, unknown>>;
 }
 
 test("production blog output preserves the published post and tag routes", () => {
@@ -107,7 +100,7 @@ test("margin-note CSS positions list items beneath the semantic rail wrapper", (
 
 test("blog detail JSON-LD contains only the visible published fields", () => {
   const html = readBlogOutput("the-devil-you-know");
-  const jsonLd = getJsonLd(html);
+  const jsonLd = getStructuredData(html, "blog detail");
 
   assert.deepEqual(Object.keys(jsonLd).sort(), [
     "@context",
@@ -155,7 +148,7 @@ test("RSS contains deterministic published-only canonical discovery output", () 
 test("blog routes contain no untyped any annotations", () => {
   const routeSources = [
     resolve(repositoryRoot, "src/pages/blog/index.astro"),
-    resolve(repositoryRoot, "src/pages/blog/[...slug]/index.astro"),
+    resolve(repositoryRoot, "src/pages/blog/[slug]/index.astro"),
     resolve(repositoryRoot, "src/pages/blog/tags/[tag].astro"),
   ].map((sourcePath) => readFileSync(sourcePath, "utf8"));
 
@@ -167,7 +160,7 @@ test("blog routes contain no untyped any annotations", () => {
 test("blog routes use the editorial presentation without legacy utility or prose classes", () => {
   const routeSources = [
     resolve(repositoryRoot, "src/pages/blog/index.astro"),
-    resolve(repositoryRoot, "src/pages/blog/[...slug]/index.astro"),
+    resolve(repositoryRoot, "src/pages/blog/[slug]/index.astro"),
     resolve(repositoryRoot, "src/pages/blog/tags/[tag].astro"),
   ].map((sourcePath) => readFileSync(sourcePath, "utf8"));
 

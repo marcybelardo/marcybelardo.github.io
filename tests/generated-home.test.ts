@@ -5,6 +5,10 @@ import { fileURLToPath } from "node:url";
 import test from "node:test";
 
 import { getFeaturedProjects, getRecentPosts } from "../src/content/content-queries.ts";
+import {
+  getGraphEntries,
+  getStructuredData,
+} from "./generated-artifact-helpers.ts";
 import { getGeneratedProjectSlugs } from "./generated-project-artifacts.ts";
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -20,8 +24,6 @@ const profileUrls = [
   "https://instagram.com/marcelinebelardo",
 ];
 
-type JsonLdEntry = Readonly<Record<string, unknown>>;
-
 function readHomepage(): string {
   assert.ok(existsSync(homepagePath), "homepage output must exist before generated assertions");
   return readFileSync(homepagePath, "utf8");
@@ -35,15 +37,6 @@ function readBio(): string {
 function readContact(): string {
   assert.ok(existsSync(contactPath), "Contact output must exist before generated assertions");
   return readFileSync(contactPath, "utf8");
-}
-
-function getJsonLd(html: string): Readonly<Record<string, unknown>> {
-  const match = html.match(
-    /<script type="application\/ld\+json">([\s\S]*?)<\/script>/,
-  );
-
-  assert.ok(match?.[1], "homepage must contain JSON-LD");
-  return JSON.parse(match[1]) as Readonly<Record<string, unknown>>;
 }
 
 function getVisibleH1Text(html: string): string {
@@ -93,17 +86,11 @@ test("homepage renders the practice, mixed selected work, writing, and contact p
 
 test("homepage JSON-LD matches visible identity and verified profiles", () => {
   const html = readHomepage();
-  const jsonLd = getJsonLd(html);
+  const jsonLd = getStructuredData(html, "homepage");
   const visibleName = getVisibleH1Text(html);
-  const graph = jsonLd["@graph"];
 
   assert.equal(jsonLd["@context"], "https://schema.org");
-  assert.ok(Array.isArray(graph), "homepage JSON-LD must expose a graph");
-
-  const graphEntries = graph.filter(
-    (entry): entry is JsonLdEntry =>
-      typeof entry === "object" && entry !== null && !Array.isArray(entry),
-  );
+  const graphEntries = getGraphEntries(jsonLd, "homepage");
   const website = graphEntries.find((entry) => entry["@type"] === "WebSite");
   const person = graphEntries.find((entry) => entry["@type"] === "Person");
   const canonical = `${configuredOrigin}/`;

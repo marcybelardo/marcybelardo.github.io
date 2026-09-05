@@ -4,6 +4,12 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 
+import {
+  assertGeneratedImageContract,
+  getImages,
+  getImagesInsideSquareWrappers,
+  getSquareImageWrappers,
+} from "./generated-artifact-helpers.ts";
 import { getGeneratedProjectSlugs } from "./generated-project-artifacts.ts";
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -24,22 +30,6 @@ const representativePaths: ReadonlyArray<string> = [
   ),
   resolve(distDirectory, "404.html"),
 ];
-
-function getSquareImageWrappers(html: string): Array<string> {
-  return [
-    ...html.matchAll(
-      /<div class="square-image(?:\s[^>]*)?"[^>]*>[\s\S]*?<\/div>/g,
-    ),
-  ].map((match) => match[0] ?? "");
-}
-
-function getImages(html: string): Array<string> {
-  return [...html.matchAll(/<img\b[^>]*>/g)].map((match) => match[0] ?? "");
-}
-
-function getImagesInsideSquareWrappers(html: string): Array<string> {
-  return getSquareImageWrappers(html).flatMap((wrapper) => getImages(wrapper));
-}
 
 test("Bio uses a square contain frame for its portrait image", () => {
   assert.ok(existsSync(bioPath), "Bio output must exist before image assertions");
@@ -71,10 +61,7 @@ test("SquareImage output reserves intrinsic dimensions and responsive sources", 
 
   assert.equal(images.length, 1);
   images.forEach((image) => {
-    assert.match(image, /\bwidth="\d+"/);
-    assert.match(image, /\bheight="\d+"/);
-    assert.match(image, /\bsrcset="[^"]+"/);
-    assert.match(image, /\bsizes="[^"]+"/);
+    assertGeneratedImageContract(image, "Bio image");
     assert.match(image, /\bloading="(?:lazy|eager)"/);
     assert.doesNotMatch(image, /20260425_29[^"?]*\.jpg(?:["?]|$)/);
     assert.doesNotMatch(image, /IMG_6936_EDIT[^"?]*\.jpg(?:["?]|$)/);
@@ -107,11 +94,7 @@ test("representative pages contain only valid generated image markup", () => {
     const images = getImages(html);
 
     images.forEach((image) => {
-      assert.match(image, /\bwidth="\d+"/);
-      assert.match(image, /\bheight="\d+"/);
-      assert.match(image, /\bsrcset="[^"]+"/);
-      assert.match(image, /\bsizes="[^"]+"/);
-      assert.match(image, /data-astro-image-fit="contain"/);
+      assertGeneratedImageContract(image, `${htmlPath} image`);
     });
 
     assert.equal(
