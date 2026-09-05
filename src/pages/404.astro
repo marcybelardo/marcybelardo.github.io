@@ -9,15 +9,47 @@ import { getRobotsValue } from "../metadata/page-metadata.ts";
   description="The page you requested could not be found."
   robots={getRobotsValue(false)}
 >
-  <section class="min-h-[60vh] flex flex-col justify-center">
-    <div class="max-w-xl">
-      <h1 class="font-bold text-neutral-900 leading-none text-[clamp(2.5rem,8vw,6rem)]">
+  <section class="not-found">
+    <div class="not-found__content">
+      <h1>
         404
       </h1>
-      <p class="text-xl text-neutral-600 leading-relaxed mt-4">
+      <p>
         Page not found.
       </p>
-      <a href="/" class="inline-block mt-8">Return to homepage</a>
+      <a href="/">Return to homepage</a>
     </div>
   </section>
 </BaseLayout>
+
+<style>
+  .not-found {
+    display: flex;
+    min-height: 60vh;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .not-found__content {
+    max-width: 36rem;
+  }
+
+  .not-found h1 {
+    color: oklch(20.5% 0 0);
+    font-size: clamp(2.5rem, 8vw, 6rem);
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  .not-found p {
+    margin-top: 1rem;
+    color: oklch(43.9% 0 0);
+    font-size: 1.25rem;
+    line-height: 1.625;
+  }
+
+  .not-found a {
+    display: inline-block;
+    margin-top: 2rem;
+  }
+</style>
