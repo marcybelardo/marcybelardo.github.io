@@ -66,9 +66,9 @@ test("homepage renders the practice, mixed selected work, writing, and contact p
   const selectedProjectIds = getSelectedProjectIds(html);
   const generatedProjectIds = new Set(getGeneratedProjectSlugs(resolve(repositoryRoot, "dist")));
 
-  assert.match(html, /I work across software, visual culture, research, and writing\./);
-  assert.match(html, /id="selected-projects-heading"[^>]*>Selected Projects<\/h2>/);
-  assert.match(html, /id="recent-writing-heading"[^>]*>Recent Writing<\/h2>/);
+  assert.match(html, /a software developer in Manila\./);
+  assert.match(html, /id="selected-projects-heading"[^>]*>Selected projects<\/h2>/);
+  assert.match(html, /id="recent-writing-heading"[^>]*>Recent writing<\/h2>/);
   assert.match(html, /marcy@marcelinebelardo\.com/);
   assert.ok(selectedProjectIds.length > 0);
   assert.ok(selectedProjectIds.length <= 4);

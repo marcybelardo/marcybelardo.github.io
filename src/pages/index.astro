@@ -2,6 +2,9 @@
 // pattern: Imperative Shell
 import { getCollection, type CollectionEntry } from "astro:content";
 
+import PhotoStudy from "../components/PhotoStudy.astro";
+import "../styles/home-design.css";
+
 import ProjectIndexEntry from "../components/ProjectIndexEntry.astro";
 import {
   getFeaturedProjects,
@@ -57,59 +60,56 @@ const structuredData = {
   description="Marceline Belardo is a software developer, photographer, and painter."
   structuredData={structuredData}
 >
-  <article class="editorial-page editorial-measure">
-    <header class="editorial-page__header">
+  <article class="portfolio-home">
+    <header class="home-introduction">
       <h1>Marceline Belardo</h1>
+      <section class="home-practice" aria-label="Practice">
+        <p>I’m Marceline, a software developer in Manila. I work mostly with Rust, C, and TypeScript. I also write, take photographs, and paint.</p>
+        <a href="/bio/">More about me</a>
+      </section>
     </header>
 
-    <section class="editorial-section" aria-labelledby="practice-heading">
-      <h2 id="practice-heading">Practice</h2>
-      <p class="accent">I work across software, visual culture, research, and writing.</p>
-    </section>
-
-    {
-      featuredProjects.length > 0 && (
-        <section class="editorial-section" aria-labelledby="selected-projects-heading">
-          <h2 id="selected-projects-heading">Selected Projects</h2>
+    <div class="home-composition">
+      <PhotoStudy />
+      {featuredProjects.length > 0 && (
+        <section class="home-projects" aria-labelledby="selected-projects-heading">
+          <div class="home-section-heading">
+            <h2 id="selected-projects-heading">Selected projects</h2>
+            <a href="/projects/">All projects</a>
+          </div>
           <ul class="editorial-list" aria-label="Selected projects">
             {featuredProjects.map((project, index) => (
-              <li>
-                <ProjectIndexEntry project={project} ordinal={index + 1} />
-              </li>
+              <li><ProjectIndexEntry project={project} ordinal={index + 1} /></li>
             ))}
           </ul>
         </section>
-      )
-    }
+      )}
+    </div>
 
-    {
-      recentPosts.length > 0 && (
-        <section class="editorial-section" aria-labelledby="recent-writing-heading">
-          <h2 id="recent-writing-heading">Recent Writing</h2>
+    <div class="home-bottom">
+      {recentPosts.length > 0 && (
+        <section class="home-writing" aria-labelledby="recent-writing-heading">
+          <div class="home-section-heading">
+            <h2 id="recent-writing-heading">Recent writing</h2>
+            <a href="/blog/">All writing</a>
+          </div>
           <ul class="editorial-list" aria-label="Recent writing">
             {recentPosts.map((post) => (
               <li>
-                <article class="editorial-article">
+                <article>
+                  <time class="metadata" datetime={post.data.date.toISOString()}>{formatDisplayDate(post.data.date)}</time>
                   <h3><a href={`/blog/${post.id}/`}>{post.data.title}</a></h3>
-                  <time class="metadata" datetime={post.data.date.toISOString()}>
-                    {formatDisplayDate(post.data.date)}
-                  </time>
                   {post.data.description && <p>{post.data.description}</p>}
                 </article>
               </li>
             ))}
           </ul>
         </section>
-      )
-    }
-
-    <section class="editorial-section" aria-labelledby="contact-prompt-heading">
-      <h2 id="contact-prompt-heading">Get in touch</h2>
-      <p>
-        Feel free to reach out at <a href="mailto:marcy@marcelinebelardo.com">
-          marcy@marcelinebelardo.com
-        </a>.
-      </p>
-    </section>
+      )}
+      <section class="home-contact" aria-labelledby="contact-prompt-heading">
+        <h2 id="contact-prompt-heading">Get in touch</h2>
+        <a href="mailto:marcy@marcelinebelardo.com">marcy@marcelinebelardo.com</a>
+      </section>
+    </div>
   </article>
 </BaseLayout>

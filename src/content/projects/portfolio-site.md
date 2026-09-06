@@ -2,13 +2,12 @@
 slug: portfolio-site
 title: Portfolio Site
 date: 2026-06-04
-description: This very website — a static personal portfolio built with Astro, React, and TailwindCSS.
+description: This very website — a static personal portfolio built with Astro and TypeScript.
 disciplines:
   - software
   - visual
 tags:
   - Astro
-  - React
   - TypeScript
 featured: true
 featuredOrder: 4
@@ -18,4 +17,4 @@ repositoryUrl: https://github.com/marcybelardo/marcybelardo.github.io
 
 ## Summary
 
-This website is a static personal portfolio built with Astro, React, and TailwindCSS.
+This website is a static personal portfolio built with Astro and TypeScript.

@@ -1,0 +1,102 @@
+/* Homepage design study. Reading pages retain their own text measure. */
+.editorial-main:has(.portfolio-home) {
+  width: calc(100% - clamp(2rem, 6vw, 7rem));
+  max-width: 110rem;
+  padding: clamp(2.5rem, 5vw, 5rem) 0 4rem;
+}
+body:has(.portfolio-home) .site-header {
+  position: relative;
+  border-bottom: 0;
+  background: var(--color-paper);
+  backdrop-filter: none;
+}
+body:has(.portfolio-home) .site-header__inner,
+body:has(.portfolio-home) .social-links {
+  width: calc(100% - clamp(2rem, 6vw, 7rem));
+  max-width: 110rem;
+}
+body:has(.portfolio-home) .site-header__inner { padding: 1.5rem 0; }
+.portfolio-home { font-family: var(--font-utility); line-height: 1.45; }
+.portfolio-home a { color: var(--color-ink); }
+.portfolio-home a:hover { color: var(--color-prussian-blue); }
+.home-introduction h1 {
+  font-size: clamp(3.3rem, 9.5vw, 11rem);
+  font-weight: 400;
+  letter-spacing: -0.075em;
+  line-height: 0.95;
+}
+.home-practice { font-size: clamp(1rem, 1.4vw, 1.35rem); }
+.home-practice p { max-width: 37rem; }
+.home-practice a { display: inline-block; margin-top: 1rem; font-size: 0.95rem; }
+.home-photograph { margin: 0; min-width: 0; }
+.home-photograph__placeholder,
+.home-photograph__image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  object-fit: contain;
+  background: #d9d8d2;
+}
+.home-photograph__placeholder {
+  display: grid;
+  place-items: center;
+  color: #565650;
+  font-size: 1rem;
+}
+.home-section-heading { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; margin-bottom: 1.5rem; }
+.home-section-heading h2,
+.home-contact h2 { font-size: 1rem; font-weight: 400; }
+.home-section-heading > a { font-size: 0.9rem; }
+.home-projects { min-width: 0; }
+.portfolio-home .editorial-list > li { padding: 1.5rem 0; }
+.portfolio-home .project-index-entry__heading h2 {
+  font-size: clamp(1.8rem, 3vw, 3.3rem);
+  font-weight: 400;
+  line-height: 1.05;
+  letter-spacing: -0.045em;
+}
+.portfolio-home .project-index-entry__heading h2 a { text-decoration: none; }
+.portfolio-home .project-index-entry__heading h2 a:hover { text-decoration: underline; }
+.portfolio-home .project-index-entry__body { margin-top: 0.65rem; }
+.portfolio-home .project-index-entry__details p { max-width: 34rem; }
+/* Disciplines repeat the section's context; tags remain on the project pages. */
+.portfolio-home .project-index-entry__disciplines,
+.portfolio-home .project-index-entry__tags { display: none; }
+.home-bottom { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: clamp(2rem, 8vw, 10rem); margin-top: clamp(4rem, 8vw, 9rem); }
+.home-writing h3 { margin: 0.75rem 0; font-size: clamp(1.5rem, 2.4vw, 2.5rem); font-weight: 400; letter-spacing: -0.04em; line-height: 1.15; }
+.home-writing h3 a { text-decoration: none; }
+.home-writing h3 a:hover { text-decoration: underline; }
+.home-writing p { max-width: 38rem; }
+.home-contact { align-self: end; padding: 1.5rem 0; border-top: 1px solid var(--color-rule); }
+.home-contact > a { display: inline-block; margin-top: 1rem; font-size: clamp(1.1rem, 1.6vw, 1.75rem); letter-spacing: -0.03em; overflow-wrap: anywhere; }
+@media (max-width: 47.999rem) {
+  .home-bottom { grid-template-columns: 1fr; gap: 3rem; }
+  .home-introduction h1 { max-width: 12ch; }
+  .home-practice { max-width: 34rem; }
+  .home-section-heading { margin-bottom: 1rem; }
+  .portfolio-home .project-index-entry__heading h2 { font-size: 2rem; }
+}
+@media print {
+  .editorial-main:has(.portfolio-home) { width: 100%; padding: 0; }
+  .home-photograph { break-inside: avoid; }
+  .home-bottom { margin-top: 2rem; }
+}
+
+/* Wide photograph: masthead, landscape image, then a horizontal work list. */
+.home-introduction { margin-bottom: 2.5rem; }
+.home-practice { display: flex; justify-content: space-between; align-items: end; gap: 2rem; margin-top: 2rem; }
+.home-practice a { flex-shrink: 0; }
+.home-photograph { aspect-ratio: 2.6; }
+.home-projects { margin-top: 3rem; }
+.portfolio-home .project-index-entry { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 2rem; align-items: center; }
+.portfolio-home .project-index-entry__heading { grid-template-columns: 5rem minmax(0, 1fr); align-items: baseline; gap: 1.5rem; }
+.portfolio-home .project-index-entry__heading .metadata { flex-direction: column; gap: 0.2rem; }
+.portfolio-home .project-index-entry__body { margin-top: 0; }
+@media (max-width: 47.999rem) {
+  .home-practice { display: block; margin-top: 1.5rem; }
+  .home-photograph { aspect-ratio: 1.25; }
+  .portfolio-home .project-index-entry { grid-template-columns: 1fr; gap: 0.75rem; }
+  .portfolio-home .project-index-entry__heading { grid-template-columns: 3rem minmax(0, 1fr); gap: 1rem; }
+  .portfolio-home .project-index-entry__body { margin-left: 4rem; }
+}

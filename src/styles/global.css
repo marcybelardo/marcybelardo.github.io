@@ -309,10 +309,10 @@ textarea {
 .accent {
     color: var(--color-muted-ink);
     font-family: var(--font-utility);
-    font-size: 0.75rem;
-    letter-spacing: 0.08em;
+    font-size: 0.9rem;
+    letter-spacing: 0;
     line-height: 1.4;
-    text-transform: uppercase;
+    text-transform: none;
 }
 
 .accent {
@@ -462,7 +462,8 @@ a.no-underline {
     flex: 0 0 auto;
     color: var(--color-ink);
     font-size: 1rem;
-    font-weight: 700;
+    font-weight: 500;
+    font-family: var(--font-utility);
     letter-spacing: -0.02em;
 }
 
@@ -482,9 +483,9 @@ a.no-underline {
     color: var(--color-ink);
     cursor: pointer;
     font-family: var(--font-utility);
-    font-size: 0.75rem;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
+    font-size: 0.9rem;
+    letter-spacing: 0;
+    text-transform: none;
 }
 
 .primary-navigation__list {
@@ -499,9 +500,9 @@ a.no-underline {
 .primary-navigation__link {
     color: var(--color-ink);
     font-family: var(--font-utility);
-    font-size: 0.75rem;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
+    font-size: 0.9rem;
+    letter-spacing: 0;
+    text-transform: none;
 }
 
 .primary-navigation__link[aria-current="page"] {

@@ -1,0 +1,25 @@
+---
+import { Image } from "astro:assets";
+import type { ImageMetadata } from "astro";
+
+// Add src/assets/homepage-photo.jpg to replace the placeholder in either branch.
+// Set alt to describe the photograph before publishing it.
+const photos = import.meta.glob<{ default: ImageMetadata }>(
+  "../assets/homepage-photo.jpg", { eager: true },
+);
+const photo = Object.values(photos)[0]?.default;
+const alt = "";
+if (photo && !alt.trim()) {
+  throw new Error("Set the photograph alt text in PhotoStudy.astro before building.");
+}
+---
+<figure class="home-photograph">
+  {photo ? (
+    <Image src={photo} alt={alt} widths={[640, 960, 1440, 1920, 2400]}
+      sizes="(min-width: 80rem) 90vw, 100vw" priority class="home-photograph__image" />
+  ) : (
+    <div class="home-photograph__placeholder" role="img" aria-label="Photograph placeholder">
+      <span>Photograph</span>
+    </div>
+  )}
+</figure>

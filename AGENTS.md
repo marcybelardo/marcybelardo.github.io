@@ -77,3 +77,7 @@ The real CV upload path is `public/marceline-belardo-cv.pdf`, served at `/marcel
 ## Instructions for agents
 
 1. When significant changes are made, update the AGENTS.md file
+
+## Homepage design comparison — Wide photograph
+
+This branch (`codex/photo-wide`) is a local design study for comparison with the other photo-layout branch. The homepage uses `src/styles/home-design.css`, sentence-case shared utility typography, and the existing published project/writing queries. Its introduction replaces the abstract practice copy; the reading widths, routes, and blog behavior remain intact. `PhotoStudy.astro` reserves the photograph space and accepts `src/assets/homepage-photo.jpg`; set its meaningful `alt` before building with a photo. Images are displayed uncropped with contain fitting. See `docs/homepage-design-comparison.md` for preview and photo instructions.
