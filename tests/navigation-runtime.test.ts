@@ -181,8 +181,9 @@ type NavigationDom = ReturnType<typeof createNavigationDom> & {
   readonly mediaQuery: FakeNode & { matches: boolean };
 };
 
-function bootstrapNavigation(matches = true): NavigationDom {
+function bootstrapNavigation(matches = true, alwaysCompact = false): NavigationDom {
   const dom = createNavigationDom();
+  if (alwaysCompact && dom.document.navigation) dom.document.navigation.dataset.compact = "always";
   const mediaQuery = Object.assign(new FakeNode(), { matches });
   const animationFrames: Array<() => void> = [];
 
@@ -313,4 +314,25 @@ test("navigation removes every runtime listener during Astro swaps", () => {
 
   assert.equal(panel.dataset.open, "false");
   assert.equal(button.getAttribute("aria-expanded"), "false");
+});
+
+
+test("homepage menu stays collapsible on desktop and across breakpoint changes", () => {
+  const { button, firstLink, document, panel, mediaQuery, flushAnimationFrames } = bootstrapNavigation(false, true);
+  assert.equal(panel.dataset.open, "false");
+  assert.equal(panel.attributes.has("inert"), true);
+  button.dispatchEvent("click", { target: button });
+  flushAnimationFrames();
+  assert.equal(panel.dataset.open, "true");
+  assert.equal(document.activeElement, firstLink);
+  for (const matches of [true, false]) {
+    mediaQuery.matches = matches;
+    mediaQuery.dispatchEvent("change");
+    assert.equal(panel.dataset.open, "true");
+  }
+  document.dispatchEvent("keydown", { key: "Escape", target: firstLink });
+  flushAnimationFrames();
+  assert.equal(panel.dataset.open, "false");
+  assert.equal(button.getAttribute("aria-expanded"), "false");
+  assert.equal(document.activeElement, button);
 });

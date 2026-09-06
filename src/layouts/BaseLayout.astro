@@ -107,6 +107,7 @@ const standardSiteDocumentUri = standardSiteDocument
           class="primary-navigation"
           aria-label="Primary"
           data-site-navigation
+          data-compact={path === "/" ? "always" : undefined}
         >
           <a
             href="/"
@@ -188,6 +189,7 @@ const standardSiteDocumentUri = standardSiteDocument
         const menuPanel = navigation.querySelector("[data-open]");
         const firstLink = menuPanel?.querySelector("a");
         const compactLayout = window.matchMedia("(max-width: 47.999rem)");
+        const isCompact = () => navigation.dataset.compact === "always" || compactLayout.matches;
         let isOpen = false;
         let removeListeners = () => {};
 
@@ -196,7 +198,7 @@ const standardSiteDocumentUri = standardSiteDocument
           menuPanel instanceof HTMLElement
         ) {
           const setPanelState = (open: boolean) => {
-            const shouldShowPanel = !compactLayout.matches || open;
+            const shouldShowPanel = !isCompact() || open;
 
             menuPanel.dataset.open = String(shouldShowPanel);
             menuPanel.setAttribute("aria-hidden", String(!shouldShowPanel));
@@ -220,7 +222,7 @@ const standardSiteDocumentUri = standardSiteDocument
           };
 
           const openMenu = () => {
-            if (!compactLayout.matches) {
+            if (!isCompact()) {
               return;
             }
 
@@ -256,7 +258,7 @@ const standardSiteDocumentUri = standardSiteDocument
           };
 
           const handleMediaChange = () => {
-            if (!compactLayout.matches) {
+            if (!isCompact()) {
               isOpen = false;
             }
 

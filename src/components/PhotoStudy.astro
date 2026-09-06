@@ -8,7 +8,7 @@ const photos = import.meta.glob<{ default: ImageMetadata }>(
   "../assets/homepage-photo.jpg", { eager: true },
 );
 const photo = Object.values(photos)[0]?.default;
-const alt = "";
+const alt = "A photograph of Marceline Belardo at the Forbidden City";
 if (photo && !alt.trim()) {
   throw new Error("Set the photograph alt text in PhotoStudy.astro before building.");
 }
@@ -16,7 +16,7 @@ if (photo && !alt.trim()) {
 <figure class="home-photograph">
   {photo ? (
     <Image src={photo} alt={alt} widths={[640, 960, 1440, 1920, 2400]}
-      sizes="(min-width: 80rem) 90vw, 100vw" priority class="home-photograph__image" />
+      sizes="100vw" layout="constrained" fit="cover" priority class="home-photograph__image" />
   ) : (
     <div class="home-photograph__placeholder" role="img" aria-label="Photograph placeholder">
       <span>Photograph</span>

@@ -280,16 +280,26 @@ test("portfolio-redesign.AC5.2 structured data and visible media contracts remai
   getHtmlFiles(distDirectory).forEach((htmlPath) => {
     const html = readFileSync(htmlPath, "utf8");
     const images = getImages(html);
+    const isHomepage = htmlPath === resolve(distDirectory, "index.html");
+    const heroImages = isHomepage ? images.filter((image) => image.includes('class="home-photograph__image"')) : [];
+    assert.ok(heroImages.length <= 1, "only one homepage photograph may use cover framing");
+    heroImages.forEach((image) => {
+      assert.match(image, /alt="[^"\s][^"]+"/);
+      assert.match(image, /sizes="100vw"/);
+      assert.match(image, /fetchpriority="high"/);
+      assert.ok(html.includes('<figure class="home-photograph">'));
+    });
 
     images.forEach((image) => {
       assertGeneratedImageContract(
         image,
         `${getRouteFromHtmlPath(htmlPath, distDirectory)} image`,
+        heroImages.includes(image) ? "cover" : "contain",
       );
     });
     assert.equal(
       getImagesInsideSquareWrappers(html).length,
-      images.length,
+      images.length - heroImages.length,
       `${getRouteFromHtmlPath(htmlPath, distDirectory)} images must remain inside square frames`,
     );
   });

@@ -134,6 +134,7 @@ export function getImages(html: string): Array<string> {
 export function assertGeneratedImageContract(
   image: string,
   label: string,
+  fit: "contain" | "cover" = "contain",
 ): void {
   assert.match(image, /\bwidth="\d+"/, `${label} must emit intrinsic width`);
   assert.match(image, /\bheight="\d+"/, `${label} must emit intrinsic height`);
@@ -141,8 +142,8 @@ export function assertGeneratedImageContract(
   assert.match(image, /\bsizes="[^"]+"/, `${label} must emit responsive sizing`);
   assert.match(
     image,
-    /data-astro-image-fit="contain"/,
-    `${label} must preserve the full image`,
+    new RegExp(`data-astro-image-fit="${fit}"`),
+    `${label} must use ${fit} fitting`,
   );
 }
 

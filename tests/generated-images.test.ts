@@ -92,14 +92,23 @@ test("representative pages contain only valid generated image markup", () => {
     assert.ok(existsSync(htmlPath), `${htmlPath} must exist before image assertions`);
     const html = readFileSync(htmlPath, "utf8");
     const images = getImages(html);
+    const isHomepage = htmlPath === resolve(distDirectory, "index.html");
+    const heroImages = isHomepage ? images.filter((image) => image.includes('class="home-photograph__image"')) : [];
+    assert.ok(heroImages.length <= 1, "only one homepage photograph may use cover framing");
+    heroImages.forEach((image) => {
+      assert.match(image, /alt="[^"\s][^"]+"/);
+      assert.match(image, /sizes="100vw"/);
+      assert.match(image, /fetchpriority="high"/);
+      assert.ok(html.includes('<figure class="home-photograph">'));
+    });
 
     images.forEach((image) => {
-      assertGeneratedImageContract(image, `${htmlPath} image`);
+      assertGeneratedImageContract(image, `${htmlPath} image`, heroImages.includes(image) ? "cover" : "contain");
     });
 
     assert.equal(
       getImagesInsideSquareWrappers(html).length,
-      images.length,
+      images.length - heroImages.length,
       `${htmlPath} must contain every emitted image inside a square-image frame`,
     );
   });
