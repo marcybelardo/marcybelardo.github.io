@@ -9,13 +9,11 @@ import {
   getGraphEntries,
   getStructuredData,
 } from "./generated-artifact-helpers.ts";
-import { getGeneratedProjectSlugs } from "./generated-project-artifacts.ts";
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const homepagePath = resolve(repositoryRoot, "dist", "index.html");
 const bioPath = resolve(repositoryRoot, "dist", "bio", "index.html");
 const contactPath = resolve(repositoryRoot, "dist", "contact", "index.html");
-const homepageSourcePath = resolve(repositoryRoot, "src", "pages", "index.astro");
 const bioSourcePath = resolve(repositoryRoot, "src", "pages", "bio", "index.astro");
 const configuredOrigin = "https://www.marcelinebelardo.com";
 const profileUrls = [
@@ -49,39 +47,18 @@ function getVisibleH1Text(html: string): string {
   return visibleText;
 }
 
-function getSelectedProjectIds(html: string): Array<string> {
-  return [...html.matchAll(/href="\/projects\/([^/]+)\/"/g)].map(
-    (match) => match[1] ?? "",
-  );
-}
-
-function getRecentWritingIds(html: string): Array<string> {
-  return [...html.matchAll(/href="\/blog\/([^/]+)\/"/g)].map(
-    (match) => match[1] ?? "",
-  );
-}
-
-test("homepage renders the practice, mixed selected work, writing, and contact prompt", () => {
+test("homepage is a photo landing with direct links instead of content previews", () => {
   const html = readHomepage();
-  const selectedProjectIds = getSelectedProjectIds(html);
-  const generatedProjectIds = new Set(getGeneratedProjectSlugs(resolve(repositoryRoot, "dist")));
-
-  assert.match(html, /a software developer in Manila\./);
-  assert.match(html, /id="selected-projects-heading"[^>]*>Selected projects<\/h2>/);
-  assert.match(html, /id="recent-writing-heading"[^>]*>Recent writing<\/h2>/);
-  assert.match(html, /marcy@marcelinebelardo\.com/);
-  assert.ok(selectedProjectIds.length > 0);
-  assert.ok(selectedProjectIds.length <= 4);
-  assert.equal(
-    (html.match(/class="project-index-entry"/g) ?? []).length,
-    selectedProjectIds.length,
-  );
-  assert.equal(new Set(selectedProjectIds).size, selectedProjectIds.length);
-  selectedProjectIds.forEach((projectId) => {
-    assert.ok(generatedProjectIds.has(projectId));
-  });
-  assert.match(html, /The Devil You Know, the Devil You (?:Don't|Don&#39;t)/);
-  assert.doesNotMatch(html, />\s*(?:Art|Code)\s*</);
+  const landing = html.match(/<article class="portfolio-home">([\s\S]*?)<\/article>/)?.[1] ?? "";
+  assert.equal(getVisibleH1Text(html), "Marceline Belardo");
+  assert.match(landing, /<figure class="home-photograph">/);
+  const directions = landing.match(/<nav class="home-directions"[^>]*>([\s\S]*?)<\/nav>/)?.[1] ?? "";
+  assert.deepEqual([...directions.matchAll(/href="([^"]+)"/g)].map((match) => match[1]), ["/projects/", "/blog/", "/bio/", "/contact/"]);
+  assert.doesNotMatch(landing, /selected-projects-heading|recent-writing-heading|home-practice|home-contact|project-index-entry/);
+  assert.match(html, /data-compact="always"/);
+  const button = html.match(/<button[^>]*data-menu-button[^>]*>([\s\S]*?)<\/button>/)?.[1];
+  assert.equal(button?.trim(), "", "the menu control is a shape without visible text");
+  assert.match(html, /aria-label="Close primary navigation"/);
 });
 
 test("homepage JSON-LD matches visible identity and verified profiles", () => {
@@ -117,18 +94,7 @@ test("homepage JSON-LD matches visible identity and verified profiles", () => {
   });
 });
 
-test("homepage ordering and limits remain stable across repeated runs", () => {
-  const homepageRuns = [readHomepage(), readHomepage()];
-  const selectedProjectRuns = homepageRuns.map(getSelectedProjectIds);
-  const recentWritingRuns = homepageRuns.map(getRecentWritingIds);
-
-  assert.deepEqual(selectedProjectRuns[0], selectedProjectRuns[1]);
-  assert.ok((selectedProjectRuns[0]?.length ?? 0) > 0);
-  assert.ok((selectedProjectRuns[0]?.length ?? 0) <= 4);
-  assert.deepEqual(recentWritingRuns[0], recentWritingRuns[1]);
-  assert.deepEqual(recentWritingRuns[0], ["the-devil-you-know"]);
-  assert.ok((recentWritingRuns[0]?.length ?? 0) <= 3);
-
+test("shared featured and recent queries retain stable ordering for content consumers", () => {
   const fixtureEntries = [
     {
       id: "zeta",
@@ -173,25 +139,15 @@ test("homepage ordering and limits remain stable across repeated runs", () => {
   assert.deepEqual(recentRuns[0], ["alpha", "zeta", "bravo"]);
 });
 
-test("empty featured and recent fixtures have no optional section to render", () => {
+test("shared queries accept empty collections", () => {
   assert.deepEqual(getFeaturedProjects([], true, 4), []);
   assert.deepEqual(getRecentPosts([], true, 3), []);
-
-  const source = readFileSync(homepageSourcePath, "utf8");
-  assert.match(
-    source,
-    /featuredProjects\.length > 0 && \(\s*<section[\s\S]*?selected-projects-heading[\s\S]*?<ul[\s\S]*?<\/section>/,
-  );
-  assert.match(
-    source,
-    /recentPosts\.length > 0 && \(\s*<section[\s\S]*?recent-writing-heading[\s\S]*?<ul[\s\S]*?<\/section>/,
-  );
 });
 
 test("Bio uses verified copy and the square portrait without résumé placeholders", () => {
   const html = readBio();
 
-  assert.match(html, /Software Developer/);
+  assert.match(html, /Software developer/);
   assert.match(html, /Building maintainable, friendly, and performant programs\./);
   assert.match(html, /C · Rust · Java · TypeScript · React · Python · PostgreSQL/);
   assert.match(html, /alt="Marceline Belardo holding a camera, taking a selfie"/);

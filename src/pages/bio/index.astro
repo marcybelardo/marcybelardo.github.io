@@ -2,10 +2,12 @@
 // pattern: Imperative Shell
 import SquareImage from "../../components/SquareImage.astro";
 import portraitImage from "../../assets/20260425_29.jpg";
+import "../../styles/bio-design.css";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 
 const bioContent = {
-  label: "Software Developer",
+  label: "Software developer",
+  introduction: "I’m Marceline, a software developer in Manila. I work mostly with Rust, C, and TypeScript. I also write, take photographs, and paint.",
   statement: "Building maintainable, friendly, and performant programs.",
   skills: [
     "C",
@@ -19,45 +21,23 @@ const bioContent = {
   portraitAlt: "Marceline Belardo holding a camera, taking a selfie",
 };
 ---
-
 <BaseLayout
   title="Bio"
   description="About Marceline Belardo, a software developer working across software, visual culture, research, and writing."
 >
-  <article class="editorial-page editorial-measure">
-    <header class="editorial-page__header">
-      <p class="eyebrow">About</p>
-      <h1>Bio</h1>
-      <p>{bioContent.label}</p>
-    </header>
-
-    <section class="editorial-section">
-      <div class="bio-introduction">
-        <SquareImage
-          src={portraitImage}
-          alt={bioContent.portraitAlt}
-          class="bio-portrait"
-          priority
-        />
-        <p class="accent">{bioContent.statement}</p>
-      </div>
-      <p><a href="/marceline-belardo-cv.pdf" target="_blank" rel="noopener noreferrer">View CV (PDF)</a></p>
+  <article class="bio-page">
+    <header class="bio-title"><h1>Bio</h1><p>{bioContent.label}</p></header>
+    <div class="bio-introduction">
+      <p>{bioContent.introduction}</p>
+      <a href="/marceline-belardo-cv.pdf" target="_blank" rel="noopener noreferrer">View CV (PDF)</a>
+    </div>
+    <SquareImage src={portraitImage} alt={bioContent.portraitAlt} class="bio-portrait" priority />
+    <section class="bio-practice" aria-label="Approach">
+      <p>{bioContent.statement}</p>
     </section>
-
-    <section class="editorial-section" aria-labelledby="skills-heading">
+    <section class="bio-tools" aria-labelledby="skills-heading">
       <h2 id="skills-heading">Tools and languages</h2>
-      <p class="accent">{bioContent.skills.join(" · ")}</p>
+      <p>{bioContent.skills.join(" · ")}</p>
     </section>
   </article>
 </BaseLayout>
-
-<style>
-  .bio-introduction {
-    display: grid;
-    gap: 1.5rem;
-  }
-
-  .bio-portrait {
-    max-width: 22rem;
-  }
-</style>

@@ -1,0 +1,49 @@
+/* A single Prussian-blue mark opens the photo pages' existing accessible menu. */
+body:has(.portfolio-home, .bio-page) .site-header {
+  position: absolute;
+  inset: 0 0 auto;
+  border: 0;
+  background: transparent;
+  backdrop-filter: none;
+}
+body:has(.portfolio-home, .bio-page) .site-header__inner {
+  width: auto;
+  margin: 0 clamp(1rem, 2vw, 2.5rem);
+  padding: 1rem 0 0;
+}
+body:has(.portfolio-home, .bio-page) .primary-navigation {
+  position: relative;
+  width: 100%;
+  justify-content: space-between;
+}
+body:has(.portfolio-home) .primary-navigation { justify-content: flex-end; }
+body:has(.portfolio-home) .site-brand { display: none; }
+body:has(.portfolio-home, .bio-page) .primary-navigation[data-js-ready] .primary-navigation__menu-button {
+  display: block;
+  flex: 0 0 auto;
+  width: clamp(2.75rem, 4vw, 4rem);
+  height: clamp(2.75rem, 4vw, 4rem);
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: var(--color-prussian-blue);
+}
+body:has(.portfolio-home, .bio-page) .primary-navigation__menu-button:hover { background: #174b69; }
+body:has(.portfolio-home, .bio-page) .primary-navigation__menu-button[aria-expanded="true"] { background: #171717; }
+body:has(.portfolio-home, .bio-page) .primary-navigation[data-js-ready] .primary-navigation__panel {
+  position: absolute;
+  top: calc(100% + 0.75rem);
+  right: 0;
+  min-width: 13rem;
+  padding: 1.25rem;
+  border: 1px solid var(--color-rule);
+  background: var(--color-paper);
+  box-shadow: none;
+}
+body:has(.portfolio-home, .bio-page) .primary-navigation[data-js-ready] .primary-navigation__panel[data-open="false"] { display: none; }
+body:has(.portfolio-home, .bio-page) .primary-navigation__list { flex-direction: column; align-items: stretch; gap: 1rem; }
+/* The no-script baseline stays visible in normal flow rather than covering the page. */
+body:has(.portfolio-home, .bio-page):has(.primary-navigation:not([data-js-ready])) .site-header { position: relative; }
+body:has(.portfolio-home, .bio-page) .primary-navigation:not([data-js-ready]) .primary-navigation__panel { position: static; padding: 0; border: 0; box-shadow: none; }
+body:has(.portfolio-home, .bio-page) .primary-navigation:not([data-js-ready]) .primary-navigation__list { flex-direction: row; flex-wrap: wrap; gap: 0.75rem; }
+@media print { body:has(.portfolio-home, .bio-page) .site-header { display: none; } }

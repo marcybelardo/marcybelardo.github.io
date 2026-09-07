@@ -1,34 +1,8 @@
 ---
-// pattern: Imperative Shell
-import { getCollection, type CollectionEntry } from "astro:content";
-
 import PhotoStudy from "../components/PhotoStudy.astro";
 import "../styles/home-design.css";
-
-import ProjectIndexEntry from "../components/ProjectIndexEntry.astro";
-import {
-  getFeaturedProjects,
-  getRecentPosts,
-} from "../content/content-queries.ts";
 import BaseLayout from "../layouts/BaseLayout.astro";
 import { SITE_ORIGIN } from "../site-config.ts";
-import { formatDisplayDate } from "../utils/format-date.ts";
-
-const isProduction = !import.meta.env.DEV;
-const [projectEntries, blogEntries] = await Promise.all([
-  getCollection("project"),
-  getCollection("blog"),
-]);
-const featuredProjects: Array<CollectionEntry<"project">> = getFeaturedProjects(
-  projectEntries,
-  isProduction,
-  4,
-);
-const recentPosts: Array<CollectionEntry<"blog">> = getRecentPosts(
-  blogEntries,
-  isProduction,
-  3,
-);
 const canonicalUrl = new URL("/", Astro.site ?? SITE_ORIGIN).toString();
 const profileUrls = [
   "https://github.com/marcybelardo",
@@ -54,62 +28,19 @@ const structuredData = {
   ],
 };
 ---
-
 <BaseLayout
   title="Marceline Belardo"
   description="Marceline Belardo is a software developer, photographer, and painter."
   structuredData={structuredData}
 >
   <article class="portfolio-home">
-    <header class="home-introduction">
-      <h1>Marceline Belardo</h1>
-      <section class="home-practice" aria-label="Practice">
-        <p>I’m Marceline, a software developer in Manila. I work mostly with Rust, C, and TypeScript. I also write, take photographs, and paint.</p>
-        <a href="/bio/">More about me</a>
-      </section>
-    </header>
-
-    <div class="home-composition">
-      <PhotoStudy />
-      {featuredProjects.length > 0 && (
-        <section class="home-projects" aria-labelledby="selected-projects-heading">
-          <div class="home-section-heading">
-            <h2 id="selected-projects-heading">Selected projects</h2>
-            <a href="/projects/">All projects</a>
-          </div>
-          <ul class="editorial-list" aria-label="Selected projects">
-            {featuredProjects.map((project, index) => (
-              <li><ProjectIndexEntry project={project} ordinal={index + 1} /></li>
-            ))}
-          </ul>
-        </section>
-      )}
-    </div>
-
-    <div class="home-bottom">
-      {recentPosts.length > 0 && (
-        <section class="home-writing" aria-labelledby="recent-writing-heading">
-          <div class="home-section-heading">
-            <h2 id="recent-writing-heading">Recent writing</h2>
-            <a href="/blog/">All writing</a>
-          </div>
-          <ul class="editorial-list" aria-label="Recent writing">
-            {recentPosts.map((post) => (
-              <li>
-                <article>
-                  <time class="metadata" datetime={post.data.date.toISOString()}>{formatDisplayDate(post.data.date)}</time>
-                  <h3><a href={`/blog/${post.id}/`}>{post.data.title}</a></h3>
-                  {post.data.description && <p>{post.data.description}</p>}
-                </article>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-      <section class="home-contact" aria-labelledby="contact-prompt-heading">
-        <h2 id="contact-prompt-heading">Get in touch</h2>
-        <a href="mailto:marcy@marcelinebelardo.com">marcy@marcelinebelardo.com</a>
-      </section>
-    </div>
+    <h1>Marceline Belardo</h1>
+    <PhotoStudy />
+    <nav class="home-directions" aria-label="Explore the site">
+      <a href="/projects/">Projects</a>
+      <a href="/blog/">Blog</a>
+      <a href="/bio/">Bio</a>
+      <a href="/contact/">Contact</a>
+    </nav>
   </article>
 </BaseLayout>

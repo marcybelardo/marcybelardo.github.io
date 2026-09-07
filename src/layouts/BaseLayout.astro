@@ -1,6 +1,7 @@
 ---
 // pattern: Imperative Shell
 import "../styles/global.css";
+import "../styles/photo-navigation.css";
 import BskyLogo from "../assets/bsky.svg";
 import GithubLogo from "../assets/GitHub_Invertocat_Black.svg";
 import InstagramLogo from "../assets/Instagram_Glyph_Black.svg";
@@ -107,7 +108,7 @@ const standardSiteDocumentUri = standardSiteDocument
           class="primary-navigation"
           aria-label="Primary"
           data-site-navigation
-          data-compact={path === "/" ? "always" : undefined}
+          data-compact={path === "/" || path === "/bio/" ? "always" : undefined}
         >
           <a
             href="/"
@@ -125,7 +126,7 @@ const standardSiteDocumentUri = standardSiteDocument
             aria-label="Close primary navigation"
             data-menu-button
           >
-            Menu
+            {path === "/" || path === "/bio/" ? null : "Menu"}
           </button>
           <div class="primary-navigation__panel" id="primary-navigation" data-open="true">
             <ul class="primary-navigation__list">
