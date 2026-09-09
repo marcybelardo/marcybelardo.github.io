@@ -1,14 +1,15 @@
 ---
 // pattern: Imperative Shell
-import SquareImage from "../../components/SquareImage.astro";
-import portraitImage from "../../assets/20260425_29.jpg";
+import { Image } from "astro:assets";
+import portraitImage from "../../assets/marcy_mirror.jpg";
 import "../../styles/bio-design.css";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 
 const bioContent = {
   label: "Software developer",
-  introduction: "I’m Marceline, a software developer in Manila. I work mostly with Rust, C, and TypeScript. I also write, take photographs, and paint.",
-  statement: "Building maintainable, friendly, and performant programs.",
+  introduction: "I’m Marceline, an independent software developer in Manila since July 2023. I build web and desktop applications, networking tools, and command-line software, mostly in Rust, TypeScript, Python, and C. Paid work includes a Next.js and TypeScript photography frontend and Python NLP sentiment charts for a journalist.",
+  work: "My open-source work includes tree-based window management and directional navigation in fht-compositor, five merged pull requests for Starship, and my own local-first Rust desktop application chikachika, C HTTP server lilyhttpd, and Rust Huffman compressor cmprsr-rs.",
+  statement: "Before software, I studied Film at UP Diliman and worked as a senior content editor leading six or seven writers. I graduated with a BA in Film in 2019 and am pursuing a Diploma in Computer Science at UPOU, expected in 2028. Writing, photography, and painting remain part of what I do.",
   skills: [
     "C",
     "Rust",
@@ -18,8 +19,9 @@ const bioContent = {
     "Python",
     "PostgreSQL",
   ],
-  portraitAlt: "Marceline Belardo holding a camera, taking a selfie",
+  portraitAlt: "Marceline Belardo taking a mirror photograph with a camera",
 };
+const portraitSizes = "(min-width: 55rem) 15vw, (min-width: 35rem) 18vw, 30vw";
 ---
 <BaseLayout
   title="Bio"
@@ -29,9 +31,48 @@ const bioContent = {
     <header class="bio-title"><h1>Bio</h1><p>{bioContent.label}</p></header>
     <div class="bio-introduction">
       <p>{bioContent.introduction}</p>
+      <p>{bioContent.work}</p>
       <a href="/marceline-belardo-cv.pdf" target="_blank" rel="noopener noreferrer">View CV (PDF)</a>
     </div>
-    <SquareImage src={portraitImage} alt={bioContent.portraitAlt} class="bio-portrait" priority />
+    <div class="bio-portrait-triptych" aria-label="Marceline taking a mirror photograph">
+      <figure class="bio-portrait-frame">
+        <Image
+          src={portraitImage}
+          alt={bioContent.portraitAlt}
+          class="bio-portrait-frame__image"
+          widths={[320, 640, 960, 1280]}
+          sizes={portraitSizes}
+          layout="constrained"
+          priority
+          fit="contain"
+          style="object-fit: contain;"
+        />
+      </figure>
+      <figure class="bio-portrait-frame">
+        <Image
+          src={portraitImage}
+          alt=""
+          class="bio-portrait-frame__image"
+          widths={[320, 640, 960, 1280]}
+          sizes={portraitSizes}
+          layout="constrained"
+          fit="contain"
+          style="object-fit: contain;"
+        />
+      </figure>
+      <figure class="bio-portrait-frame">
+        <Image
+          src={portraitImage}
+          alt=""
+          class="bio-portrait-frame__image"
+          widths={[320, 640, 960, 1280]}
+          sizes={portraitSizes}
+          layout="constrained"
+          fit="contain"
+          style="object-fit: contain;"
+        />
+      </figure>
+    </div>
     <section class="bio-practice" aria-label="Approach">
       <p>{bioContent.statement}</p>
     </section>

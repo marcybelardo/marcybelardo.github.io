@@ -18,6 +18,10 @@ const squareImageSource = readFileSync(
   resolve(repositoryRoot, "src/components/SquareImage.astro"),
   "utf8",
 );
+const bioDesignSource = readFileSync(
+  resolve(repositoryRoot, "src/styles/bio-design.css"),
+  "utf8",
+);
 const bioPath = resolve(distDirectory, "bio", "index.html");
 const representativePaths: ReadonlyArray<string> = [
   resolve(distDirectory, "index.html"),
@@ -31,35 +35,46 @@ const representativePaths: ReadonlyArray<string> = [
   resolve(distDirectory, "404.html"),
 ];
 
-test("Bio uses a square contain frame for its portrait image", () => {
+function getBioPortraitFrames(html: string): Array<string> {
+  return [...html.matchAll(/<figure class="bio-portrait-frame">([\s\S]*?)<\/figure>/g)].map(
+    (match) => match[0] ?? "",
+  );
+}
+
+function getImagesInsideBioPortraitFrames(html: string): Array<string> {
+  return getBioPortraitFrames(html).flatMap((frame) => getImages(frame));
+}
+
+test("Bio uses a full-image grayscale portrait triptych", () => {
   assert.ok(existsSync(bioPath), "Bio output must exist before image assertions");
 
   const bioHtml = readFileSync(bioPath, "utf8");
-  const wrappers = getSquareImageWrappers(bioHtml);
+  const frames = getBioPortraitFrames(bioHtml);
 
-  assert.equal(wrappers.length, 1);
-  wrappers.forEach((wrapper) => {
-    assert.match(wrapper, /style="aspect-ratio:\s*1;"/);
-    assert.match(wrapper, /class="square-image__image/);
-    assert.match(wrapper, /data-astro-image-fit="contain"/);
-    assert.match(wrapper, /style="object-fit:\s*contain;"/);
+  assert.equal(frames.length, 3);
+  frames.forEach((frame) => {
+    assert.match(frame, /data-astro-image-fit="contain"/);
+    assert.match(frame, /style="object-fit:\s*contain;"/);
   });
 
-  assert.match(bioHtml, /alt="Marceline Belardo holding a camera, taking a selfie"/);
+  assert.match(bioHtml, /alt="Marceline Belardo taking a mirror photograph with a camera"/);
+  assert.equal(getImagesInsideBioPortraitFrames(bioHtml).length, 3);
+  assert.match(bioDesignSource, /\.bio-portrait-frame\s*\{[\s\S]*aspect-ratio:\s*2\s*\/\s*3/);
+  assert.match(bioDesignSource, /\.bio-portrait-frame__image\s*\{[\s\S]*filter:\s*grayscale\(100%\)/);
   assert.equal(
-    getImagesInsideSquareWrappers(bioHtml).length,
+    getImagesInsideBioPortraitFrames(bioHtml).length,
     getImages(bioHtml).length,
-    "every Bio image must be contained by a square-image frame",
+    "every Bio image must be contained by a portrait frame",
   );
 });
 
-test("SquareImage output reserves intrinsic dimensions and responsive sources", () => {
+test("Bio images reserve intrinsic dimensions and responsive sources", () => {
   assert.ok(existsSync(bioPath), "Bio output must exist before image assertions");
 
   const bioHtml = readFileSync(bioPath, "utf8");
   const images = getImages(bioHtml);
 
-  assert.equal(images.length, 1);
+  assert.equal(images.length, 3);
   images.forEach((image) => {
     assertGeneratedImageContract(image, "Bio image");
     assert.match(image, /\bloading="(?:lazy|eager)"/);
@@ -71,8 +86,8 @@ test("SquareImage output reserves intrinsic dimensions and responsive sources", 
   assert.match(bioHtml, /\s1280w/);
   assert.match(
     bioHtml,
-    /sizes="auto"/,
-    "Bio images must let the browser use their scrollbar-excluding rendered width",
+    /sizes="\(min-width: 55rem\) 15vw, \(min-width: 35rem\) 18vw, 30vw"/,
+    "Bio images must use responsive panel widths",
   );
   assert.doesNotMatch(
     bioHtml,
@@ -107,9 +122,10 @@ test("representative pages contain only valid generated image markup", () => {
     });
 
     assert.equal(
-      getImagesInsideSquareWrappers(html).length,
+      getImagesInsideSquareWrappers(html).length +
+        (htmlPath === bioPath ? getImagesInsideBioPortraitFrames(html).length : 0),
       images.length - heroImages.length,
-      `${htmlPath} must contain every emitted image inside a square-image frame`,
+      `${htmlPath} must contain every emitted image inside an appropriate contained-image frame`,
     );
   });
 });

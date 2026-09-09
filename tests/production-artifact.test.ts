@@ -28,6 +28,7 @@ import {
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const distDirectory = resolve(repositoryRoot, "dist");
+const bioPath = resolve(distDirectory, "bio", "index.html");
 const configuredOrigin = "https://www.marcelinebelardo.com";
 const googleTagManagerContainerId = "GTM-N4JNKN2H";
 const primaryDestinations = ["/projects/", "/blog/", "/bio/", "/contact/"];
@@ -42,6 +43,12 @@ function readArtifact(relativePath: string): string {
 
   assert.ok(existsSync(artifactPath), `${relativePath} must be generated`);
   return readFileSync(artifactPath, "utf8");
+}
+
+function getBioPortraitFrames(html: string): Array<string> {
+  return [...html.matchAll(/<figure class="bio-portrait-frame">([\s\S]*?)<\/figure>/g)].map(
+    (match) => match[0] ?? "",
+  );
 }
 
 test("portfolio-redesign.AC1.1 production artifact contains the complete static route inventory", () => {
@@ -281,6 +288,7 @@ test("portfolio-redesign.AC5.2 structured data and visible media contracts remai
     const html = readFileSync(htmlPath, "utf8");
     const images = getImages(html);
     const isHomepage = htmlPath === resolve(distDirectory, "index.html");
+    const isBio = htmlPath === bioPath;
     const heroImages = isHomepage ? images.filter((image) => image.includes('class="home-photograph__image"')) : [];
     assert.ok(heroImages.length <= 1, "only one homepage photograph may use cover framing");
     heroImages.forEach((image) => {
@@ -297,10 +305,21 @@ test("portfolio-redesign.AC5.2 structured data and visible media contracts remai
         heroImages.includes(image) ? "cover" : "contain",
       );
     });
+
+    if (isBio) {
+      const portraitFrames = getBioPortraitFrames(html);
+      assert.equal(portraitFrames.length, 3, "Bio must contain three portrait frames");
+      portraitFrames.forEach((frame) => {
+        assert.match(frame, /<img\b[^>]*data-astro-image-fit="contain"/);
+        assert.match(frame, /<img\b[^>]*style="object-fit:\s*contain;"/);
+      });
+    }
+
     assert.equal(
-      getImagesInsideSquareWrappers(html).length,
+      getImagesInsideSquareWrappers(html).length +
+        (isBio ? getBioPortraitFrames(html).reduce((count, frame) => count + getImages(frame).length, 0) : 0),
       images.length - heroImages.length,
-      `${getRouteFromHtmlPath(htmlPath, distDirectory)} images must remain inside square frames`,
+      `${getRouteFromHtmlPath(htmlPath, distDirectory)} images must remain inside a contained-image frame`,
     );
   });
 });

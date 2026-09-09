@@ -49,7 +49,7 @@ function getVisibleH1Text(html: string): string {
 
 test("homepage is a photo landing with direct links instead of content previews", () => {
   const html = readHomepage();
-  const landing = html.match(/<article class="portfolio-home">([\s\S]*?)<\/article>/)?.[1] ?? "";
+  const landing = html.match(/<article class="portfolio-home"[^>]*>([\s\S]*?)<\/article>/)?.[1] ?? "";
   assert.equal(getVisibleH1Text(html), "Marceline Belardo");
   assert.match(landing, /<figure class="home-photograph">/);
   const directions = landing.match(/<nav class="home-directions"[^>]*>([\s\S]*?)<\/nav>/)?.[1] ?? "";
@@ -144,19 +144,26 @@ test("shared queries accept empty collections", () => {
   assert.deepEqual(getRecentPosts([], true, 3), []);
 });
 
-test("Bio uses verified copy and the square portrait without résumé placeholders", () => {
+test("Bio uses verified copy and a full-image mirror portrait triptych", () => {
   const html = readBio();
 
   assert.match(html, /Software developer/);
-  assert.match(html, /Building maintainable, friendly, and performant programs\./);
+  assert.match(html, /I’m Marceline, an independent software developer in Manila since July 2023\./);
+  assert.match(html, /Next\.js and TypeScript photography frontend/);
+  assert.match(html, /Python NLP sentiment charts for a journalist/);
+  assert.match(html, /five merged pull requests for Starship/);
+  assert.match(html, /Diploma in Computer Science at UPOU, expected in 2028/);
+  assert.match(html, /Writing, photography, and painting remain part of what I do\./);
   assert.match(html, /C · Rust · Java · TypeScript · React · Python · PostgreSQL/);
-  assert.match(html, /alt="Marceline Belardo holding a camera, taking a selfie"/);
+  assert.match(html, /alt="Marceline Belardo taking a mirror photograph with a camera"/);
+  assert.equal([...html.matchAll(/<figure class="bio-portrait-frame">/g)].length, 3);
+  assert.equal([...html.matchAll(/<img\b[^>]*\salt(?=\s[^>]*class="bio-portrait-frame__image")/g)].length, 2);
   assert.match(
     html,
     /<a href="\/marceline-belardo-cv\.pdf" target="_blank" rel="noopener noreferrer"[^>]*>View CV \(PDF\)<\/a>/,
   );
   assert.doesNotMatch(html, /<a href="\/marceline-belardo-cv\.pdf"[^>]*download(?:\s|=|>)/);
-  assert.match(html, /<div class="square-image[\s\S]*?<img\b[^>]*width="\d+"[^>]*height="\d+"/);
+  assert.match(html, /<figure class="bio-portrait-frame">[\s\S]*?<img\b[^>]*width="\d+"[^>]*height="\d+"/);
   assert.match(
     html,
     /<meta name="description" content="About Marceline Belardo, a software developer working across software, visual culture, research, and writing\."/,

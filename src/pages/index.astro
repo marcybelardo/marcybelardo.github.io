@@ -27,13 +27,35 @@ const structuredData = {
     },
   ],
 };
+const enableMotifPreview = import.meta.env.DEV;
 ---
 <BaseLayout
   title="Marceline Belardo"
   description="Marceline Belardo is a software developer, photographer, and painter."
   structuredData={structuredData}
 >
-  <article class="portfolio-home">
+  <article class="portfolio-home" data-motif="brackets">
+    {enableMotifPreview && (
+      <script is:inline>
+        (() => {
+          const home = document.querySelector(".portfolio-home");
+          const motif = new URLSearchParams(window.location.search).get("motif");
+
+          if (
+            home instanceof HTMLElement &&
+            (motif === "brackets" || motif === "spine" || motif === "disc")
+          ) {
+            home.dataset.motif = motif;
+          }
+        })();
+      </script>
+    )}
+    <div class="home-motif" aria-hidden="true">
+      <span class="home-motif__bracket home-motif__bracket--top"></span>
+      <span class="home-motif__bracket home-motif__bracket--bottom"></span>
+      <span class="home-motif__spine"></span>
+      <span class="home-motif__disc"></span>
+    </div>
     <h1>Marceline Belardo</h1>
     <PhotoStudy />
     <nav class="home-directions" aria-label="Explore the site">

@@ -2,13 +2,12 @@
 import { Image } from "astro:assets";
 import type { ImageMetadata } from "astro";
 
-// Add src/assets/homepage-photo.jpg to replace the placeholder in either branch.
-// Set alt to describe the photograph before publishing it.
 const photos = import.meta.glob<{ default: ImageMetadata }>(
-  "../assets/homepage-photo.jpg", { eager: true },
+  "../assets/marcy_sensouji.jpg", { eager: true },
 );
 const photo = Object.values(photos)[0]?.default;
-const alt = "A photograph of Marceline Belardo at the Forbidden City";
+const alt =
+  "Marceline Belardo in profile wearing glasses, with a temple pagoda behind her at Sensōji in Tokyo";
 if (photo && !alt.trim()) {
   throw new Error("Set the photograph alt text in PhotoStudy.astro before building.");
 }
