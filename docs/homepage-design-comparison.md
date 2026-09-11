@@ -2,17 +2,17 @@
 
 Branch: `codex/photo-wide`.
 
-The homepage is now a single-screen photographic landing: name at the top, the photograph filling the central space, and Projects, Blog, Bio, and Contact links along the bottom. Project and writing previews have been removed. A blank Prussian-blue square opens the accessible menu. The composition may scroll on short viewports or with enlarged text so content remains reachable.
+The homepage is now a single-screen photographic landing: name at the top, a smaller right-aligned photograph in the central space, and Projects, Blog, Bio, and Contact links along the bottom. Project and writing previews have been removed. A blank dark-ink square opens the accessible menu. The composition may scroll on short viewports or with enlarged text so content remains reachable.
 
-The homepage comparison has three dev-only motif previews. The default is `brackets`, with an asymmetric pair of blue crop brackets tying the title to the photograph. `spine` replaces those with a single blue rail aligned to the menu mark, and `disc` uses a blue disc intersecting the photograph's right paper edge. Use `?motif=brackets`, `?motif=spine`, or `?motif=disc` in development; production always renders the default brackets treatment.
+Fine pointers reveal a textured, multicolor radial field that follows the pointer inside the homepage title, page links, and photo-page menu square. The field uses a fixed radius and fades back to the normal ink color outside that radius; touch and coarse-pointer devices retain the plain ink treatment.
 
-Bio uses the supplied mirror photograph as a native 2:3 grayscale triptych, with compact marginal text and readable desktop geometry. The portrait remains uncropped; the first panel has descriptive alt text and the repeated panels are decorative. It shares the blue menu square; the layout stacks on narrow screens.
+Bio uses the supplied mirror photograph as a native 2:3 grayscale triptych, with compact marginal text and readable desktop geometry. The portrait remains uncropped; the first panel has descriptive alt text and the repeated panels are decorative. It shares the dark-ink menu square; the layout stacks on narrow screens.
 
 ## Preview
 
 From the repository root, run `nix develop --command pnpm --dir .worktrees/photo-wide dev --host 127.0.0.1 --port 4321`.
 
-Open `http://127.0.0.1:4321/`, `http://127.0.0.1:4321/?motif=spine`, `http://127.0.0.1:4321/?motif=disc`, or `http://127.0.0.1:4321/bio/`.
+Open `http://127.0.0.1:4321/` or `http://127.0.0.1:4321/bio/`.
 
 ## Images and styles
 
@@ -24,4 +24,6 @@ The alternative `codex/photo-index` branch remains as the original comparison. N
 
 ## Validation
 
-On 2026-09-10, the full `pnpm verify` passed: 15 Python tests, validation and fixture builds, a production build, and 135 Node tests. A final production build also passed after the crop-position adjustment. All three local motif URLs and Bio returned HTTP 200. Source and generated output were reviewed; browser visual inspection was not performed. The implementation and revisions were delegated to GPT-5.6 Luna at Extra High.
+The final `pnpm verify` passed on 2026-09-12: 15 Python tests, content validation and fixture builds, a clean production build, and 138 Node tests. All code changes and revisions were delegated to GPT-5.6 Luna at Extra High and reviewed by the parent agent.
+
+On 2026-09-12, browser review covered the 1440×900 desktop composition, a 326px mobile viewport, and Bio at desktop width. The title responds at the top edge, the menu square keeps its dark-ink base while showing the textured color field, and opening then closing with Escape preserves the existing focus-managed behavior. The implementation is a local design study and has not been published to the live site. Run `pnpm verify` after changes; browser review should also cover no-JavaScript navigation and the 360px, 768px, and 1280px compositions.

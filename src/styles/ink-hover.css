@@ -1,0 +1,49 @@
+/* A small local field of color follows a fine pointer inside selected ink. */
+[data-ink-hover] {
+  --ink-hover-x: 50%;
+  --ink-hover-y: 50%;
+  --ink-hover-radius: 5rem;
+  --ink-hover-gradient: radial-gradient(
+    circle var(--ink-hover-radius) at var(--ink-hover-x) var(--ink-hover-y),
+    #00a9b7 0%,
+    #6246c8 24%,
+    #d25572 49%,
+    #d99a2e 73%,
+    var(--color-ink) 100%
+  );
+  --ink-hover-texture: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 96 96'%3E%3Cfilter id='grain'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23grain)' opacity='.2'/%3E%3C/svg%3E");
+}
+
+/* The inactive state remains ordinary ink when JavaScript is absent or unsupported. */
+[data-ink-hover="text"] {
+  color: var(--color-ink);
+}
+
+@supports (background-clip: text) or (-webkit-background-clip: text) {
+  [data-ink-hover="text"][data-ink-hover-active="true"] {
+    background-image: var(--ink-hover-texture), var(--ink-hover-gradient);
+    background-size: 7rem 7rem, auto;
+    background-repeat: repeat, no-repeat;
+    background-blend-mode: soft-light, normal;
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+    -webkit-text-fill-color: transparent;
+  }
+}
+
+/* The compact menu is a filled surface, so the same field is painted inside its bounds. */
+.primary-navigation__menu-button[data-ink-hover="surface"][data-ink-hover-active="true"] {
+  --ink-hover-radius: 3.5rem;
+  background-color: var(--color-ink);
+  background-image: var(--ink-hover-texture), var(--ink-hover-gradient);
+  background-size: 7rem 7rem, auto;
+  background-repeat: repeat, no-repeat;
+  background-blend-mode: soft-light, normal;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-ink-hover] {
+    transition: none;
+  }
+}

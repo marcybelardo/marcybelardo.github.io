@@ -1,9 +1,15 @@
 /* A photograph with type at the edges: one screen, no feed or teaser sections. */
-.editorial-main:has(.portfolio-home) { width: 100%; max-width: none; margin: 0; padding: 0; }
+.editorial-main:has(.portfolio-home) {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+}
+
 body:has(.portfolio-home) .social-links { display: none; }
+
 .portfolio-home {
   --edge: clamp(1rem, 2vw, 2.5rem);
-  --motif-blue: var(--color-prussian-blue);
   position: relative;
   isolation: isolate;
   display: grid;
@@ -15,50 +21,9 @@ body:has(.portfolio-home) .social-links { display: none; }
   font-family: "Arial Narrow", "Liberation Sans Narrow", "Helvetica Neue", Arial, sans-serif;
   line-height: 1;
 }
-.portfolio-home > :not(.home-motif) { position: relative; z-index: 2; }
-.home-motif { position: absolute; inset: 0; z-index: 3; pointer-events: none; overflow: hidden; }
-.home-motif__bracket,
-.home-motif__spine,
-.home-motif__disc { display: none; position: absolute; }
-.portfolio-home[data-motif="brackets"] .home-motif__bracket { display: block; }
-.home-motif__bracket {
-  width: clamp(6rem, 16vw, 15rem);
-  height: clamp(4.5rem, 13vw, 11rem);
-  border-color: var(--motif-blue);
-  border-style: solid;
-  border-width: clamp(0.2rem, 0.34vw, 0.34rem);
-}
-.home-motif__bracket--top {
-  top: clamp(6.25rem, 16vh, 10rem);
-  left: var(--edge);
-  border-right: 0;
-  border-bottom: 0;
-}
-.home-motif__bracket--bottom {
-  right: clamp(2.25rem, 9vw, 9rem);
-  bottom: clamp(3.25rem, 8vh, 5rem);
-  width: clamp(8rem, 22vw, 20rem);
-  height: clamp(5rem, 15vw, 12rem);
-  border-top: 0;
-  border-left: 0;
-}
-.portfolio-home[data-motif="spine"] .home-motif__spine { display: block; }
-.home-motif__spine {
-  top: calc(1rem + clamp(2.75rem, 4vw, 4rem));
-  right: var(--edge);
-  bottom: clamp(3.25rem, 8vh, 5rem);
-  width: clamp(0.24rem, 0.45vw, 0.42rem);
-  background: var(--motif-blue);
-}
-.portfolio-home[data-motif="disc"] .home-motif__disc { display: block; }
-.home-motif__disc {
-  top: clamp(11rem, 28vh, 19rem);
-  right: clamp(-7rem, -7vw, -3.5rem);
-  width: clamp(7rem, 18vw, 18rem);
-  aspect-ratio: 1;
-  border-radius: 50%;
-  background: var(--motif-blue);
-}
+
+.portfolio-home > * { position: relative; z-index: 2; }
+
 .portfolio-home h1 {
   margin: 0 var(--edge);
   padding-right: clamp(4rem, 7vw, 7rem);
@@ -67,8 +32,21 @@ body:has(.portfolio-home) .social-links { display: none; }
   letter-spacing: -0.065em;
   line-height: 0.9;
 }
-.home-photograph { position: relative; min-height: 0; margin: 0; overflow: hidden; }
-.home-photograph__image, .home-photograph__placeholder {
+
+.home-photograph {
+  position: relative;
+  grid-row: 2;
+  align-self: center;
+  justify-self: end;
+  width: min(72vw, 64rem);
+  max-height: 53svh;
+  aspect-ratio: 16 / 9;
+  margin: 0;
+  overflow: hidden;
+}
+
+.home-photograph__image,
+.home-photograph__placeholder {
   position: absolute;
   inset: 0;
   display: block;
@@ -79,18 +57,52 @@ body:has(.portfolio-home) .social-links { display: none; }
   object-position: center 30%;
   background: #d9d8d2;
 }
-.home-photograph__placeholder { display: grid; place-items: center; color: #565650; }
-.home-directions { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 1rem 2rem; margin: 0 var(--edge); }
-.home-directions a { color: var(--color-ink); font-size: clamp(1rem, 1.7vw, 1.75rem); letter-spacing: -0.035em; text-decoration: none; }
+
+.home-photograph__placeholder {
+  display: grid;
+  place-items: center;
+  color: #565650;
+}
+
+.home-directions {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem 2rem;
+  margin: 0 var(--edge);
+}
+
+.home-directions a {
+  color: var(--color-ink);
+  font-size: clamp(1rem, 1.7vw, 1.75rem);
+  letter-spacing: -0.035em;
+  text-decoration: none;
+}
+
 .home-directions a:hover { text-decoration: underline; }
+
 /* A short viewport or enlarged text can grow the page instead of hiding links. */
 @media (max-width: 35rem) {
   .portfolio-home { min-height: 32rem; }
-  .portfolio-home h1 { max-width: 12ch; padding-right: 3.5rem; font-size: clamp(3rem, 11vw, 4.8rem); }
+
+  .portfolio-home h1 {
+    max-width: 12ch;
+    padding-right: 3.5rem;
+    font-size: clamp(3rem, 11vw, 4.8rem);
+  }
+
+  .home-photograph {
+    width: 100%;
+    max-height: 42svh;
+    aspect-ratio: 4 / 3;
+  }
+
   .home-directions { gap: 1rem; }
-  .home-motif__bracket--top { top: clamp(7rem, 18vh, 9rem); left: 1rem; }
-  .home-motif__bracket--bottom { right: 2rem; bottom: 3.5rem; }
-  .home-motif__spine { right: 1rem; }
-  .home-motif__disc { top: 52%; right: -3.5rem; width: 7rem; }
 }
-@media print { .portfolio-home { height: 90vh; min-height: 0; } }
+
+@media print {
+  .portfolio-home {
+    height: 90vh;
+    min-height: 0;
+  }
+}

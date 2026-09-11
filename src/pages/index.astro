@@ -1,6 +1,7 @@
 ---
 import PhotoStudy from "../components/PhotoStudy.astro";
 import "../styles/home-design.css";
+import "../styles/ink-hover.css";
 import BaseLayout from "../layouts/BaseLayout.astro";
 import { SITE_ORIGIN } from "../site-config.ts";
 const canonicalUrl = new URL("/", Astro.site ?? SITE_ORIGIN).toString();
@@ -27,42 +28,26 @@ const structuredData = {
     },
   ],
 };
-const enableMotifPreview = import.meta.env.DEV;
 ---
 <BaseLayout
   title="Marceline Belardo"
   description="Marceline Belardo is a software developer, photographer, and painter."
   structuredData={structuredData}
 >
-  <article class="portfolio-home" data-motif="brackets">
-    {enableMotifPreview && (
-      <script is:inline>
-        (() => {
-          const home = document.querySelector(".portfolio-home");
-          const motif = new URLSearchParams(window.location.search).get("motif");
-
-          if (
-            home instanceof HTMLElement &&
-            (motif === "brackets" || motif === "spine" || motif === "disc")
-          ) {
-            home.dataset.motif = motif;
-          }
-        })();
-      </script>
-    )}
-    <div class="home-motif" aria-hidden="true">
-      <span class="home-motif__bracket home-motif__bracket--top"></span>
-      <span class="home-motif__bracket home-motif__bracket--bottom"></span>
-      <span class="home-motif__spine"></span>
-      <span class="home-motif__disc"></span>
-    </div>
-    <h1>Marceline Belardo</h1>
+  <article class="portfolio-home">
+    <h1 data-ink-hover="text">Marceline Belardo</h1>
     <PhotoStudy />
     <nav class="home-directions" aria-label="Explore the site">
-      <a href="/projects/">Projects</a>
-      <a href="/blog/">Blog</a>
-      <a href="/bio/">Bio</a>
-      <a href="/contact/">Contact</a>
+      <a href="/projects/" data-ink-hover="text">Projects</a>
+      <a href="/blog/" data-ink-hover="text">Blog</a>
+      <a href="/bio/" data-ink-hover="text">Bio</a>
+      <a href="/contact/" data-ink-hover="text">Contact</a>
     </nav>
   </article>
 </BaseLayout>
+
+<script>
+  import { initializeInkHover } from "../scripts/ink-hover.ts";
+
+  initializeInkHover();
+</script>

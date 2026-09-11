@@ -3,6 +3,7 @@
 import { Image } from "astro:assets";
 import portraitImage from "../../assets/marcy_mirror.jpg";
 import "../../styles/bio-design.css";
+import "../../styles/ink-hover.css";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 
 const bioContent = {
@@ -28,11 +29,11 @@ const portraitSizes = "(min-width: 55rem) 15vw, (min-width: 35rem) 18vw, 30vw";
   description="About Marceline Belardo, a software developer working across software, visual culture, research, and writing."
 >
   <article class="bio-page">
-    <header class="bio-title"><h1>Bio</h1><p>{bioContent.label}</p></header>
+    <header class="bio-title"><h1 data-ink-hover="text">Bio</h1><p>{bioContent.label}</p></header>
     <div class="bio-introduction">
       <p>{bioContent.introduction}</p>
       <p>{bioContent.work}</p>
-      <a href="/marceline-belardo-cv.pdf" target="_blank" rel="noopener noreferrer">View CV (PDF)</a>
+      <a data-ink-hover="text" href="/marceline-belardo-cv.pdf" target="_blank" rel="noopener noreferrer">View CV (PDF)</a>
     </div>
     <div class="bio-portrait-triptych" aria-label="Marceline taking a mirror photograph">
       <figure class="bio-portrait-frame">
@@ -77,8 +78,14 @@ const portraitSizes = "(min-width: 55rem) 15vw, (min-width: 35rem) 18vw, 30vw";
       <p>{bioContent.statement}</p>
     </section>
     <section class="bio-tools" aria-labelledby="skills-heading">
-      <h2 id="skills-heading">Tools and languages</h2>
+      <h2 id="skills-heading" data-ink-hover="text">Tools and languages</h2>
       <p>{bioContent.skills.join(" · ")}</p>
     </section>
   </article>
 </BaseLayout>
+
+<script>
+  import { initializeInkHover } from "../../scripts/ink-hover.ts";
+
+  initializeInkHover();
+</script>

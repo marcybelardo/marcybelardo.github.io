@@ -1,23 +1,31 @@
-/* A single Prussian-blue mark opens the photo pages' existing accessible menu. */
+/* A single dark-ink mark opens the photo pages' existing accessible menu. */
 body:has(.portfolio-home, .bio-page) .site-header {
   position: absolute;
   inset: 0 0 auto;
   border: 0;
   background: transparent;
   backdrop-filter: none;
+  pointer-events: none;
 }
 body:has(.portfolio-home, .bio-page) .site-header__inner {
   width: auto;
   margin: 0 clamp(1rem, 2vw, 2.5rem);
   padding: 1rem 0 0;
+  pointer-events: none;
 }
 body:has(.portfolio-home, .bio-page) .primary-navigation {
   position: relative;
   width: 100%;
   justify-content: space-between;
+  pointer-events: none;
 }
 body:has(.portfolio-home) .primary-navigation { justify-content: flex-end; }
 body:has(.portfolio-home) .site-brand { display: none; }
+body:has(.portfolio-home, .bio-page) .site-brand,
+body:has(.portfolio-home, .bio-page) .primary-navigation__menu-button,
+body:has(.portfolio-home, .bio-page) .primary-navigation__panel {
+  pointer-events: auto;
+}
 body:has(.portfolio-home, .bio-page) .primary-navigation[data-js-ready] .primary-navigation__menu-button {
   display: block;
   flex: 0 0 auto;
@@ -26,10 +34,9 @@ body:has(.portfolio-home, .bio-page) .primary-navigation[data-js-ready] .primary
   padding: 0;
   border: 0;
   border-radius: 0;
-  background: var(--color-prussian-blue);
+  background-color: var(--color-ink);
 }
-body:has(.portfolio-home, .bio-page) .primary-navigation__menu-button:hover { background: #174b69; }
-body:has(.portfolio-home, .bio-page) .primary-navigation__menu-button[aria-expanded="true"] { background: #171717; }
+body:has(.portfolio-home, .bio-page) .primary-navigation__menu-button:hover { background-color: var(--color-ink); }
 body:has(.portfolio-home, .bio-page) .primary-navigation[data-js-ready] .primary-navigation__panel {
   position: absolute;
   top: calc(100% + 0.75rem);

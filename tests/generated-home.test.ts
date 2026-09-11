@@ -160,7 +160,7 @@ test("Bio uses verified copy and a full-image mirror portrait triptych", () => {
   assert.equal([...html.matchAll(/<img\b[^>]*\salt(?=\s[^>]*class="bio-portrait-frame__image")/g)].length, 2);
   assert.match(
     html,
-    /<a href="\/marceline-belardo-cv\.pdf" target="_blank" rel="noopener noreferrer"[^>]*>View CV \(PDF\)<\/a>/,
+    /<a\b[^>]*href="\/marceline-belardo-cv\.pdf"[^>]*target="_blank"[^>]*rel="noopener noreferrer"[^>]*>View CV \(PDF\)<\/a>/,
   );
   assert.doesNotMatch(html, /<a href="\/marceline-belardo-cv\.pdf"[^>]*download(?:\s|=|>)/);
   assert.match(html, /<figure class="bio-portrait-frame">[\s\S]*?<img\b[^>]*width="\d+"[^>]*height="\d+"/);

@@ -124,6 +124,7 @@ const standardSiteDocumentUri = standardSiteDocument
             aria-controls="primary-navigation"
             aria-expanded="true"
             aria-label="Close primary navigation"
+            data-ink-hover={path === "/" || path === "/bio/" ? "surface" : undefined}
             data-menu-button
           >
             {path === "/" || path === "/bio/" ? null : "Menu"}

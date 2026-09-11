@@ -15,7 +15,7 @@ if (photo && !alt.trim()) {
 <figure class="home-photograph">
   {photo ? (
     <Image src={photo} alt={alt} widths={[640, 960, 1440, 1920, 2400]}
-      sizes="100vw" layout="constrained" fit="cover" priority class="home-photograph__image" />
+      sizes="(max-width: 35rem) 100vw, min(72vw, 64rem)" layout="constrained" fit="cover" priority class="home-photograph__image" />
   ) : (
     <div class="home-photograph__placeholder" role="img" aria-label="Photograph placeholder">
       <span>Photograph</span>

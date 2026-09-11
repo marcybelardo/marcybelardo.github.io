@@ -112,7 +112,11 @@ test("representative pages contain only valid generated image markup", () => {
     assert.ok(heroImages.length <= 1, "only one homepage photograph may use cover framing");
     heroImages.forEach((image) => {
       assert.match(image, /alt="[^"\s][^"]+"/);
-      assert.match(image, /sizes="100vw"/);
+      assert.match(
+        image,
+        /sizes="\(max-width: 35rem\) 100vw, min\(72vw, 64rem\)"/,
+        "homepage photo sizes must match its constrained frame",
+      );
       assert.match(image, /fetchpriority="high"/);
       assert.ok(html.includes('<figure class="home-photograph">'));
     });
