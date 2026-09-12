@@ -300,7 +300,7 @@ test("generated documents expose the accessible primary navigation contract", ()
   const htmlFiles = getHtmlFiles(distDirectory);
   const htmlDocuments = htmlFiles.map((htmlPath) => readFileSync(htmlPath, "utf8"));
   const allHtml = htmlDocuments.join("\n");
-  htmlDocuments.forEach((html) => {
+  htmlDocuments.forEach((html, index) => {
     const navigation = getPrimaryNavigation(html);
     assert.deepEqual(getPrimaryDestinationHrefs(navigation), primaryDestinations);
 
@@ -315,7 +315,15 @@ test("generated documents expose the accessible primary navigation contract", ()
     assert.match(navigation, /aria-expanded="true"/);
     assert.match(navigation, /aria-label="Close primary navigation"/);
     assert.match(navigation, /data-menu-button/);
+    assert.match(navigation, /data-compact="always"/);
+    assert.match(navigation, /data-ink-hover="surface"/);
+    assert.match(navigation, /<a href="\/" class="site-brand no-underline"/);
     assert.match(navigation, /id="primary-navigation"[^>]*data-open="true"/);
+    if (getRouteFromHtmlPath(htmlFiles[index] ?? "", distDirectory) === "/") {
+      assert.match(navigation, /data-home="true"/);
+    } else {
+      assert.doesNotMatch(navigation, /data-home=/);
+    }
   });
 
   const routeExpectations = [

@@ -1,0 +1,31 @@
+/* Shared starting points for destination-page compositions. */
+:root {
+  --interior-page-gutter: clamp(1rem, 4vw, 4rem);
+  --interior-reading-width: 44rem;
+  --interior-section-space: clamp(3.5rem, 8vw, 6.5rem);
+}
+
+.interior-page {
+  width: min(
+    calc(100% - 2 * var(--interior-page-gutter)),
+    var(--editorial-measure)
+  );
+  margin-inline: auto;
+}
+
+.interior-page__header {
+  max-width: var(--interior-reading-width);
+  margin-bottom: var(--interior-section-space);
+}
+
+.interior-page__title {
+  font-size: clamp(2.75rem, 8vw, 6.75rem);
+  font-weight: 400;
+  letter-spacing: -0.045em;
+  line-height: 0.95;
+}
+
+.interior-page__section {
+  max-width: var(--interior-reading-width);
+  margin-block: var(--interior-section-space);
+}

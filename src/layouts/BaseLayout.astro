@@ -1,7 +1,9 @@
 ---
 // pattern: Imperative Shell
 import "../styles/global.css";
-import "../styles/photo-navigation.css";
+import "../styles/compact-navigation.css";
+import "../styles/ink-hover.css";
+import "../styles/interior-page.css";
 import BskyLogo from "../assets/bsky.svg";
 import GithubLogo from "../assets/GitHub_Invertocat_Black.svg";
 import InstagramLogo from "../assets/Instagram_Glyph_Black.svg";
@@ -108,7 +110,8 @@ const standardSiteDocumentUri = standardSiteDocument
           class="primary-navigation"
           aria-label="Primary"
           data-site-navigation
-          data-compact={path === "/" || path === "/bio/" ? "always" : undefined}
+          data-compact="always"
+          data-home={path === "/" ? "true" : undefined}
         >
           <a
             href="/"
@@ -124,11 +127,9 @@ const standardSiteDocumentUri = standardSiteDocument
             aria-controls="primary-navigation"
             aria-expanded="true"
             aria-label="Close primary navigation"
-            data-ink-hover={path === "/" || path === "/bio/" ? "surface" : undefined}
+            data-ink-hover="surface"
             data-menu-button
-          >
-            {path === "/" || path === "/bio/" ? null : "Menu"}
-          </button>
+          ></button>
           <div class="primary-navigation__panel" id="primary-navigation" data-open="true">
             <ul class="primary-navigation__list">
               {
@@ -180,6 +181,12 @@ const standardSiteDocumentUri = standardSiteDocument
         <GithubLogo width={20} height={20} />
       </a>
     </footer>
+
+    <script>
+      import { initializeInkHover } from "../scripts/ink-hover.ts";
+
+      initializeInkHover();
+    </script>
 
     <script>
       // pattern: Imperative Shell

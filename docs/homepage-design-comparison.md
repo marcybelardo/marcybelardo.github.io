@@ -8,6 +8,8 @@ Fine pointers reveal a textured, multicolor glow behind the homepage title and l
 
 Bio uses the supplied mirror photograph as a native 2:3 grayscale triptych, with compact marginal text and readable desktop geometry. The portrait remains uncropped; the first panel has descriptive alt text and the repeated panels are decorative. It shares the dark-ink menu square; the layout stacks on narrow screens.
 
+The same compact menu now anchors Home, Bio, Projects, Blog, Contact, project details, blog details, and tag archives. Interior routes show a small home link beside the menu; Home hides the duplicate brand beside its large title. Every route keeps the visible server-rendered links when JavaScript is disabled. `GlowText.astro` provides the paired glow and semantic text spans, and the shared layout loads the ink-hover styles and runtime once. `interior-page.css` adds neutral width, heading, and section tokens for future destination-page work without changing those pages' current compositions.
+
 ## Preview
 
 From the repository root, run `nix develop --command pnpm --dir .worktrees/photo-wide dev --host 127.0.0.1 --port 4321`.
@@ -18,7 +20,7 @@ Open `http://127.0.0.1:4321/` or `http://127.0.0.1:4321/bio/`.
 
 The homepage photo is `src/assets/marcy_sensouji.jpg`, showing Marceline Belardo in profile wearing glasses with a temple pagoda behind her at Sensōji in Tokyo. Its description is the `alt` constant in `src/components/PhotoStudy.astro`. Add both when changing the image. Cropping uses a centered horizontal position with a 30% vertical focal point; change `object-position` in `src/styles/home-design.css` to adjust it.
 
-Bio uses `src/assets/marcy_mirror.jpg` in three native 2:3 portrait frames, with copy and alt text in `src/pages/bio/index.astro`. Its grayscale triptych layout is in `src/styles/bio-design.css`. The shared square menu is in `src/styles/photo-navigation.css`.
+Bio uses `src/assets/marcy_mirror.jpg` in three native 2:3 portrait frames, with copy and alt text in `src/pages/bio/index.astro`. Its grayscale triptych layout is in `src/styles/bio-design.css`. The shared square menu is in `src/styles/compact-navigation.css`; shared interior starter styles are in `src/styles/interior-page.css`.
 
 The alternative `codex/photo-index` branch remains as the original comparison. Nothing has been published to the live site. Run `pnpm verify` before publishing.
 

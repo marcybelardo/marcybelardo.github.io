@@ -14,8 +14,12 @@ const inkHoverStyles = readFileSync(
   resolve(repositoryRoot, "src/styles/ink-hover.css"),
   "utf8",
 );
-const photoNavigationStyles = readFileSync(
-  resolve(repositoryRoot, "src/styles/photo-navigation.css"),
+const compactNavigationStyles = readFileSync(
+  resolve(repositoryRoot, "src/styles/compact-navigation.css"),
+  "utf8",
+);
+const interiorPageStyles = readFileSync(
+  resolve(repositoryRoot, "src/styles/interior-page.css"),
   "utf8",
 );
 
@@ -259,33 +263,37 @@ test("ink hover styles use a local fixed-radius field clipped to ink", () => {
   assert.match(inkHoverStyles, /\.ink-hover__foreground\s*\{[^}]*z-index:\s*1;[^}]*color:\s*var\(--color-ink\);/);
   assert.doesNotMatch(inkHoverStyles, /content:\s*attr\(data-ink-text\)/);
   assert.match(inkHoverStyles, /background:\s*var\(--color-ink\)/);
-  assert.match(photoNavigationStyles, /background-color:\s*var\(--color-ink\)/);
+  assert.match(compactNavigationStyles, /background-color:\s*var\(--color-ink\)/);
   assert.doesNotMatch(
-    photoNavigationStyles,
+    compactNavigationStyles,
     /primary-navigation__menu-button[^}]*\{[^}]*background:\s*var\(--color-ink\)/,
   );
+  assert.match(compactNavigationStyles, /primary-navigation\[data-js-ready\] \.primary-navigation__panel\[data-open="false"\]/);
+  assert.match(compactNavigationStyles, /primary-navigation:not\(\[data-js-ready\]\) \.primary-navigation__panel\s*\{[^}]*position:\s*static/);
+  assert.match(interiorPageStyles, /--interior-page-gutter:/);
+  assert.match(interiorPageStyles, /\.interior-page__header\s*\{/);
+  assert.match(interiorPageStyles, /\.interior-page__section\s*\{/);
 });
 
-test("text glow keeps its decorative duplicate out of accessible content", () => {
+test("GlowText owns paired decorative and semantic copies and BaseLayout initializes it once", () => {
+  const glowTextComponent = readFileSync(
+    resolve(repositoryRoot, "src/components/GlowText.astro"),
+    "utf8",
+  );
   const homeMarkup = readFileSync(resolve(repositoryRoot, "src/pages/index.astro"), "utf8");
   const bioMarkup = readFileSync(resolve(repositoryRoot, "src/pages/bio/index.astro"), "utf8");
+  const baseLayout = readFileSync(resolve(repositoryRoot, "src/layouts/BaseLayout.astro"), "utf8");
   const allMarkup = homeMarkup + bioMarkup;
-  const targetMarkup = [...allMarkup.matchAll(/data-ink-hover="text"/g)];
-  const glowCopies = [...allMarkup.matchAll(/<span class="ink-hover__glow-copy" aria-hidden="true">([^<]+)<\/span>/g)];
-  const foregroundCopies = [...allMarkup.matchAll(/<span class="ink-hover__foreground">([^<]+)<\/span>/g)];
 
-  const expectedText = [
-    "Marceline Belardo",
-    "Projects",
-    "Blog",
-    "Bio",
-    "Contact",
-    "Bio",
-    "View CV (PDF)",
-    "Tools and languages",
-  ];
-  assert.equal(targetMarkup.length, expectedText.length);
-  assert.deepEqual(glowCopies.map((match) => match[1]), expectedText);
-  assert.deepEqual(foregroundCopies.map((match) => match[1]), expectedText);
+  assert.match(glowTextComponent, /class="ink-hover__glow-copy" aria-hidden="true"><slot\s*\/>/);
+  assert.match(glowTextComponent, /class="ink-hover__foreground"><slot\s*\/>/);
+  assert.equal([...glowTextComponent.matchAll(/<slot\s*\/>/g)].length, 2);
+  assert.equal([...homeMarkup.matchAll(/<GlowText>/g)].length, 5);
+  assert.equal([...bioMarkup.matchAll(/<GlowText>/g)].length, 3);
+  assert.doesNotMatch(allMarkup, /ink-hover__glow-copy|ink-hover__foreground/);
+  assert.doesNotMatch(allMarkup, /initializeInkHover|styles\/ink-hover\.css/);
+  assert.match(baseLayout, /\.\.\/styles\/ink-hover\.css/);
+  assert.match(baseLayout, /import \{ initializeInkHover \} from "\.\.\/scripts\/ink-hover\.ts"/);
+  assert.equal([...baseLayout.matchAll(/initializeInkHover\(\)/g)].length, 1);
   assert.doesNotMatch(allMarkup, /data-ink-hover="text"[^>]*aria-label=/);
 });

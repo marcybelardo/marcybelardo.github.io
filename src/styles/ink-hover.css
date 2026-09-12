@@ -74,7 +74,7 @@
 }
 
 /* The black square remains the button's foreground while its edge sheds the local field. */
-body:has(.portfolio-home, .bio-page) .primary-navigation .primary-navigation__menu-button[data-ink-hover="surface"][data-ink-hover-active="true"] {
+.primary-navigation .primary-navigation__menu-button[data-ink-hover="surface"][data-ink-hover-active="true"] {
   --ink-hover-radius: 3.5rem;
   position: relative;
   isolation: isolate;
@@ -82,7 +82,7 @@ body:has(.portfolio-home, .bio-page) .primary-navigation .primary-navigation__me
   background-color: transparent;
 }
 
-body:has(.portfolio-home, .bio-page) .primary-navigation .primary-navigation__menu-button[data-ink-hover="surface"][data-ink-hover-active="true"]::before {
+.primary-navigation .primary-navigation__menu-button[data-ink-hover="surface"][data-ink-hover-active="true"]::before {
   content: "";
   position: absolute;
   inset: 0;
@@ -98,7 +98,7 @@ body:has(.portfolio-home, .bio-page) .primary-navigation .primary-navigation__me
   -webkit-mask-image: var(--ink-hover-mask);
 }
 
-body:has(.portfolio-home, .bio-page) .primary-navigation .primary-navigation__menu-button[data-ink-hover="surface"][data-ink-hover-active="true"]::after {
+.primary-navigation .primary-navigation__menu-button[data-ink-hover="surface"][data-ink-hover-active="true"]::after {
   content: "";
   position: absolute;
   inset: 0;

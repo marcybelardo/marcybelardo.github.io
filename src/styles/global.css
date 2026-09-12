@@ -97,7 +97,7 @@ textarea {
 .editorial-main {
     width: min(100% - 2rem, var(--editorial-measure));
     margin: 0 auto;
-    padding: 4rem 0 6rem;
+    padding: 5rem 0 6rem;
 }
 
 .editorial-measure {
