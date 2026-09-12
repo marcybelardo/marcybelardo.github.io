@@ -276,7 +276,10 @@ test("portfolio-redesign.AC5.2 structured data and visible media contracts remai
     assert.equal(projectData.url, projectData["@id"]);
     assert.equal(
       projectData.name,
-      getSingleMatch(projectHtml, /<h1[^>]*>([^<]+)<\/h1>/g, `${slug} project heading`).trim(),
+      getInkHoverVisibleText(
+        getSingleMatch(projectHtml, /<h1\b[^>]*>([\s\S]*?)<\/h1>/g, `${slug} project heading`),
+        `${slug} project heading`,
+      ).trim(),
     );
     assert.equal(
       projectData.description,

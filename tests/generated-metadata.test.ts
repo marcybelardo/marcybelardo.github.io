@@ -9,6 +9,7 @@ import {
   getCssFiles,
   getGraphEntries,
   getHtmlFiles,
+  getInkHoverVisibleText,
   getPrimaryDestinationHrefs,
   getPrimaryNavigation,
   getRouteFromHtmlPath,
@@ -231,7 +232,10 @@ test("blog detail JSON-LD matches its visible article metadata and tags", () => 
   const html = readFileSync(blogDetailPath, "utf8");
   const jsonLd = getStructuredData(html, "blog detail");
   const canonical = `${configuredOrigin}/blog/the-devil-you-know/`;
-  const headline = getSingleMatch(html, /<h1[^>]*>([^<]+)<\/h1>/g, "blog headline").trim();
+  const headline = getInkHoverVisibleText(
+    getSingleMatch(html, /<h1\b[^>]*>([\s\S]*?)<\/h1>/g, "blog headline"),
+    "blog headline",
+  ).trim();
   const description = getSingleMatch(
     html,
     /<meta name="description" content="([^"]*)"\s*\/?\s*>/g,
@@ -398,7 +402,10 @@ test("homepage and project JSON-LD contain only visible fields", () => {
     assert.equal(projectData.url, projectData["@id"]);
     assert.equal(
       projectData.name,
-      getSingleMatch(projectHtml, /<h1[^>]*>([^<]+)<\/h1>/g, `${slug} project heading`),
+      getInkHoverVisibleText(
+        getSingleMatch(projectHtml, /<h1\b[^>]*>([\s\S]*?)<\/h1>/g, `${slug} project heading`),
+        `${slug} project heading`,
+      ).trim(),
     );
     assert.equal(
       projectData.description,
