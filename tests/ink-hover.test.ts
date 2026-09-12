@@ -30,8 +30,8 @@ const homeDesignStyles = readFileSync(
   resolve(repositoryRoot, "src/styles/home-design.css"),
   "utf8",
 );
-const bioDesignStyles = readFileSync(
-  resolve(repositoryRoot, "src/styles/bio-design.css"),
+const aboutDesignStyles = readFileSync(
+  resolve(repositoryRoot, "src/styles/about-design.css"),
   "utf8",
 );
 const projectDesignStyles = readFileSync(
@@ -40,10 +40,6 @@ const projectDesignStyles = readFileSync(
 );
 const blogDesignStyles = readFileSync(
   resolve(repositoryRoot, "src/styles/blog-design.css"),
-  "utf8",
-);
-const contactDesignStyles = readFileSync(
-  resolve(repositoryRoot, "src/styles/contact-design.css"),
   "utf8",
 );
 
@@ -273,6 +269,11 @@ test("ink hover styles keep the text glow and black menu face distinct", () => {
   assert.match(inkHoverStyles, /mask-image:\s*var\(--ink-hover-mask\)/);
   assert.match(inkHoverStyles, /-webkit-mask-image:\s*var\(--ink-hover-mask\)/);
   assert.match(inkHoverStyles, /background-clip:\s*text/);
+  assert.match(
+    inkHoverStyles,
+    /\.about-title,[\s\S]*?\.about-contact\s*\{\s*overflow:\s*visible;/,
+    "About GlowText targets and their containers preserve visible glow overflow",
+  );
   assert.match(inkHoverStyles, /background-size:\s*7rem 7rem, auto/);
   const menuAura = inkHoverStyles.match(
     /\.primary-navigation \.primary-navigation__menu-button\[data-ink-hover="surface"\]\[data-ink-hover-active="true"\]::before\s*\{([^}]*)\}/,
@@ -334,15 +335,14 @@ test("display headings share one compressed stack while reading and utility face
 
   const displayStyleSources = [
     homeDesignStyles,
-    bioDesignStyles,
+    aboutDesignStyles,
     projectDesignStyles,
     blogDesignStyles,
-    contactDesignStyles,
   ].join("\n");
   assert.doesNotMatch(displayStyleSources, /font-family:\s*"Arial Narrow"/);
   const displayTargets: Array<[RegExp, string]> = [
     [/\.portfolio-home\s*\{[^}]*font-family:\s*var\(--font-display\)/, "Home"],
-    [/\.bio-title h1\s*\{[^}]*font-family:\s*var\(--font-display\)/, "Bio title"],
+    [/\.about-title h1\s*\{[^}]*font-family:\s*var\(--font-display\)/, "About title"],
     [/\.projects-index__header h1\s*\{[^}]*font-family:\s*var\(--font-display\)/, "Projects title"],
     [/\.project-index-entry__main h2\s*\{[^}]*font-family:\s*var\(--font-display\)/, "project entry titles"],
     [/\.project-layout__header h1\s*\{[^}]*font-family:\s*var\(--font-display\)/, "project detail title"],
@@ -350,8 +350,6 @@ test("display headings share one compressed stack while reading and utility face
     [/\.blog-index-page \.blog-index__header h1\s*\{[^}]*font-family:\s*var\(--font-display\)/, "Blog and tag titles"],
     [/\.blog-index-entry__summary h2\s*\{[^}]*font-family:\s*var\(--font-display\)/, "blog entry titles"],
     [/\.blog-article \.blog-article__header h1\s*\{[^}]*font-family:\s*var\(--font-display\)/, "blog article title"],
-    [/\.contact-page__heading h1\s*\{[^}]*font-family:\s*var\(--font-display\)/, "Contact title"],
-    [/\.contact-page__email\s*\{[^}]*font-family:\s*var\(--font-display\)/, "Contact email display"],
   ];
   displayTargets.forEach(([pattern, label]) => {
     assert.match(displayStyleSources, pattern, `${label} use the display face`);
