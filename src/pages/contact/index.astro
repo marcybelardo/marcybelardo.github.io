@@ -1,5 +1,7 @@
 ---
 // pattern: Imperative Shell
+import GlowText from "../../components/GlowText.astro";
+import "../../styles/contact-design.css";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 
 const contactDestinations = {
@@ -8,13 +10,15 @@ const contactDestinations = {
     href: "mailto:marcy@marcelinebelardo.com",
   },
   profiles: [
-    { label: "GitHub profile", href: "https://github.com/marcybelardo" },
+    { label: "GitHub", accessibleLabel: "GitHub profile", href: "https://github.com/marcybelardo" },
     {
-      label: "Bluesky profile",
+      label: "Bluesky",
+      accessibleLabel: "Bluesky profile",
       href: "https://bsky.app/profile/marcelinebelardo.com",
     },
     {
-      label: "Instagram profile",
+      label: "Instagram",
+      accessibleLabel: "Instagram profile",
       href: "https://instagram.com/marcelinebelardo",
     },
   ],
@@ -25,20 +29,33 @@ const contactDestinations = {
   title="Contact"
   description="Contact Marceline Belardo by email or through verified GitHub, Bluesky, and Instagram profiles."
 >
-  <article class="editorial-page editorial-measure">
-    <header class="editorial-page__header">
-      <p class="eyebrow">Get in touch</p>
-      <h1>Contact</h1>
-      <p>Feel free to reach out by email or through one of these profiles.</p>
+  <article class="contact-page">
+    <header class="contact-page__heading">
+      <h1 data-ink-hover="text"><GlowText>Contact</GlowText></h1>
     </header>
 
-    <ul class="editorial-list" aria-label="Contact links">
-      <li><a href={contactDestinations.email.href}>{contactDestinations.email.label}</a></li>
-      {
-        contactDestinations.profiles.map((destination) => (
-          <li><a href={destination.href}>{destination.label}</a></li>
-        ))
-      }
-    </ul>
+    <a
+      class="contact-page__email"
+      href={contactDestinations.email.href}
+      aria-label={contactDestinations.email.label}
+      data-ink-hover="text"
+    >
+      <GlowText>marcy@marcelinebelardo.com</GlowText>
+    </a>
+
+    <nav aria-label="Social profiles" class="contact-page__profiles">
+      <ul>
+        {contactDestinations.profiles.map((destination) => (
+          <li>
+            <a
+              href={destination.href}
+              aria-label={destination.accessibleLabel}
+            >
+              {destination.label}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </nav>
   </article>
 </BaseLayout>

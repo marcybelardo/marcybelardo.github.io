@@ -198,18 +198,45 @@ test("Bio uses verified copy and a full-image mirror portrait triptych", () => {
 
 test("Contact exposes verified destinations with descriptive, non-empty links", () => {
   const html = readContact();
-  const destinations = [
-    ["mailto:marcy@marcelinebelardo.com", "Email Marceline at marcy@marcelinebelardo.com"],
-    ["https://github.com/marcybelardo", "GitHub profile"],
-    ["https://bsky.app/profile/marcelinebelardo.com", "Bluesky profile"],
-    ["https://instagram.com/marcelinebelardo", "Instagram profile"],
-  ] as const;
+  const emailLink = html.match(
+    /<a\b(?=[^>]*href="mailto:marcy@marcelinebelardo\.com")(?=[^>]*aria-label="Email Marceline at marcy@marcelinebelardo\.com")[^>]*>([\s\S]*?)<\/a>/,
+  );
 
-  assert.match(html, /Feel free to reach out by email or through one of these profiles\./);
-  destinations.forEach(([href, label]) => {
-    assert.match(html, new RegExp(`<a href="${href.replaceAll("/", "\\/")}">${label}<\/a>`));
-  });
+  assert.ok(emailLink, "Contact must keep the descriptive accessible email label");
+  assert.equal(
+    getInkHoverVisibleText(emailLink[1] ?? "", "Contact email"),
+    "marcy@marcelinebelardo.com",
+  );
+  assert.doesNotMatch(html, /Feel free to reach out|Get in touch/);
+  assert.doesNotMatch(html, /<img\b/);
+
+  const profiles = html.match(
+    /<nav\b[^>]*class="contact-page__profiles"[^>]*>([\s\S]*?)<\/nav>/,
+  )?.[1] ?? "";
+  const profileLinks = [
+    ...profiles.matchAll(
+      /<a\b[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/g,
+    ),
+  ];
+  assert.deepEqual(
+    profileLinks.map((match) => [
+      match[1],
+      (match[2] ?? "").replace(/<[^>]+>/g, "").trim(),
+    ]),
+    [
+      ["https://github.com/marcybelardo", "GitHub"],
+      ["https://bsky.app/profile/marcelinebelardo.com", "Bluesky"],
+      ["https://instagram.com/marcelinebelardo", "Instagram"],
+    ],
+  );
   assert.doesNotMatch(html, /<a\b[^>]*>\s*<\/a>/);
+  const contactStyles = readFileSync(
+    resolve(repositoryRoot, "src", "styles", "contact-design.css"),
+    "utf8",
+  );
+  assert.match(contactStyles, /min-height:\s*max\(100svh,\s*31rem\)/);
+  assert.doesNotMatch(contactStyles, /height:\s*100svh/);
+  assert.match(contactStyles, /body:has\(\.contact-page\)\s+\.social-links\s*\{\s*display:\s*none;/);
   assert.match(
     html,
     /<meta name="description" content="Contact Marceline Belardo by email or through verified GitHub, Bluesky, and Instagram profiles\."/,

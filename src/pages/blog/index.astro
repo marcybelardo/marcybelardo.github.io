@@ -1,13 +1,11 @@
 ---
 // pattern: Imperative Shell
-import SquareImage from "../../components/SquareImage.astro";
+import GlowText from "../../components/GlowText.astro";
 import BlogIndexEntry from "../../components/BlogIndexEntry.astro";
 import BaseLayout from "../../layouts/BaseLayout.astro";
+import "../../styles/blog-design.css";
 import { getCollection, type CollectionEntry } from "astro:content";
-import {
-  getPublishedBlogPosts,
-  toTagSlug,
-} from "../../content/content-queries.ts";
+import { getPublishedBlogPosts } from "../../content/content-queries.ts";
 
 const posts: Array<CollectionEntry<"blog">> = getPublishedBlogPosts(
   await getCollection("blog"),
@@ -19,52 +17,22 @@ const posts: Array<CollectionEntry<"blog">> = getPublishedBlogPosts(
   title="Blog"
   description="Writing by Marceline Belardo about technology, politics, and art."
 >
-  <article class="editorial-page editorial-measure">
-    <header class="editorial-page__header">
-      <p class="eyebrow">Writing</p>
-      <h1>Blog</h1>
-      <p>
-        <a href="/rss.xml" class="utility no-underline">RSS feed</a>
-      </p>
+  <article class="editorial-page blog-index-page">
+    <header class="blog-index__header">
+      <h1 data-ink-hover="text"><GlowText>Blog</GlowText></h1>
+      <a href="/rss.xml" class="blog-index__rss">RSS feed</a>
     </header>
     {
       posts.length === 0 ? (
         <p class="editorial-empty">No posts yet.</p>
       ) : (
-        <ul class="editorial-list blog-index__list" aria-label="Blog posts">
+        <ol class="blog-index__list" aria-label="Published writing">
           {posts.map((post) => (
             <li>
-              {post.data.image && post.data.imageAlt && (
-                <a href={`/blog/${post.id}/`} class="blog-index__image-link">
-                  <SquareImage
-                    src={post.data.image}
-                    alt={post.data.imageAlt}
-                    class="blog-index__image"
-                  />
-                </a>
-              )}
               <BlogIndexEntry post={post} />
-              {post.data.tags.length > 0 && (
-                <p class="metadata blog-index__tags">
-                  {post.data.tags.map((tag, i) => [
-                    i > 0 && ", ",
-                    (() => {
-                      const slug = toTagSlug(tag);
-
-                      return slug ? (
-                        <a
-                          href={`/blog/tags/${slug}/`}
-                        >
-                          {tag}
-                        </a>
-                      ) : null;
-                    })(),
-                  ])}
-                </p>
-              )}
             </li>
           ))}
-        </ul>
+        </ol>
       )
     }
   </article>

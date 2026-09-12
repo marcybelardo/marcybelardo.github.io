@@ -11,6 +11,7 @@ import {
   decodeHtmlEntities,
   getGraphEntries,
   getHtmlFiles,
+  getInkHoverVisibleText,
   getImages,
   getImagesInsideSquareWrappers,
   getPrimaryDestinationHrefs,
@@ -250,7 +251,10 @@ test("portfolio-redesign.AC5.2 structured data and visible media contracts remai
   assert.equal(blogData.url, blogCanonical);
   assert.equal(
     blogData.headline,
-    getSingleMatch(blogHtml, /<h1[^>]*>([^<]+)<\/h1>/g, "blog headline").trim(),
+    getInkHoverVisibleText(
+      blogHtml.match(/<h1\b[^>]*>([\s\S]*?)<\/h1>/)?.[1] ?? "",
+      "blog headline",
+    ).trim(),
   );
   assert.equal(
     blogData.description,

@@ -1,7 +1,9 @@
 ---
 // pattern: Imperative Shell
+import GlowText from "../../../components/GlowText.astro";
 import BaseLayout from "../../../layouts/BaseLayout.astro";
 import BlogIndexEntry from "../../../components/BlogIndexEntry.astro";
+import "../../../styles/blog-design.css";
 import { getCollection, type CollectionEntry } from "astro:content";
 import {
   getBlogTagArchives,
@@ -32,17 +34,19 @@ const { label, posts } = tag;
   title={`Posts tagged: ${label}`}
   description={`Writing by Marceline Belardo tagged with ${label}.`}
 >
-  <article class="editorial-page editorial-measure">
-    <header class="editorial-page__header">
-      <p class="eyebrow"><a href="/blog/">Blog archive</a></p>
-      <h1>Posts tagged: <span class="accent">{label}</span></h1>
+  <article class="editorial-page blog-index-page">
+    <header class="blog-index__header">
+      <h1 data-ink-hover="text"><GlowText>Posts tagged: {label}</GlowText></h1>
+      <a href="/rss.xml" class="blog-index__rss">RSS feed</a>
     </header>
     {
-      <ul class="editorial-list blog-index__list" aria-label={`Posts tagged ${label}`}>
+      <ol class="blog-index__list" aria-label={`Posts tagged ${label}`}>
         {posts.map((post) => (
-          <li><BlogIndexEntry post={post} /></li>
+          <li>
+            <BlogIndexEntry post={post} />
+          </li>
         ))}
-      </ul>
+      </ol>
     }
   </article>
 </BaseLayout>

@@ -1,6 +1,10 @@
 ---
+// pattern: Imperative Shell
 import type { CollectionEntry } from "astro:content";
 
+import GlowText from "./GlowText.astro";
+import SquareImage from "./SquareImage.astro";
+import { toTagSlug } from "../content/content-queries.ts";
 import { formatDisplayDate } from "../utils/format-date.ts";
 
 type Props = {
@@ -8,14 +12,54 @@ type Props = {
 };
 
 const { post } = Astro.props;
+const { data } = post;
+const postUrl = `/blog/${post.id}/`;
 ---
 
-<a href={`/blog/${post.id}/`}>
-  <h2>{post.data.title}</h2>
-</a>
-<time class="metadata" datetime={post.data.date.toISOString()}>
-  {formatDisplayDate(post.data.date)}
-</time>
-{post.data.description && (
-  <p class="blog-index__description">{post.data.description}</p>
-)}
+<article
+  class:list={[
+    "blog-index-entry",
+    { "blog-index-entry--with-image": Boolean(data.image && data.imageAlt) },
+    { "blog-index-entry--without-aside": !data.image && data.tags.length === 0 },
+  ]}
+>
+  <time class="metadata blog-index-entry__date" datetime={data.date.toISOString()}>
+    {formatDisplayDate(data.date)}
+  </time>
+
+  <div class="blog-index-entry__summary">
+    <h2>
+      <a href={postUrl} data-ink-hover="text"><GlowText>{data.title}</GlowText></a>
+    </h2>
+    {data.description && <p>{data.description}</p>}
+  </div>
+
+  {data.image && data.imageAlt && (
+    <a
+      href={postUrl}
+      class="blog-index-entry__image-link"
+      aria-label={`Read ${data.title}`}
+    >
+      <SquareImage
+        src={data.image}
+        alt={data.imageAlt}
+        class="blog-index-entry__image"
+        sizes="(min-width: 80rem) 10rem, (min-width: 48rem) 8rem, 6rem"
+      />
+    </a>
+  )}
+
+  {data.tags.length > 0 && (
+    <ul class="blog-index-entry__tags" aria-label="Tags">
+      {data.tags.map((tag) => {
+        const slug = toTagSlug(tag);
+
+        return (
+          <li>
+            {slug ? <a href={`/blog/tags/${slug}/`}>{tag}</a> : tag}
+          </li>
+        );
+      })}
+    </ul>
+  )}
+</article>

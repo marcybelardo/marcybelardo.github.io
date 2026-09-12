@@ -4,7 +4,10 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 
-import { getStructuredData } from "./generated-artifact-helpers.ts";
+import {
+  getInkHoverVisibleText,
+  getStructuredData,
+} from "./generated-artifact-helpers.ts";
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const distDirectory = resolve(repositoryRoot, "dist");
@@ -45,6 +48,56 @@ test("production blog output preserves the published post and tag routes", () =>
   assert.match(detailHtml, /data-margin-note-rail/);
   assert.match(detailHtml, /data-margin-note-rail[\s\S]*<ol aria-label="Margin notes"><\/ol>/);
   assert.doesNotMatch(detailHtml, /data-margin-notes-enhanced="true"/);
+  assert.doesNotMatch(detailHtml, /class="eyebrow"/);
+  const articleHeading = detailHtml.match(/<h1\b[^>]*>([\s\S]*?)<\/h1>/)?.[1] ?? "";
+  assert.equal(
+    getInkHoverVisibleText(articleHeading, "blog article title"),
+    "The Devil You Know, the Devil You Don't",
+  );
+});
+
+test("blog index and tag archives use the same full-width contents entry", () => {
+  const indexHtml = readBlogOutput();
+  const tagHtml = readBlogOutput("tags", "technology");
+  const indexHeading = indexHtml.match(/<h1\b[^>]*>([\s\S]*?)<\/h1>/)?.[1] ?? "";
+  const tagHeading = tagHtml.match(/<h1\b[^>]*>([\s\S]*?)<\/h1>/)?.[1] ?? "";
+
+  assert.equal(getInkHoverVisibleText(indexHeading, "blog index title"), "Blog");
+  assert.equal(
+    getInkHoverVisibleText(tagHeading, "tag archive title"),
+    "Posts tagged: Technology",
+  );
+  [indexHtml, tagHtml].forEach((html) => {
+    assert.match(html, /class="[^"]*\bblog-index-page\b/);
+    assert.match(html, /href="\/rss\.xml" class="blog-index__rss">RSS feed<\/a>/);
+    assert.match(html, /class="blog-index-entry"/);
+    assert.match(html, /<time class="metadata blog-index-entry__date"/);
+    assert.match(html, /<div class="blog-index-entry__summary">/);
+    assert.match(html, /class="blog-index-entry__tags" aria-label="Tags"/);
+    assert.doesNotMatch(html, /class="eyebrow"/);
+  });
+
+  const indexEntryTitle = indexHtml.match(
+    /<h2>\s*<a\b(?=[^>]*href="\/blog\/the-devil-you-know\/"?)(?=[^>]*data-ink-hover="text")[^>]*>([\s\S]*?)<\/a>\s*<\/h2>/,
+  )?.[1] ?? "";
+  assert.equal(
+    getInkHoverVisibleText(indexEntryTitle, "blog index entry title"),
+    "The Devil You Know, the Devil You Don't",
+  );
+  assert.match(
+    indexHtml,
+    /<p>Where Marceline comes to terms with AI&#39;s usefulness, and why its issues run deeper than technology<\/p>/,
+  );
+  assert.match(indexHtml, /href="\/blog\/tags\/technology\/">Technology<\/a>/);
+
+  const blogStyles = readFileSync(
+    resolve(repositoryRoot, "src/styles/blog-design.css"),
+    "utf8",
+  );
+  assert.match(blogStyles, /grid-template-columns:\s*minmax\(7rem,\s*0\.2fr\)\s+minmax\(0,\s*1fr\)\s+minmax\(9rem,\s*0\.23fr\)/);
+  assert.match(blogStyles, /\.blog-index-entry--with-image/);
+  assert.match(blogStyles, /@media \(max-width:\s*47\.999rem\)/);
+  assert.match(blogStyles, /font-family:\s*var\(--font-reading\)/);
 });
 
 test("blog detail renders one shared author signature between the body and margin-note rail", () => {

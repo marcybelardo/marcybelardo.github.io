@@ -1,8 +1,10 @@
 ---
 // pattern: Imperative Shell
 import BlogAuthorSignature from "../../../components/BlogAuthorSignature.astro";
+import GlowText from "../../../components/GlowText.astro";
 import SquareImage from "../../../components/SquareImage.astro";
 import BaseLayout from "../../../layouts/BaseLayout.astro";
+import "../../../styles/blog-design.css";
 import { getCollection, render, type CollectionEntry } from "astro:content";
 import {
   getPublishedBlogPosts,
@@ -79,29 +81,23 @@ const structuredData = {
     data-margin-note-article
   >
     <header class="editorial-page__header blog-article__header">
-      <p class="eyebrow">Writing</p>
-      <h1>{post.data.title}</h1>
+      <h1 data-ink-hover="text"><GlowText>{post.data.title}</GlowText></h1>
       <div class="metadata blog-article__metadata">
         <time datetime={post.data.date.toISOString()}>
-          {
-            formatDisplayDate(post.data.date)
-          }
+          {formatDisplayDate(post.data.date)}
         </time>
         {post.data.tags.length > 0 && (
-          <span>
-            {post.data.tags.map((tag, i) => [
-              i > 0 && ", ",
-              (() => {
-                const slug = toTagSlug(tag);
+          <ul class="blog-article__tags" aria-label="Tags">
+            {post.data.tags.map((tag) => {
+              const slug = toTagSlug(tag);
 
-                return slug ? (
-                  <a href={`/blog/tags/${slug}/`}>
-                    {tag}
-                  </a>
-                ) : null;
-              })(),
-            ])}
-          </span>
+              return (
+                <li>
+                  {slug ? <a href={`/blog/tags/${slug}/`}>{tag}</a> : tag}
+                </li>
+              );
+            })}
+          </ul>
         )}
       </div>
     </header>
