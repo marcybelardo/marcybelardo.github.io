@@ -1,4 +1,4 @@
-/* A small local field of color follows a fine pointer inside selected ink. */
+/* A local colored duplicate sits behind the unmodified black foreground ink. */
 [data-ink-hover] {
   --ink-hover-x: 50%;
   --ink-hover-y: 50%;
@@ -9,37 +9,111 @@
     #6246c8 24%,
     #d25572 49%,
     #d99a2e 73%,
-    var(--color-ink) 100%
+    transparent 100%
+  );
+  --ink-hover-mask: radial-gradient(
+    circle var(--ink-hover-radius) at var(--ink-hover-x) var(--ink-hover-y),
+    #000 0%,
+    #000 45%,
+    transparent 100%
   );
   --ink-hover-texture: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 96 96'%3E%3Cfilter id='grain'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23grain)' opacity='.2'/%3E%3C/svg%3E");
 }
 
-/* The inactive state remains ordinary ink when JavaScript is absent or unsupported. */
+/* The semantic foreground stays fully opaque black over a decorative paint copy. */
 [data-ink-hover="text"] {
+  position: relative;
+  isolation: isolate;
+  overflow: visible;
+  color: var(--color-ink);
+  opacity: 1;
+}
+
+.ink-hover__glow-copy {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  display: block;
+  box-sizing: border-box;
+  padding: inherit;
+  overflow: visible;
+  pointer-events: none;
+  white-space: inherit;
+  text-align: inherit;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  visibility: hidden;
+}
+
+.ink-hover__foreground {
+  position: relative;
+  z-index: 1;
+  display: block;
+  color: var(--color-ink);
+  opacity: 1;
+}
+
+.home-directions a[data-ink-hover="text"],
+.bio-introduction a[data-ink-hover="text"] {
   color: var(--color-ink);
 }
 
-@supports (background-clip: text) or (-webkit-background-clip: text) {
-  [data-ink-hover="text"][data-ink-hover-active="true"] {
-    background-image: var(--ink-hover-texture), var(--ink-hover-gradient);
-    background-size: 7rem 7rem, auto;
-    background-repeat: repeat, no-repeat;
-    background-blend-mode: soft-light, normal;
-    background-clip: text;
-    -webkit-background-clip: text;
-    color: transparent;
-    -webkit-text-fill-color: transparent;
-  }
-}
-
-/* The compact menu is a filled surface, so the same field is painted inside its bounds. */
-.primary-navigation__menu-button[data-ink-hover="surface"][data-ink-hover-active="true"] {
-  --ink-hover-radius: 3.5rem;
-  background-color: var(--color-ink);
+[data-ink-hover="text"][data-ink-hover-active="true"] > .ink-hover__glow-copy {
+  visibility: visible;
+  filter: blur(8px);
+  opacity: 0.95;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
   background-image: var(--ink-hover-texture), var(--ink-hover-gradient);
   background-size: 7rem 7rem, auto;
   background-repeat: repeat, no-repeat;
   background-blend-mode: soft-light, normal;
+  mask-image: var(--ink-hover-mask);
+  -webkit-mask-image: var(--ink-hover-mask);
+}
+
+/* The black square remains the button's foreground while its edge sheds the local field. */
+body:has(.portfolio-home, .bio-page) .primary-navigation .primary-navigation__menu-button[data-ink-hover="surface"][data-ink-hover-active="true"] {
+  --ink-hover-radius: 3.5rem;
+  position: relative;
+  isolation: isolate;
+  overflow: visible;
+  background-color: transparent;
+}
+
+body:has(.portfolio-home, .bio-page) .primary-navigation .primary-navigation__menu-button[data-ink-hover="surface"][data-ink-hover-active="true"]::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  filter: blur(8px);
+  opacity: 0.95;
+  background-image: var(--ink-hover-texture), var(--ink-hover-gradient);
+  background-size: 7rem 7rem, auto;
+  background-repeat: repeat, no-repeat;
+  background-blend-mode: soft-light, normal;
+  mask-image: var(--ink-hover-mask);
+  -webkit-mask-image: var(--ink-hover-mask);
+}
+
+body:has(.portfolio-home, .bio-page) .primary-navigation .primary-navigation__menu-button[data-ink-hover="surface"][data-ink-hover-active="true"]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: var(--color-ink);
+}
+
+/* Keep filtered edges visible around the existing scoped targets and their containers. */
+.portfolio-home,
+.home-directions,
+.bio-title,
+.bio-introduction,
+.bio-tools {
+  overflow: visible;
 }
 
 @media (prefers-reduced-motion: reduce) {

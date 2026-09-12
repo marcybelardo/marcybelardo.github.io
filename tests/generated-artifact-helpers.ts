@@ -71,6 +71,31 @@ export function getSingleMatch(
   return decodeHtmlEntities(matches[0]?.[1] ?? "");
 }
 
+/** Extracts the visible text from a layered ink-hover target and checks its hidden copy. */
+export function getInkHoverVisibleText(
+  markup: string,
+  label: string,
+): string {
+  const glowText = getSingleMatch(
+    markup,
+    /<span class="ink-hover__glow-copy" aria-hidden="true">([^<]*)<\/span>/g,
+    `${label} aria-hidden glow copy`,
+  );
+  const foregroundText = getSingleMatch(
+    markup,
+    /<span class="ink-hover__foreground">([^<]*)<\/span>/g,
+    `${label} foreground copy`,
+  );
+  const otherContent = markup.replace(
+    /<span class="ink-hover__(?:glow-copy|foreground)"(?: aria-hidden="true")?>([^<]*)<\/span>/g,
+    "",
+  ).trim();
+
+  assert.equal(glowText, foregroundText, `${label} glow copy must match visible text`);
+  assert.equal(otherContent, "", `${label} must contain only its paired text copies`);
+  return foregroundText;
+}
+
 /** Extracts the one JSON-LD object emitted in a generated document. */
 export function getStructuredData(html: string, label: string): JsonLdEntry {
   return JSON.parse(

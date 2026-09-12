@@ -29,11 +29,11 @@ const portraitSizes = "(min-width: 55rem) 15vw, (min-width: 35rem) 18vw, 30vw";
   description="About Marceline Belardo, a software developer working across software, visual culture, research, and writing."
 >
   <article class="bio-page">
-    <header class="bio-title"><h1 data-ink-hover="text">Bio</h1><p>{bioContent.label}</p></header>
+    <header class="bio-title"><h1 data-ink-hover="text"><span class="ink-hover__glow-copy" aria-hidden="true">Bio</span><span class="ink-hover__foreground">Bio</span></h1><p>{bioContent.label}</p></header>
     <div class="bio-introduction">
       <p>{bioContent.introduction}</p>
       <p>{bioContent.work}</p>
-      <a data-ink-hover="text" href="/marceline-belardo-cv.pdf" target="_blank" rel="noopener noreferrer">View CV (PDF)</a>
+      <a data-ink-hover="text" href="/marceline-belardo-cv.pdf" target="_blank" rel="noopener noreferrer"><span class="ink-hover__glow-copy" aria-hidden="true">View CV (PDF)</span><span class="ink-hover__foreground">View CV (PDF)</span></a>
     </div>
     <div class="bio-portrait-triptych" aria-label="Marceline taking a mirror photograph">
       <figure class="bio-portrait-frame">
@@ -78,7 +78,7 @@ const portraitSizes = "(min-width: 55rem) 15vw, (min-width: 35rem) 18vw, 30vw";
       <p>{bioContent.statement}</p>
     </section>
     <section class="bio-tools" aria-labelledby="skills-heading">
-      <h2 id="skills-heading" data-ink-hover="text">Tools and languages</h2>
+      <h2 id="skills-heading" data-ink-hover="text"><span class="ink-hover__glow-copy" aria-hidden="true">Tools and languages</span><span class="ink-hover__foreground">Tools and languages</span></h2>
       <p>{bioContent.skills.join(" · ")}</p>
     </section>
   </article>

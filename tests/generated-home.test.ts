@@ -7,6 +7,7 @@ import test from "node:test";
 import { getFeaturedProjects, getRecentPosts } from "../src/content/content-queries.ts";
 import {
   getGraphEntries,
+  getInkHoverVisibleText,
   getStructuredData,
 } from "./generated-artifact-helpers.ts";
 
@@ -38,10 +39,13 @@ function readContact(): string {
 }
 
 function getVisibleH1Text(html: string): string {
-  const matches = [...html.matchAll(/<h1\b[^>]*>([^<]+)<\/h1>/g)];
+  const matches = [...html.matchAll(/<h1\b[^>]*>([\s\S]*?)<\/h1>/g)];
 
   assert.equal(matches.length, 1, "homepage must contain one visible h1");
-  const visibleText = matches[0]?.[1]?.trim() ?? "";
+  const visibleText = getInkHoverVisibleText(
+    matches[0]?.[1] ?? "",
+    "homepage h1",
+  );
 
   assert.ok(visibleText, "homepage visible h1 must contain text");
   return visibleText;
@@ -53,7 +57,19 @@ test("homepage is a photo landing with direct links instead of content previews"
   assert.equal(getVisibleH1Text(html), "Marceline Belardo");
   assert.match(landing, /<figure class="home-photograph">/);
   const directions = landing.match(/<nav class="home-directions"[^>]*>([\s\S]*?)<\/nav>/)?.[1] ?? "";
-  assert.deepEqual([...directions.matchAll(/href="([^"]+)"/g)].map((match) => match[1]), ["/projects/", "/blog/", "/bio/", "/contact/"]);
+  const directionLinks = [
+    ...directions.matchAll(/<a\b[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/g),
+  ];
+  assert.deepEqual(
+    directionLinks.map((match) => match[1]),
+    ["/projects/", "/blog/", "/bio/", "/contact/"],
+  );
+  assert.deepEqual(
+    directionLinks.map((match) =>
+      getInkHoverVisibleText(match[2] ?? "", `homepage link ${match[1]}`),
+    ),
+    ["Projects", "Blog", "Bio", "Contact"],
+  );
   assert.doesNotMatch(landing, /selected-projects-heading|recent-writing-heading|home-practice|home-contact|project-index-entry/);
   assert.match(html, /data-compact="always"/);
   const button = html.match(/<button[^>]*data-menu-button[^>]*>([\s\S]*?)<\/button>/)?.[1];
@@ -158,9 +174,15 @@ test("Bio uses verified copy and a full-image mirror portrait triptych", () => {
   assert.match(html, /alt="Marceline Belardo taking a mirror photograph with a camera"/);
   assert.equal([...html.matchAll(/<figure class="bio-portrait-frame">/g)].length, 3);
   assert.equal([...html.matchAll(/<img\b[^>]*\salt(?=\s[^>]*class="bio-portrait-frame__image")/g)].length, 2);
-  assert.match(
-    html,
-    /<a\b[^>]*href="\/marceline-belardo-cv\.pdf"[^>]*target="_blank"[^>]*rel="noopener noreferrer"[^>]*>View CV \(PDF\)<\/a>/,
+  const cvLinks = [
+    ...html.matchAll(
+      /<a\b(?=[^>]*href="\/marceline-belardo-cv\.pdf")(?=[^>]*target="_blank")(?=[^>]*rel="noopener noreferrer")[^>]*>([\s\S]*?)<\/a>/g,
+    ),
+  ];
+  assert.equal(cvLinks.length, 1, "Bio must contain one secure CV link");
+  assert.equal(
+    getInkHoverVisibleText(cvLinks[0]?.[1] ?? "", "CV link"),
+    "View CV (PDF)",
   );
   assert.doesNotMatch(html, /<a href="\/marceline-belardo-cv\.pdf"[^>]*download(?:\s|=|>)/);
   assert.match(html, /<figure class="bio-portrait-frame">[\s\S]*?<img\b[^>]*width="\d+"[^>]*height="\d+"/);

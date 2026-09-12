@@ -241,12 +241,51 @@ test("ink hover responds to pointer capability changes and cleans up on swaps", 
 test("ink hover styles use a local fixed-radius field clipped to ink", () => {
   assert.match(inkHoverStyles, /circle var\(--ink-hover-radius\) at var\(--ink-hover-x\) var\(--ink-hover-y\)/);
   assert.match(inkHoverStyles, /--ink-hover-radius:\s*5rem/);
-  assert.match(inkHoverStyles, /var\(--color-ink\)\s*100%/);
+  assert.match(inkHoverStyles, /filter:\s*blur\(8px\)/);
+  assert.match(inkHoverStyles, /mask-image:\s*var\(--ink-hover-mask\)/);
+  assert.match(inkHoverStyles, /-webkit-mask-image:\s*var\(--ink-hover-mask\)/);
   assert.match(inkHoverStyles, /background-clip:\s*text/);
   assert.match(inkHoverStyles, /background-size:\s*7rem 7rem, auto/);
+  assert.match(
+    inkHoverStyles,
+    /\[data-ink-hover="text"\]\s*\{[^}]*color:\s*var\(--color-ink\);[^}]*opacity:\s*1/,
+    "the target text remains fully opaque black",
+  );
+  assert.match(
+    inkHoverStyles,
+    /\.ink-hover__glow-copy\s*\{[^}]*z-index:\s*0;[^}]*color:\s*transparent/,
+    "the decorative copy paints in a visible layer beneath the foreground",
+  );
+  assert.match(inkHoverStyles, /\.ink-hover__foreground\s*\{[^}]*z-index:\s*1;[^}]*color:\s*var\(--color-ink\);/);
+  assert.doesNotMatch(inkHoverStyles, /content:\s*attr\(data-ink-text\)/);
+  assert.match(inkHoverStyles, /background:\s*var\(--color-ink\)/);
   assert.match(photoNavigationStyles, /background-color:\s*var\(--color-ink\)/);
   assert.doesNotMatch(
     photoNavigationStyles,
     /primary-navigation__menu-button[^}]*\{[^}]*background:\s*var\(--color-ink\)/,
   );
+});
+
+test("text glow keeps its decorative duplicate out of accessible content", () => {
+  const homeMarkup = readFileSync(resolve(repositoryRoot, "src/pages/index.astro"), "utf8");
+  const bioMarkup = readFileSync(resolve(repositoryRoot, "src/pages/bio/index.astro"), "utf8");
+  const allMarkup = homeMarkup + bioMarkup;
+  const targetMarkup = [...allMarkup.matchAll(/data-ink-hover="text"/g)];
+  const glowCopies = [...allMarkup.matchAll(/<span class="ink-hover__glow-copy" aria-hidden="true">([^<]+)<\/span>/g)];
+  const foregroundCopies = [...allMarkup.matchAll(/<span class="ink-hover__foreground">([^<]+)<\/span>/g)];
+
+  const expectedText = [
+    "Marceline Belardo",
+    "Projects",
+    "Blog",
+    "Bio",
+    "Contact",
+    "Bio",
+    "View CV (PDF)",
+    "Tools and languages",
+  ];
+  assert.equal(targetMarkup.length, expectedText.length);
+  assert.deepEqual(glowCopies.map((match) => match[1]), expectedText);
+  assert.deepEqual(foregroundCopies.map((match) => match[1]), expectedText);
+  assert.doesNotMatch(allMarkup, /data-ink-hover="text"[^>]*aria-label=/);
 });
