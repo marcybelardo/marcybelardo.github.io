@@ -52,7 +52,7 @@ Certificate result: **not verified — no deployed TLS handshake was performed.*
 
 After deployment, inspect each page at 360px, 768px, and 1280px viewport widths. Mark a row only after checking the page at all three widths.
 
-Pages: Home, Projects, one project detail, Blog, one footnoted post, Bio, Contact, and 404.
+Pages: Home, Projects, one project detail, Blog, one footnoted post, About, and 404.
 
 The current published blog post is not footnoted, so the footnoted-post row and the footnote-specific checks below remain pending until a deployed footnoted post is available.
 
@@ -63,8 +63,7 @@ The current published blog post is not footnoted, so the footnoted-post row and 
 | Project detail | [ ] | [ ] | [ ] | Not verified — post-deploy browser check required. |
 | Blog | [ ] | [ ] | [ ] | Not verified — post-deploy browser check required. |
 | Footnoted post | [ ] | [ ] | [ ] | Not verified — post-deploy browser check required. |
-| Bio | [ ] | [ ] | [ ] | Not verified — post-deploy browser check required. |
-| Contact | [ ] | [ ] | [ ] | Not verified — post-deploy browser check required. |
+| About | [ ] | [ ] | [ ] | Not verified — post-deploy browser check required. |
 | 404 | [ ] | [ ] | [ ] | Not verified — post-deploy browser check required. |
 
 Confirm that no page has horizontal overflow, clipped copy, empty controls, broken links, or inaccessible content at any width.
@@ -76,7 +75,7 @@ Use keyboard only, with no pointer input:
 - [ ] Reach and activate every primary navigation destination.
 - [ ] Open and dismiss the compact navigation with the menu control and Escape.
 - [ ] Confirm focus remains visible and returns to the menu control after dismissal.
-- [ ] Activate every project, contact, repository/live/external, tag, and footnote link.
+- [ ] Activate every project, About email, repository/live/external, tag, and footnote link.
 - [ ] Confirm keyboard focus remains visible across the header, page content, and footer.
 
 Status: **Not verified — post-deploy browser/keyboard check required.**

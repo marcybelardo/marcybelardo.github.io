@@ -13,7 +13,7 @@ const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const distDirectory = resolve(repositoryRoot, "dist");
 const configuredOrigin = "https://www.marcelinebelardo.com";
 const approvedSignature =
-  "Marceline Belardo is a stay-at-home software developer, conceptual artist, and reluctant content creator. She is based in Makati City, Philippines. She writes these blogs as a public service, and you can see new posts by following her on BlueSky @marcelinebelardo.com, or by using the RSS feed with your favorite reader. If you'd like to support her, consider some words of encouragement, or if your company is hiring, find out how to contact her at the Bio page.";
+  "Marceline Belardo is a stay-at-home software developer, conceptual artist, and reluctant content creator. She is based in Makati City, Philippines. She writes these blogs as a public service, and you can see new posts by following her on BlueSky @marcelinebelardo.com, or by using the RSS feed with your favorite reader. If you'd like to support her, consider some words of encouragement, or if your company is hiring, find out how to contact her at the About page.";
 
 function readBlogOutput(...segments: ReadonlyArray<string>): string {
   const outputPath = resolve(distDirectory, "blog", ...segments, "index.html");
@@ -140,7 +140,7 @@ test("blog detail renders one shared author signature between the body and margi
   assert.deepEqual(links, [
     ["https://bsky.app/profile/marcelinebelardo.com", "BlueSky @marcelinebelardo.com"],
     ["/rss.xml", "RSS feed"],
-    ["/bio/", "Bio page"],
+    ["/about/", "About page"],
   ]);
 });
 

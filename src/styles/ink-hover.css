@@ -54,7 +54,7 @@
 }
 
 .home-directions a[data-ink-hover="text"],
-.bio-introduction a[data-ink-hover="text"] {
+.about-introduction a[data-ink-hover="text"] {
   color: var(--color-ink);
 }
 
@@ -110,9 +110,10 @@
 /* Keep filtered edges visible around the existing scoped targets and their containers. */
 .portfolio-home,
 .home-directions,
-.bio-title,
-.bio-introduction,
-.bio-tools {
+.about-title,
+.about-introduction,
+.about-skills,
+.about-contact {
   overflow: visible;
 }
 

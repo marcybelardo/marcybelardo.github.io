@@ -14,13 +14,12 @@ const configuredOrigin = "https://www.marcelinebelardo.com";
 const retiredRoutes = ["/code/", "/paintings/", "/photography/"];
 const requiredRoutes = [
   "/",
-  "/bio/",
+  "/about/",
   "/blog/",
   "/blog/tags/ai/",
   "/blog/tags/politics/",
   "/blog/tags/technology/",
   "/blog/the-devil-you-know/",
-  "/contact/",
   "/projects/",
   ...getGeneratedProjectRoutes(distDirectory),
 ];
@@ -37,7 +36,7 @@ function getSitemapUrls(xml: string): Array<string> {
 }
 
 test("production discovery output contains required routes and artifacts", () => {
-  requiredRoutes.forEach((route) => {
+  [...requiredRoutes, "/bio/", "/contact/"].forEach((route) => {
     const routePath = route === "/"
       ? resolve(distDirectory, "index.html")
       : resolve(distDirectory, route.slice(1), "index.html");
@@ -61,6 +60,13 @@ test("sitemap contains canonical published routes and excludes retired routes, 4
   const sitemapRoutes = sitemapUrls.map((url) => new URL(url).pathname).sort();
 
   assert.deepEqual(sitemapRoutes, requiredRoutes.slice().sort());
+  ["/bio/", "/contact/"].forEach((route) => {
+    assert.doesNotMatch(sitemap, new RegExp(`${configuredOrigin}${route}`));
+    const redirect = readDiscoveryArtifact(`${route.slice(1)}index.html`);
+    assert.match(redirect, /<meta name="robots" content="noindex, follow"/);
+    assert.match(redirect, /<link rel="canonical" href="https:\/\/www\.marcelinebelardo\.com\/about\/"/);
+    assert.match(redirect, /<meta http-equiv="refresh" content="0;url=\/about\/"/);
+  });
   sitemapUrls.forEach((url) => {
     assert.equal(new URL(url).origin, configuredOrigin);
     assert.doesNotMatch(url, /marcybelardo\.github\.io/i);

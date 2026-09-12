@@ -29,10 +29,10 @@ import {
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const distDirectory = resolve(repositoryRoot, "dist");
-const bioPath = resolve(distDirectory, "bio", "index.html");
+const aboutPath = resolve(distDirectory, "about", "index.html");
 const configuredOrigin = "https://www.marcelinebelardo.com";
 const googleTagManagerContainerId = "GTM-N4JNKN2H";
-const primaryDestinations = ["/projects/", "/blog/", "/bio/", "/contact/"];
+const primaryDestinations = ["/projects/", "/blog/", "/about/"];
 const retiredRoutes = ["code", "paintings", "photography"];
 const publishedProjectSlugs = getGeneratedProjectSlugs(distDirectory);
 const publishedBlogTags = ["ai", "politics", "technology"];
@@ -46,8 +46,8 @@ function readArtifact(relativePath: string): string {
   return readFileSync(artifactPath, "utf8");
 }
 
-function getBioPortraitFrames(html: string): Array<string> {
-  return [...html.matchAll(/<figure class="bio-portrait-frame">([\s\S]*?)<\/figure>/g)].map(
+function getAboutPortraitFrames(html: string): Array<string> {
+  return [...html.matchAll(/<figure class="about-portrait-frame">([\s\S]*?)<\/figure>/g)].map(
     (match) => match[0] ?? "",
   );
 }
@@ -59,6 +59,7 @@ test("portfolio-redesign.AC1.1 production artifact contains the complete static 
     "/",
     "/projects/",
     "/blog/",
+    "/about/",
     "/bio/",
     "/contact/",
     "/blog/the-devil-you-know/",
@@ -99,6 +100,10 @@ test("production artifact includes Google Tag Manager in every document shell", 
   getHtmlFiles(distDirectory).forEach((htmlPath) => {
     const relativePath = relative(distDirectory, htmlPath);
     const html = readFileSync(htmlPath, "utf8");
+    if (html.includes('http-equiv="refresh"')) {
+      assert.match(html, /<meta name="robots" content="noindex, follow"/);
+      return;
+    }
     const headMatch = html.match(/<head>([\s\S]*?)<\/head>/i);
     const bodyMatch = html.match(/<body\b[^>]*>([\s\S]*?)<\/body>/i);
 
@@ -138,6 +143,10 @@ test("production artifact includes Google Tag Manager in every document shell", 
 test("portfolio-redesign.AC1.3 primary navigation exposes only the integrated sections", () => {
   getHtmlFiles(distDirectory).forEach((htmlPath) => {
     const html = readFileSync(htmlPath, "utf8");
+    if (html.includes('http-equiv="refresh"')) {
+      assert.match(html, /<link rel="canonical" href="https:\/\/www\.marcelinebelardo\.com\/about\/"/);
+      return;
+    }
     const navigation = getPrimaryNavigation(html);
 
     assert.deepEqual(getPrimaryDestinationHrefs(navigation), primaryDestinations);
@@ -295,7 +304,7 @@ test("portfolio-redesign.AC5.2 structured data and visible media contracts remai
     const html = readFileSync(htmlPath, "utf8");
     const images = getImages(html);
     const isHomepage = htmlPath === resolve(distDirectory, "index.html");
-    const isBio = htmlPath === bioPath;
+    const isAbout = htmlPath === aboutPath;
     const heroImages = isHomepage ? images.filter((image) => image.includes('class="home-photograph__image"')) : [];
     assert.ok(heroImages.length <= 1, "only one homepage photograph may use cover framing");
     heroImages.forEach((image) => {
@@ -317,9 +326,9 @@ test("portfolio-redesign.AC5.2 structured data and visible media contracts remai
       );
     });
 
-    if (isBio) {
-      const portraitFrames = getBioPortraitFrames(html);
-      assert.equal(portraitFrames.length, 3, "Bio must contain three portrait frames");
+    if (isAbout) {
+      const portraitFrames = getAboutPortraitFrames(html);
+      assert.equal(portraitFrames.length, 3, "About must contain three portrait frames");
       portraitFrames.forEach((frame) => {
         assert.match(frame, /<img\b[^>]*data-astro-image-fit="contain"/);
         assert.match(frame, /<img\b[^>]*style="object-fit:\s*contain;"/);
@@ -328,7 +337,7 @@ test("portfolio-redesign.AC5.2 structured data and visible media contracts remai
 
     assert.equal(
       getImagesInsideSquareWrappers(html).length +
-        (isBio ? getBioPortraitFrames(html).reduce((count, frame) => count + getImages(frame).length, 0) : 0),
+        (isAbout ? getAboutPortraitFrames(html).reduce((count, frame) => count + getImages(frame).length, 0) : 0),
       images.length - heroImages.length,
       `${getRouteFromHtmlPath(htmlPath, distDirectory)} images must remain inside a contained-image frame`,
     );
@@ -346,6 +355,7 @@ test("portfolio-redesign.AC5.3 RSS and sitemap expose only canonical published U
   ].map((match) => match[1] ?? "");
 
   assert.match(rss, /the-devil-you-know/);
+  assert.doesNotMatch(sitemap, /https:\/\/www\.marcelinebelardo\.com\/(?:bio|contact)\//);
   publishedProjectSlugs.forEach((slug) => {
     assert.match(
       sitemap,

@@ -1,15 +1,15 @@
 /* Compact marginal notes around a full-height mirror-photograph triptych. */
-.editorial-main:has(.bio-page) {
+.editorial-main:has(.about-page) {
   width: auto;
   max-width: none;
   margin: 0 clamp(1rem, 2vw, 2.5rem);
   padding: 5.5rem 0 1rem;
 }
 
-.bio-page {
+.about-page {
   display: grid;
   grid-template-columns: minmax(15rem, 1fr) minmax(0, 2fr) minmax(15rem, 1fr);
-  grid-template-rows: auto auto auto;
+  grid-template-rows: auto auto auto auto;
   column-gap: clamp(2rem, 4vw, 4rem);
   row-gap: clamp(1.5rem, 3vw, 2.5rem);
   font-family: var(--font-utility);
@@ -17,8 +17,8 @@
   line-height: 1.35;
 }
 
-.bio-title { grid-column: 1; grid-row: 1; }
-.bio-title h1 {
+.about-title { grid-column: 1; grid-row: 1; }
+.about-title h1 {
   margin-bottom: 1rem;
   font-family: "Arial Narrow", "Liberation Sans Narrow", Arial, sans-serif;
   font-size: clamp(4rem, 7vw, 7rem);
@@ -27,7 +27,7 @@
   line-height: 0.85;
 }
 
-.bio-introduction {
+.about-introduction {
   grid-column: 3;
   grid-row: 1 / 3;
   align-self: start;
@@ -35,15 +35,15 @@
   padding-top: clamp(2rem, 4vw, 3.5rem);
 }
 
-.bio-introduction a {
+.about-introduction a {
   display: inline-block;
   margin-top: 1.5rem;
   color: var(--color-ink);
 }
 
-.bio-introduction p + p { margin-top: 1rem; }
+.about-introduction p + p { margin-top: 1rem; }
 
-.bio-portrait-triptych {
+.about-portrait-triptych {
   display: grid;
   grid-column: 2;
   grid-row: 1 / 3;
@@ -54,8 +54,8 @@
   min-width: 0;
 }
 
-/* The source is portrait-oriented; this Bio-only frame keeps its complete image visible. */
-.bio-portrait-frame {
+/* The source is portrait-oriented; these frames keep the complete image visible. */
+.about-portrait-frame {
   display: block;
   width: 100%;
   min-width: 0;
@@ -64,7 +64,7 @@
   background: transparent;
 }
 
-.bio-portrait-frame__image {
+.about-portrait-frame__image {
   display: block;
   width: 100%;
   height: 100%;
@@ -72,71 +72,85 @@
   filter: grayscale(100%);
 }
 
-.bio-practice {
+.about-practice {
   grid-column: 1;
   grid-row: 2;
   align-self: end;
   max-width: 30ch;
 }
 
-.bio-tools {
+.about-skills {
   grid-column: 2;
   grid-row: 3;
   justify-self: end;
   max-width: 30ch;
+  color: var(--color-muted-ink);
+  font-size: 0.8125rem;
+  letter-spacing: 0.025em;
 }
 
-.bio-tools h2 {
-  margin-bottom: 0.75rem;
-  font-size: 1rem;
-  font-weight: 400;
+.about-contact {
+  grid-column: 1 / -1;
+  grid-row: 4;
+  width: 100%;
+  margin-top: clamp(0.5rem, 1vw, 1rem);
+  padding-top: clamp(0.75rem, 1.5vw, 1.25rem);
+  border-top: 1px solid var(--color-rule);
+  font-size: clamp(0.875rem, 1.25vw, 1.125rem);
 }
 
-body:has(.bio-page) .social-links {
+.about-contact a {
+  display: inline-block;
+  color: var(--color-ink);
+}
+
+body:has(.about-page) .social-links {
   width: auto;
   margin: 0 clamp(1rem, 2vw, 2.5rem);
 }
 
 @media (max-width: 55rem) {
-  .bio-page {
+  .about-page {
     grid-template-columns: minmax(0, 3fr) minmax(14rem, 2fr);
     gap: 2.5rem 2rem;
   }
 
-  .bio-title { grid-column: 1; grid-row: 1; }
-  .bio-introduction {
+  .about-title { grid-column: 1; grid-row: 1; }
+  .about-introduction {
     grid-column: 2;
     grid-row: 1 / 3;
     padding-top: 1.5rem;
   }
-  .bio-portrait-triptych {
+  .about-portrait-triptych {
     grid-column: 1;
     grid-row: 2;
   }
-  .bio-practice { grid-column: 1; grid-row: 3; }
-  .bio-tools { grid-column: 2; grid-row: 3; }
+  .about-practice { grid-column: 1; grid-row: 3; }
+  .about-skills { grid-column: 2; grid-row: 3; }
+  .about-contact { grid-row: 4; }
 }
 
 @media (max-width: 35rem) {
-  .editorial-main:has(.bio-page) { padding-top: 7rem; }
-  .bio-page {
+  .editorial-main:has(.about-page) { padding-top: 7rem; }
+  .about-page {
     grid-template-columns: minmax(0, 1fr);
     row-gap: 2.5rem;
   }
 
-  .bio-title { grid-column: 1; grid-row: 1; }
-  .bio-portrait-triptych { grid-column: 1; grid-row: 2; }
-  .bio-introduction {
+  .about-title { grid-column: 1; grid-row: 1; }
+  .about-portrait-triptych { grid-column: 1; grid-row: 2; }
+  .about-introduction {
     grid-column: 1;
     grid-row: 3;
     justify-self: start;
     max-width: 48ch;
     padding: 0;
   }
-  .bio-practice { grid-column: 1; grid-row: 4; }
-  .bio-tools { grid-column: 1; grid-row: 5; justify-self: start; }
+  .about-practice { grid-column: 1; grid-row: 4; }
+  .about-skills { grid-column: 1; grid-row: 5; justify-self: start; }
+  .about-contact { grid-row: 6; }
 }
 
 @media print {
-  .editorial-main:has(.bio-page) { padding-top: 0; }
+  .editorial-main:has(.about-page) { padding-top: 0; }
 }

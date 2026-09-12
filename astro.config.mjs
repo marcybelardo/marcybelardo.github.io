@@ -10,7 +10,9 @@ import rehypeMarginNotes from "./src/markdown/rehype-margin-notes.mjs";
 export default defineConfig({
   site: SITE_ORIGIN,
   integrations: [
-    sitemap(),
+    sitemap({
+      filter: (page) => !["/bio/", "/contact/"].includes(new URL(page).pathname),
+    }),
   ],
   markdown: {
     processor: unified({

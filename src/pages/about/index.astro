@@ -1,0 +1,95 @@
+---
+// pattern: Imperative Shell
+import { Image } from "astro:assets";
+import GlowText from "../../components/GlowText.astro";
+import portraitImage from "../../assets/marcy_mirror.jpg";
+import "../../styles/about-design.css";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+
+const aboutContent = {
+  label: "Software developer",
+  introduction: "I’m Marceline, an independent software developer in Manila since July 2023. I build web and desktop applications, networking tools, and command-line software, mostly in Rust, TypeScript, Python, and C. Paid work includes a Next.js and TypeScript photography frontend and Python NLP sentiment charts for a journalist.",
+  work: "My open-source work includes tree-based window management and directional navigation in fht-compositor, five merged pull requests for Starship, and my own local-first Rust desktop application chikachika, C HTTP server lilyhttpd, and Rust Huffman compressor cmprsr-rs.",
+  practice: "Before software, I studied Film at UP Diliman and worked as a senior content editor leading six or seven writers. I graduated with a BA in Film in 2019 and am pursuing a Diploma in Computer Science at UPOU, expected in 2028. Writing, photography, and painting remain part of what I do.",
+  skills: [
+    "C",
+    "Rust",
+    "Java",
+    "TypeScript",
+    "React",
+    "Python",
+    "PostgreSQL",
+  ],
+  portraitAlt: "Marceline Belardo taking a mirror photograph with a camera",
+  email: {
+    address: "marcy@marcelinebelardo.com",
+    label: "Email Marceline at marcy@marcelinebelardo.com",
+  },
+};
+const portraitSizes = "(min-width: 55rem) 15vw, (min-width: 35rem) 18vw, 30vw";
+---
+<BaseLayout
+  title="About"
+  description="About Marceline Belardo, a software developer working across software, visual culture, research, and writing."
+>
+  <article class="about-page">
+    <header class="about-title">
+      <h1 data-ink-hover="text"><GlowText>About</GlowText></h1>
+      <p>{aboutContent.label}</p>
+    </header>
+    <div class="about-introduction">
+      <p>{aboutContent.introduction}</p>
+      <p>{aboutContent.work}</p>
+      <a data-ink-hover="text" href="/marceline-belardo-cv.pdf" target="_blank" rel="noopener noreferrer"><GlowText>View CV (PDF)</GlowText></a>
+    </div>
+    <div class="about-portrait-triptych" aria-label="Marceline taking a mirror photograph">
+      <figure class="about-portrait-frame">
+        <Image
+          src={portraitImage}
+          alt={aboutContent.portraitAlt}
+          class="about-portrait-frame__image"
+          widths={[320, 640, 960, 1280]}
+          sizes={portraitSizes}
+          layout="constrained"
+          priority
+          fit="contain"
+          style="object-fit: contain;"
+        />
+      </figure>
+      <figure class="about-portrait-frame">
+        <Image
+          src={portraitImage}
+          alt=""
+          class="about-portrait-frame__image"
+          widths={[320, 640, 960, 1280]}
+          sizes={portraitSizes}
+          layout="constrained"
+          fit="contain"
+          style="object-fit: contain;"
+        />
+      </figure>
+      <figure class="about-portrait-frame">
+        <Image
+          src={portraitImage}
+          alt=""
+          class="about-portrait-frame__image"
+          widths={[320, 640, 960, 1280]}
+          sizes={portraitSizes}
+          layout="constrained"
+          fit="contain"
+          style="object-fit: contain;"
+        />
+      </figure>
+    </div>
+    <section class="about-practice" aria-label="Approach">
+      <p>{aboutContent.practice}</p>
+    </section>
+    <p class="about-skills">{aboutContent.skills.join(" · ")}</p>
+    <p class="about-contact">
+      For work, projects, or conversation:
+      <a href={`mailto:${aboutContent.email.address}`} aria-label={aboutContent.email.label} data-ink-hover="text">
+        <GlowText>{aboutContent.email.address}</GlowText>
+      </a>
+    </p>
+  </article>
+</BaseLayout>

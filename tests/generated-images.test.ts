@@ -18,38 +18,38 @@ const squareImageSource = readFileSync(
   resolve(repositoryRoot, "src/components/SquareImage.astro"),
   "utf8",
 );
-const bioDesignSource = readFileSync(
-  resolve(repositoryRoot, "src/styles/bio-design.css"),
+const aboutDesignSource = readFileSync(
+  resolve(repositoryRoot, "src/styles/about-design.css"),
   "utf8",
 );
-const bioPath = resolve(distDirectory, "bio", "index.html");
+const aboutPath = resolve(distDirectory, "about", "index.html");
 const representativePaths: ReadonlyArray<string> = [
   resolve(distDirectory, "index.html"),
   resolve(distDirectory, "blog", "index.html"),
   resolve(distDirectory, "blog", "the-devil-you-know", "index.html"),
   resolve(distDirectory, "blog", "tags", "ai", "index.html"),
-  bioPath,
+  aboutPath,
   ...getGeneratedProjectSlugs(distDirectory).map((slug) =>
     resolve(distDirectory, "projects", slug, "index.html")
   ),
   resolve(distDirectory, "404.html"),
 ];
 
-function getBioPortraitFrames(html: string): Array<string> {
-  return [...html.matchAll(/<figure class="bio-portrait-frame">([\s\S]*?)<\/figure>/g)].map(
+function getAboutPortraitFrames(html: string): Array<string> {
+  return [...html.matchAll(/<figure class="about-portrait-frame">([\s\S]*?)<\/figure>/g)].map(
     (match) => match[0] ?? "",
   );
 }
 
-function getImagesInsideBioPortraitFrames(html: string): Array<string> {
-  return getBioPortraitFrames(html).flatMap((frame) => getImages(frame));
+function getImagesInsideAboutPortraitFrames(html: string): Array<string> {
+  return getAboutPortraitFrames(html).flatMap((frame) => getImages(frame));
 }
 
-test("Bio uses a full-image grayscale portrait triptych", () => {
-  assert.ok(existsSync(bioPath), "Bio output must exist before image assertions");
+test("About uses a full-image grayscale portrait triptych", () => {
+  assert.ok(existsSync(aboutPath), "About output must exist before image assertions");
 
-  const bioHtml = readFileSync(bioPath, "utf8");
-  const frames = getBioPortraitFrames(bioHtml);
+  const aboutHtml = readFileSync(aboutPath, "utf8");
+  const frames = getAboutPortraitFrames(aboutHtml);
 
   assert.equal(frames.length, 3);
   frames.forEach((frame) => {
@@ -57,42 +57,42 @@ test("Bio uses a full-image grayscale portrait triptych", () => {
     assert.match(frame, /style="object-fit:\s*contain;"/);
   });
 
-  assert.match(bioHtml, /alt="Marceline Belardo taking a mirror photograph with a camera"/);
-  assert.equal(getImagesInsideBioPortraitFrames(bioHtml).length, 3);
-  assert.match(bioDesignSource, /\.bio-portrait-frame\s*\{[\s\S]*aspect-ratio:\s*2\s*\/\s*3/);
-  assert.match(bioDesignSource, /\.bio-portrait-frame__image\s*\{[\s\S]*filter:\s*grayscale\(100%\)/);
+  assert.match(aboutHtml, /alt="Marceline Belardo taking a mirror photograph with a camera"/);
+  assert.equal(getImagesInsideAboutPortraitFrames(aboutHtml).length, 3);
+  assert.match(aboutDesignSource, /\.about-portrait-frame\s*\{[\s\S]*aspect-ratio:\s*2\s*\/\s*3/);
+  assert.match(aboutDesignSource, /\.about-portrait-frame__image\s*\{[\s\S]*filter:\s*grayscale\(100%\)/);
   assert.equal(
-    getImagesInsideBioPortraitFrames(bioHtml).length,
-    getImages(bioHtml).length,
-    "every Bio image must be contained by a portrait frame",
+    getImagesInsideAboutPortraitFrames(aboutHtml).length,
+    getImages(aboutHtml).length,
+    "every About image must be contained by a portrait frame",
   );
 });
 
-test("Bio images reserve intrinsic dimensions and responsive sources", () => {
-  assert.ok(existsSync(bioPath), "Bio output must exist before image assertions");
+test("About images reserve intrinsic dimensions and responsive sources", () => {
+  assert.ok(existsSync(aboutPath), "About output must exist before image assertions");
 
-  const bioHtml = readFileSync(bioPath, "utf8");
-  const images = getImages(bioHtml);
+  const aboutHtml = readFileSync(aboutPath, "utf8");
+  const images = getImages(aboutHtml);
 
   assert.equal(images.length, 3);
   images.forEach((image) => {
-    assertGeneratedImageContract(image, "Bio image");
+    assertGeneratedImageContract(image, "About image");
     assert.match(image, /\bloading="(?:lazy|eager)"/);
     assert.doesNotMatch(image, /20260425_29[^"?]*\.jpg(?:["?]|$)/);
     assert.doesNotMatch(image, /IMG_6936_EDIT[^"?]*\.jpg(?:["?]|$)/);
   });
 
-  assert.match(bioHtml, /\s320w/);
-  assert.match(bioHtml, /\s1280w/);
+  assert.match(aboutHtml, /\s320w/);
+  assert.match(aboutHtml, /\s1280w/);
   assert.match(
-    bioHtml,
+    aboutHtml,
     /sizes="\(min-width: 55rem\) 15vw, \(min-width: 35rem\) 18vw, 30vw"/,
-    "Bio images must use responsive panel widths",
+    "About images must use responsive panel widths",
   );
   assert.doesNotMatch(
-    bioHtml,
+    aboutHtml,
     /sizes="[^"]*100vw/,
-    "Bio image sizing must not overstate the layout width with 100vw",
+    "About image sizing must not overstate the layout width with 100vw",
   );
 });
 
@@ -127,7 +127,7 @@ test("representative pages contain only valid generated image markup", () => {
 
     assert.equal(
       getImagesInsideSquareWrappers(html).length +
-        (htmlPath === bioPath ? getImagesInsideBioPortraitFrames(html).length : 0),
+        (htmlPath === aboutPath ? getImagesInsideAboutPortraitFrames(html).length : 0),
       images.length - heroImages.length,
       `${htmlPath} must contain every emitted image inside an appropriate contained-image frame`,
     );

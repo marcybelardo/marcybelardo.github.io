@@ -6,11 +6,11 @@ import { normalizeRootRelativeUrls } from "../src/content/rss-content.ts";
 const SITE = "https://www.marcelinebelardo.com";
 
 test("normalizes quoted href and src root-relative URLs in either quote style", () => {
-  const html = `<a href="/bio/">Bio</a><img src='/images/portrait.png' alt="Portrait">`;
+  const html = `<a href="/about/">About</a><img src='/images/portrait.png' alt="Portrait">`;
 
   assert.equal(
     normalizeRootRelativeUrls(html, SITE),
-    `<a href="${SITE}/bio/">Bio</a><img src='${SITE}/images/portrait.png' alt="Portrait">`,
+    `<a href="${SITE}/about/">About</a><img src='${SITE}/images/portrait.png' alt="Portrait">`,
   );
 });
 

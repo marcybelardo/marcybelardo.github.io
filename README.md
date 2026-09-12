@@ -34,8 +34,9 @@ The generated route tree is:
 ├── blog/
 │   ├── <post-slug>/
 │   └── tags/<tag-slug>/
-├── bio/
-├── contact/
+├── about/
+├── bio/        # static compatibility redirect to /about/
+├── contact/    # static compatibility redirect to /about/
 ├── rss.xml
 ├── sitemap-index.xml
 ├── sitemap-0.xml
@@ -169,11 +170,9 @@ The production RSS feed includes the full rendered article content for every pub
 
 The real CV upload path is `public/marceline-belardo-cv.pdf`, which is served at `/marceline-belardo-cv.pdf`. Preserve that filename when uploading the binary; this documentation describes the intended asset path and does not imply that the binary currently exists in the repository.
 
-## Editing Bio and Contact
+## Editing About
 
-Bio copy lives in the small `bioContent` block in [`src/pages/bio/index.astro`](src/pages/bio/index.astro). Edit the factual `label`, `statement`, `skills`, and `portraitAlt` values; keep the portrait alt text meaningful.
-
-Contact copy and destinations live in the `contactDestinations` block in [`src/pages/contact/index.astro`](src/pages/contact/index.astro). Edit the email label/address and the verified profile labels/URLs. Keep all copy factual; do not invent résumé details, availability, or contact destinations. Run `pnpm verify` after changes.
+About copy and its contact line live in the `aboutContent` block in [`src/pages/about/index.astro`](src/pages/about/index.astro). Keep the label, experience, education, skills, email address, and portrait alt text factual and verified. The page keeps its full-image grayscale triptych and shared social icon footer. `/bio/` and `/contact/` remain noindex static redirects to `/about/` and are excluded from the sitemap. Run `pnpm verify` after edits.
 
 ## Integration note
 

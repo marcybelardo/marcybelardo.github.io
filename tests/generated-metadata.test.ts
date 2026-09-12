@@ -32,9 +32,10 @@ const blogDetailPath = resolve(
   "the-devil-you-know",
   "index.html",
 );
-const primaryDestinations = ["/projects/", "/blog/", "/bio/", "/contact/"];
+const primaryDestinations = ["/projects/", "/blog/", "/about/"];
 const requiredHtmlArtifacts = [
   "404.html",
+  "about/index.html",
   "bio/index.html",
   "blog/index.html",
   "blog/tags/ai/index.html",
@@ -177,13 +178,12 @@ test("every current indexable document has complete, self-referencing metadata",
 
   assert.deepEqual(indexableRoutes, [
     "/",
-    "/bio/",
+    "/about/",
     "/blog/",
     "/blog/tags/ai/",
     "/blog/tags/politics/",
     "/blog/tags/technology/",
     "/blog/the-devil-you-know/",
-    "/contact/",
     "/projects/",
     ...getGeneratedProjectRoutes(distDirectory),
   ]);
@@ -305,6 +305,12 @@ test("generated documents expose the accessible primary navigation contract", ()
   const htmlDocuments = htmlFiles.map((htmlPath) => readFileSync(htmlPath, "utf8"));
   const allHtml = htmlDocuments.join("\n");
   htmlDocuments.forEach((html, index) => {
+    if (html.includes('http-equiv="refresh"')) {
+      assert.match(html, /<meta name="robots" content="noindex, follow"/);
+      assert.match(html, /<link rel="canonical" href="https:\/\/www\.marcelinebelardo\.com\/about\/"/);
+      return;
+    }
+
     const navigation = getPrimaryNavigation(html);
     assert.deepEqual(getPrimaryDestinationHrefs(navigation), primaryDestinations);
 
@@ -334,8 +340,7 @@ test("generated documents expose the accessible primary navigation contract", ()
     ["/", "/"],
     ["/projects/", "/projects/"],
     ["/blog/", "/blog/"],
-    ["/bio/", "/bio/"],
-    ["/contact/", "/contact/"],
+    ["/about/", "/about/"],
   ] as const;
 
   routeExpectations.forEach(([route, activeHref]) => {

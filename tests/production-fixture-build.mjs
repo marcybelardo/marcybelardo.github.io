@@ -243,8 +243,8 @@ const expectedFixtureBodyHtml =
   'Marceline Belardo is a stay-at-home software developer, conceptual artist, and reluctant content creator. She is based in Makati City, Philippines. She writes these blogs as a public service, and you can see new posts by following her on <a href="https://bsky.app/profile/marcelinebelardo.com">BlueSky @marcelinebelardo.com</a>, or by using the <a href="' +
   `${siteOrigin}/rss.xml` +
   '">RSS feed</a> with your favorite reader. If you\'d like to support her, consider some words of encouragement, or if your company is hiring, find out how to contact her at the <a href="' +
-  `${siteOrigin}/bio/` +
-  '">Bio page</a>.\n</em> </p> </footer>';
+  `${siteOrigin}/about/` +
+  '">About page</a>.\n</em> </p> </footer>';
 
 function createInvalidUrlFixture(field, value) {
   return `---

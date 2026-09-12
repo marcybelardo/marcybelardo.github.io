@@ -281,19 +281,19 @@ test("GlowText owns paired decorative and semantic copies and BaseLayout initial
     "utf8",
   );
   const homeMarkup = readFileSync(resolve(repositoryRoot, "src/pages/index.astro"), "utf8");
-  const bioMarkup = readFileSync(resolve(repositoryRoot, "src/pages/bio/index.astro"), "utf8");
+  const aboutMarkup = readFileSync(resolve(repositoryRoot, "src/pages/about/index.astro"), "utf8");
   const baseLayout = readFileSync(resolve(repositoryRoot, "src/layouts/BaseLayout.astro"), "utf8");
-  const allMarkup = homeMarkup + bioMarkup;
+  const allMarkup = homeMarkup + aboutMarkup;
 
   assert.match(glowTextComponent, /class="ink-hover__glow-copy" aria-hidden="true"><slot\s*\/>/);
   assert.match(glowTextComponent, /class="ink-hover__foreground"><slot\s*\/>/);
   assert.equal([...glowTextComponent.matchAll(/<slot\s*\/>/g)].length, 2);
-  assert.equal([...homeMarkup.matchAll(/<GlowText>/g)].length, 5);
-  assert.equal([...bioMarkup.matchAll(/<GlowText>/g)].length, 3);
+  assert.equal([...homeMarkup.matchAll(/<GlowText>/g)].length, 4);
+  assert.equal([...aboutMarkup.matchAll(/<GlowText>/g)].length, 3);
   assert.doesNotMatch(allMarkup, /ink-hover__glow-copy|ink-hover__foreground/);
   assert.doesNotMatch(allMarkup, /initializeInkHover|styles\/ink-hover\.css/);
   assert.match(baseLayout, /\.\.\/styles\/ink-hover\.css/);
   assert.match(baseLayout, /import \{ initializeInkHover \} from "\.\.\/scripts\/ink-hover\.ts"/);
   assert.equal([...baseLayout.matchAll(/initializeInkHover\(\)/g)].length, 1);
-  assert.doesNotMatch(allMarkup, /data-ink-hover="text"[^>]*aria-label=/);
+  assert.match(aboutMarkup, /href=\{`mailto:\$\{aboutContent\.email\.address\}`\}\s+aria-label=\{aboutContent\.email\.label\}\s+data-ink-hover="text"/);
 });
