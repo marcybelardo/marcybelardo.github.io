@@ -75,7 +75,7 @@
 
 /* The black square remains the button's foreground while its edge sheds the local field. */
 .primary-navigation .primary-navigation__menu-button[data-ink-hover="surface"][data-ink-hover-active="true"] {
-  --ink-hover-radius: 3.5rem;
+  --ink-hover-radius: 4.75rem;
   position: relative;
   isolation: isolate;
   overflow: visible;
@@ -85,17 +85,16 @@
 .primary-navigation .primary-navigation__menu-button[data-ink-hover="surface"][data-ink-hover-active="true"]::before {
   content: "";
   position: absolute;
-  inset: 0;
+  inset: -1rem;
   z-index: 0;
+  border-radius: 50%;
   pointer-events: none;
-  filter: blur(8px);
+  filter: blur(10px);
   opacity: 0.95;
   background-image: var(--ink-hover-texture), var(--ink-hover-gradient);
   background-size: 7rem 7rem, auto;
   background-repeat: repeat, no-repeat;
   background-blend-mode: soft-light, normal;
-  mask-image: var(--ink-hover-mask);
-  -webkit-mask-image: var(--ink-hover-mask);
 }
 
 .primary-navigation .primary-navigation__menu-button[data-ink-hover="surface"][data-ink-hover-active="true"]::after {

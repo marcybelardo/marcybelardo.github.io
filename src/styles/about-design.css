@@ -20,7 +20,7 @@
 .about-title { grid-column: 1; grid-row: 1; }
 .about-title h1 {
   margin-bottom: 1rem;
-  font-family: "Arial Narrow", "Liberation Sans Narrow", Arial, sans-serif;
+  font-family: var(--font-display);
   font-size: clamp(4rem, 7vw, 7rem);
   font-weight: 400;
   letter-spacing: -0.07em;

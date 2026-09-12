@@ -10,6 +10,7 @@
 
 .projects-index__header h1 {
   margin: 0;
+  font-family: var(--font-display);
   font-size: clamp(4.25rem, 17vw, 13rem);
   font-weight: 400;
   letter-spacing: -0.085em;
@@ -62,6 +63,7 @@
 .project-index-entry__main h2 {
   max-width: 17ch;
   margin: 0;
+  font-family: var(--font-display);
   font-size: clamp(2.1rem, 5vw, 4.25rem);
   font-weight: 400;
   letter-spacing: -0.055em;
@@ -126,6 +128,7 @@
 .project-layout__header h1 {
   max-width: 18ch;
   margin: 0;
+  font-family: var(--font-display);
   font-size: clamp(3.75rem, 12.5vw, 9.5rem);
   font-weight: 400;
   letter-spacing: -0.075em;
@@ -219,6 +222,7 @@
 .project-layout__gallery > h2,
 .project-layout__related > h2 {
   margin: 0 0 1.5rem;
+  font-family: var(--font-display);
   font-size: clamp(1.8rem, 4vw, 3rem);
   font-weight: 400;
   letter-spacing: -0.045em;

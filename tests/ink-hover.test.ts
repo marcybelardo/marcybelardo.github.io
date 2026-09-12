@@ -10,6 +10,10 @@ import {
 } from "../src/scripts/ink-hover.ts";
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const globalStyles = readFileSync(
+  resolve(repositoryRoot, "src/styles/global.css"),
+  "utf8",
+);
 const inkHoverStyles = readFileSync(
   resolve(repositoryRoot, "src/styles/ink-hover.css"),
   "utf8",
@@ -20,6 +24,26 @@ const compactNavigationStyles = readFileSync(
 );
 const interiorPageStyles = readFileSync(
   resolve(repositoryRoot, "src/styles/interior-page.css"),
+  "utf8",
+);
+const homeDesignStyles = readFileSync(
+  resolve(repositoryRoot, "src/styles/home-design.css"),
+  "utf8",
+);
+const bioDesignStyles = readFileSync(
+  resolve(repositoryRoot, "src/styles/bio-design.css"),
+  "utf8",
+);
+const projectDesignStyles = readFileSync(
+  resolve(repositoryRoot, "src/styles/projects-design.css"),
+  "utf8",
+);
+const blogDesignStyles = readFileSync(
+  resolve(repositoryRoot, "src/styles/blog-design.css"),
+  "utf8",
+);
+const contactDesignStyles = readFileSync(
+  resolve(repositoryRoot, "src/styles/contact-design.css"),
   "utf8",
 );
 
@@ -242,7 +266,7 @@ test("ink hover responds to pointer capability changes and cleans up on swaps", 
   });
 });
 
-test("ink hover styles use a local fixed-radius field clipped to ink", () => {
+test("ink hover styles keep the text glow and black menu face distinct", () => {
   assert.match(inkHoverStyles, /circle var\(--ink-hover-radius\) at var\(--ink-hover-x\) var\(--ink-hover-y\)/);
   assert.match(inkHoverStyles, /--ink-hover-radius:\s*5rem/);
   assert.match(inkHoverStyles, /filter:\s*blur\(8px\)/);
@@ -250,6 +274,18 @@ test("ink hover styles use a local fixed-radius field clipped to ink", () => {
   assert.match(inkHoverStyles, /-webkit-mask-image:\s*var\(--ink-hover-mask\)/);
   assert.match(inkHoverStyles, /background-clip:\s*text/);
   assert.match(inkHoverStyles, /background-size:\s*7rem 7rem, auto/);
+  const menuAura = inkHoverStyles.match(
+    /\.primary-navigation \.primary-navigation__menu-button\[data-ink-hover="surface"\]\[data-ink-hover-active="true"\]::before\s*\{([^}]*)\}/,
+  )?.[1] ?? "";
+  assert.match(menuAura, /inset:\s*-1rem/);
+  assert.match(menuAura, /filter:\s*blur\(10px\)/);
+  assert.match(menuAura, /background-image:\s*var\(--ink-hover-texture\),\s*var\(--ink-hover-gradient\)/);
+  assert.doesNotMatch(menuAura, /mask(?:-image)?\s*:/);
+  assert.match(
+    inkHoverStyles,
+    /\.primary-navigation \.primary-navigation__menu-button\[data-ink-hover="surface"\]\[data-ink-hover-active="true"\]::after\s*\{[^}]*background:\s*var\(--color-ink\)/,
+    "the black menu face remains above the colored field",
+  );
   assert.match(
     inkHoverStyles,
     /\[data-ink-hover="text"\]\s*\{[^}]*color:\s*var\(--color-ink\);[^}]*opacity:\s*1/,
@@ -264,6 +300,21 @@ test("ink hover styles use a local fixed-radius field clipped to ink", () => {
   assert.doesNotMatch(inkHoverStyles, /content:\s*attr\(data-ink-text\)/);
   assert.match(inkHoverStyles, /background:\s*var\(--color-ink\)/);
   assert.match(compactNavigationStyles, /background-color:\s*var\(--color-ink\)/);
+  assert.match(
+    compactNavigationStyles,
+    /\.site-header__inner:has\(\.primary-navigation\[data-home="true"\]\)\s*\{[^}]*width:\s*100%;[^}]*max-width:\s*none;[^}]*padding-right:\s*clamp\(1rem,\s*2vw,\s*2\.5rem\);[^}]*padding-left:\s*clamp\(1rem,\s*2vw,\s*2\.5rem\)/,
+    "the homepage navigation uses the landing page's viewport gutter",
+  );
+  assert.match(
+    compactNavigationStyles,
+    /\.primary-navigation\[data-home="true"\]\[data-js-ready\]\s*\{[^}]*justify-content:\s*flex-end/,
+    "the enhanced homepage menu sits at the far right",
+  );
+  assert.match(
+    compactNavigationStyles,
+    /\.primary-navigation\[data-home="true"\]\[data-js-ready\] \.primary-navigation__panel\s*\{[^}]*top:\s*calc\(100% \+ 3rem\)/,
+    "the homepage panel clears the two-line mobile title",
+  );
   assert.doesNotMatch(
     compactNavigationStyles,
     /primary-navigation__menu-button[^}]*\{[^}]*background:\s*var\(--color-ink\)/,
@@ -273,6 +324,43 @@ test("ink hover styles use a local fixed-radius field clipped to ink", () => {
   assert.match(interiorPageStyles, /--interior-page-gutter:/);
   assert.match(interiorPageStyles, /\.interior-page__header\s*\{/);
   assert.match(interiorPageStyles, /\.interior-page__section\s*\{/);
+});
+
+test("display headings share one compressed stack while reading and utility faces stay separate", () => {
+  assert.match(
+    globalStyles,
+    /--font-display:\s*"Arial Narrow",\s*"Liberation Sans Narrow",\s*"Helvetica Neue",\s*Arial,\s*sans-serif/,
+  );
+
+  const displayStyleSources = [
+    homeDesignStyles,
+    bioDesignStyles,
+    projectDesignStyles,
+    blogDesignStyles,
+    contactDesignStyles,
+  ].join("\n");
+  assert.doesNotMatch(displayStyleSources, /font-family:\s*"Arial Narrow"/);
+  const displayTargets: Array<[RegExp, string]> = [
+    [/\.portfolio-home\s*\{[^}]*font-family:\s*var\(--font-display\)/, "Home"],
+    [/\.bio-title h1\s*\{[^}]*font-family:\s*var\(--font-display\)/, "Bio title"],
+    [/\.projects-index__header h1\s*\{[^}]*font-family:\s*var\(--font-display\)/, "Projects title"],
+    [/\.project-index-entry__main h2\s*\{[^}]*font-family:\s*var\(--font-display\)/, "project entry titles"],
+    [/\.project-layout__header h1\s*\{[^}]*font-family:\s*var\(--font-display\)/, "project detail title"],
+    [/\.project-layout__gallery > h2,[\s\S]*?font-family:\s*var\(--font-display\)/, "project gallery and related headings"],
+    [/\.blog-index-page \.blog-index__header h1\s*\{[^}]*font-family:\s*var\(--font-display\)/, "Blog and tag titles"],
+    [/\.blog-index-entry__summary h2\s*\{[^}]*font-family:\s*var\(--font-display\)/, "blog entry titles"],
+    [/\.blog-article \.blog-article__header h1\s*\{[^}]*font-family:\s*var\(--font-display\)/, "blog article title"],
+    [/\.contact-page__heading h1\s*\{[^}]*font-family:\s*var\(--font-display\)/, "Contact title"],
+    [/\.contact-page__email\s*\{[^}]*font-family:\s*var\(--font-display\)/, "Contact email display"],
+  ];
+  displayTargets.forEach(([pattern, label]) => {
+    assert.match(displayStyleSources, pattern, `${label} use the display face`);
+  });
+
+  assert.match(blogDesignStyles, /\.blog-article__body\s*\{[^}]*font-family:\s*var\(--font-reading\)/);
+  assert.match(projectDesignStyles, /\.project-index-entry__metadata dd\s*\{[^}]*font-family:\s*var\(--font-utility\)/);
+  assert.match(blogDesignStyles, /\.blog-index-entry__tags\s*\{[^}]*font-family:\s*var\(--font-utility\)/);
+  assert.match(globalStyles, /\.primary-navigation__link\s*\{[^}]*font-family:\s*var\(--font-utility\)/);
 });
 
 test("GlowText owns paired decorative and semantic copies and BaseLayout initializes it once", () => {
