@@ -1,10 +1,13 @@
 ---
 // pattern: Imperative Shell
 import { getCollection, type CollectionEntry } from "astro:content";
+import "../../styles/projects-design.css";
+
 import {
   filterPublishedEntries,
   sortByDateDescending,
 } from "../../content/content-queries.ts";
+import GlowText from "../../components/GlowText.astro";
 import ProjectIndexEntry from "../../components/ProjectIndexEntry.astro";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 
@@ -17,13 +20,12 @@ const projects: Array<CollectionEntry<"project">> = sortByDateDescending(
   title="Projects"
   description="An editorial index of published software, visual, and research projects by Marceline Belardo."
 >
-  <article class="editorial-page editorial-measure">
-    <header class="editorial-page__header">
-      <p class="eyebrow">Selected work</p>
-      <h1>Projects</h1>
+  <article class="projects-index">
+    <header class="projects-index__header">
+      <h1 data-ink-hover="text"><GlowText>Projects</GlowText></h1>
     </header>
 
-    <ul class="editorial-list" aria-label="Projects">
+    <ol class="projects-index__list" aria-label="Projects">
       {
         projects.map((project, index) => (
           <li>
@@ -31,6 +33,6 @@ const projects: Array<CollectionEntry<"project">> = sortByDateDescending(
           </li>
         ))
       }
-    </ul>
+    </ol>
   </article>
 </BaseLayout>

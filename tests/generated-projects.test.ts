@@ -6,6 +6,7 @@ import test from "node:test";
 
 import {
   decodeHtmlEntities,
+  getInkHoverVisibleText,
   getStructuredData,
 } from "./generated-artifact-helpers.ts";
 import { getGeneratedProjectSlugs } from "./generated-project-artifacts.ts";
@@ -13,6 +14,7 @@ import { getGeneratedProjectSlugs } from "./generated-project-artifacts.ts";
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const distDirectory = resolve(repositoryRoot, "dist");
 const projectsIndexPath = resolve(repositoryRoot, "dist/projects/index.html");
+const projectsStylesPath = resolve(repositoryRoot, "src/styles/projects-design.css");
 const projectsSourceDirectory = resolve(repositoryRoot, "src/content/projects");
 const configuredOrigin = "https://www.marcelinebelardo.com";
 
@@ -44,28 +46,44 @@ function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-test("the project index renders one ordered editorial list of stable project links", () => {
+function removeScripts(html: string): string {
+  return html.replace(
+    /<script\b([^>]*)>[\s\S]*?<\/script>/g,
+    (script, attributes: string) =>
+      attributes.includes('type="application/ld+json"') ? script : "",
+  );
+}
+
+test("the project index renders a full-width typographic catalogue of stable project links", () => {
   assert.ok(existsSync(projectsIndexPath), "project index output must exist");
 
   const html = readFileSync(projectsIndexPath, "utf8");
   const linkedProjectIds = [...html.matchAll(/href="\/projects\/([^/]+)\/"/g)].map(
     (match) => match[1],
   );
-  const noCoverEntries = (html.match(/project-index-entry__body--no-cover/g) ?? []).length;
-  const coverEntries = (
-    html.match(/class="project-index-entry__body project-index-entry__body--has-cover"/g) ?? []
-  ).length;
+  const entries = [
+    ...html.matchAll(/<article class="project-index-entry(?:\s[^\"]*)?"[^>]*>[\s\S]*?<\/article>/g),
+  ];
 
   assert.ok(projectIds.length > 0);
   assert.deepEqual(linkedProjectIds.slice().sort(), projectIds);
   assert.equal(new Set(linkedProjectIds).size, linkedProjectIds.length);
-  assert.equal(
-    (html.match(/class="project-index-entry"/g) ?? []).length,
-    linkedProjectIds.length,
-  );
-  assert.equal(noCoverEntries + coverEntries, linkedProjectIds.length);
-  assert.match(html, /<ul class="editorial-list" aria-label="Projects">/);
+  assert.equal(entries.length, linkedProjectIds.length);
+  assert.match(html, /<ol class="projects-index__list" aria-label="Projects">/);
+  const pageTitleMarkup = html.match(/<h1 data-ink-hover="text">([\s\S]*?)<\/h1>/)?.[1] ?? "";
+  assert.equal(getInkHoverVisibleText(pageTitleMarkup, "projects page title"), "Projects");
+  assert.doesNotMatch(html, /<p class="eyebrow">/);
   assert.doesNotMatch(html, /ProjectCard|project-card|border-neutral-900/);
+
+  entries.forEach((match, index) => {
+    const entry = match[0] ?? "";
+    const heading = entry.match(/<a\b[^>]*>([\s\S]*?)<\/a>/)?.[1] ?? "";
+
+    assert.ok(getInkHoverVisibleText(heading, `project index heading ${index + 1}`));
+    assert.match(entry, /class="project-index-entry__ordinal"[\s\S]*?<time\b[^>]*>(?:19|20)\d{2}<\/time>/);
+    assert.match(entry, /class="project-index-entry__main"[\s\S]*?<p class="project-index-entry__description">[^<]+<\/p>/);
+    assert.match(entry, /<aside class="project-index-entry__metadata"[\s\S]*?<dt>Disciplines<\/dt>/);
+  });
 });
 
 test("the project index emits the published project metadata", () => {
@@ -74,7 +92,7 @@ test("the project index emits the published project metadata", () => {
   const html = readFileSync(projectsIndexPath, "utf8");
   const entries = [
     ...html.matchAll(
-      /<article class="project-index-entry"[^>]*>[\s\S]*?<\/article>/g,
+      /<article class="project-index-entry(?:\s[^\"]*)?"[^>]*>[\s\S]*?<\/article>/g,
     ),
   ].map((match) => match[0] ?? "");
 
@@ -88,27 +106,21 @@ test("the project index emits the published project metadata", () => {
       entry,
       /<time\b[^>]*datetime="[^"]+"[^>]*>(?:19|20)\d{2}<\/time>/,
     );
-    assert.match(
-      entry,
-      /class="project-index-entry__details"[\s\S]*?<p\b[^>]*>[^<]+<\/p>/,
-    );
-    assert.match(
-      entry,
-      /class="project-index-entry__disciplines"[^>]*>[\s\S]*?<li\b[^>]*>[^<]+<\/li>/,
-    );
+    assert.match(entry, /class="project-index-entry__description">[^<]+<\/p>/);
+    assert.match(entry, /<dt>Disciplines<\/dt>[\s\S]*?<dd>[^<]+<\/dd>/);
+    assert.match(entry, /<dt>Tags<\/dt>[\s\S]*?<dd>[^<]+<\/dd>/);
   });
 
-  assert.doesNotMatch(html, /No image|Coming soon|undefined|null/);
+  assert.doesNotMatch(removeScripts(html), /No image|Coming soon|undefined|null/);
 });
 
 test("each project detail emits its published metadata and canonical JSON-LD", () => {
   projectIds.forEach((projectId) => {
-    const html = readProjectPage(projectId);
+    const html = removeScripts(readProjectPage(projectId));
     const canonical = `${configuredOrigin}/projects/${projectId}/`;
     const jsonLd = getStructuredData(html, `${projectId} project`);
-    const title = decodeHtmlEntities(
-      html.match(/<h1[^>]*>([^<]+)<\/h1>/)?.[1] ?? "",
-    );
+    const titleMarkup = html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/)?.[1] ?? "";
+    const title = getInkHoverVisibleText(titleMarkup, `${projectId} project title`);
     const description = decodeHtmlEntities(
       html.match(/<meta name="description" content="([^"]+)"/)?.[1] ?? "",
     );
@@ -127,6 +139,9 @@ test("each project detail emits its published metadata and canonical JSON-LD", (
       html,
       new RegExp(`<link rel="canonical" href="${escapeRegExp(canonical)}"`),
     );
+    assert.match(html, /<h1 data-ink-hover="text"><span class="ink-hover__glow-copy" aria-hidden="true">[\s\S]*?<\/span>\s*<span class="ink-hover__foreground">[\s\S]*?<\/span><\/h1>/);
+    assert.match(html, /class="project-layout__overview"[\s\S]*?class="project-layout__description"/);
+    assert.match(html, /<aside class="project-layout__marginalia"[\s\S]*?class="project-layout__metadata"/);
     assert.deepEqual(jsonLd, {
       "@context": "https://schema.org",
       "@type": "CreativeWork",
@@ -140,9 +155,19 @@ test("each project detail emits its published metadata and canonical JSON-LD", (
   });
 });
 
+test("project stylesheet provides responsive catalogue and readable case-study columns", () => {
+  const styles = readFileSync(projectsStylesPath, "utf8");
+
+  assert.match(styles, /\.projects-index__header h1\s*\{[^}]*font-size:\s*clamp\(/);
+  assert.match(styles, /\.project-index-entry--has-cover\s*\{\s*grid-template-columns:/);
+  assert.match(styles, /\.project-layout__overview\s*\{\s*display:\s*grid/);
+  assert.match(styles, /\.project-layout__body\s*\{\s*width:\s*min\(100%,\s*var\(--reading-measure\)\)/);
+  assert.match(styles, /@media\s*\(min-width:\s*56rem\)/);
+});
+
 test("every published project has a stable static case-study route", () => {
   projectIds.forEach((projectId) => {
-    const html = readProjectPage(projectId);
+    const html = removeScripts(readProjectPage(projectId));
 
     assert.doesNotMatch(html, /href="#"|href=""|Coming soon|undefined|null/);
     assert.doesNotMatch(html, /<p>\s*<img\b/);
@@ -156,9 +181,10 @@ test("project output has no empty controls, placeholders, cards, or draft conten
   );
   const projectOutput = projectOutputFiles
     .map((filePath) => readFileSync(filePath, "utf8"))
+    .map(removeScripts)
     .join("\n");
-  const indexHtml = readFileSync(projectsIndexPath, "utf8");
-  const detailHtml = projectIds.map((projectId) => readProjectPage(projectId));
+  const indexHtml = removeScripts(readFileSync(projectsIndexPath, "utf8"));
+  const detailHtml = projectIds.map((projectId) => removeScripts(readProjectPage(projectId)));
   const relationOutput = detailHtml
     .map(
       (html) =>

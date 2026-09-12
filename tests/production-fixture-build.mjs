@@ -353,6 +353,14 @@ function getSquareImageWrappers(html) {
   ].map((match) => match[0] ?? "");
 }
 
+function removePageScripts(html) {
+  return html.replace(
+    /<script\b([^>]*)>[\s\S]*?<\/script>/g,
+    (script, attributes) =>
+      attributes.includes('type="application/ld+json"') ? script : "",
+  );
+}
+
 function assertSquareImageContract(wrapper, label) {
   assert.match(wrapper, /style="aspect-ratio:\s*1;"/, `${label} must reserve a square frame`);
   assert.match(wrapper, /data-astro-image-fit="contain"/, `${label} must preserve the full image`);
@@ -381,7 +389,18 @@ function assertProjectFixtureOutput(relatedProjectSlug) {
   );
 
   const html = readFileSync(optionalProjectOutputPath, "utf8");
+  const indexHtml = readFileSync(resolve(repositoryRoot, "dist/projects/index.html"), "utf8");
+  const optionalIndexEntry = [
+    ...indexHtml.matchAll(/<article class="project-index-entry(?:\s[^\"]*)?"[^>]*>[\s\S]*?<\/article>/g),
+  ].find((match) => match[0]?.includes('href="/projects/optional-project-fixture/"'))?.[0] ?? "";
   const squareImageWrappers = getSquareImageWrappers(html);
+
+  assert.ok(optionalIndexEntry, "optional project must appear in the generated catalogue");
+  assert.match(optionalIndexEntry, /project-index-entry--has-cover/);
+  assert.match(optionalIndexEntry, /square-image project-index-entry__image/);
+  assert.match(optionalIndexEntry, /<dt>Disciplines<\/dt>[\s\S]*?<dd>software · visual<\/dd>/);
+  assert.match(optionalIndexEntry, /<dt>Status<\/dt>[\s\S]*?<dd>Published fixture<\/dd>/);
+  assert.match(optionalIndexEntry, /<dt>Tags<\/dt>[\s\S]*?<dd>fixture · validation<\/dd>/);
 
   assert.equal(squareImageWrappers.length, 2, "cover and gallery must use SquareImage");
   squareImageWrappers.forEach((wrapper, index) => {
@@ -418,7 +437,7 @@ function assertProjectFixtureOutput(relatedProjectSlug) {
   assert.doesNotMatch(noOptionalsHtml, /class="project-layout__cover"/);
   assert.doesNotMatch(noOptionalsHtml, /class="project-layout__gallery"/);
   assert.doesNotMatch(noOptionalsHtml, /class="project-layout__related"/);
-  assert.doesNotMatch(noOptionalsHtml, /href="#"|href=""|undefined|null/);
+  assert.doesNotMatch(removePageScripts(noOptionalsHtml), /href="#"|href=""|undefined|null/);
 }
 
 function assertFootnoteBaseline(html) {

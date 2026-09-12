@@ -2,8 +2,10 @@
 // pattern: Imperative Shell
 import type { CollectionEntry } from "astro:content";
 import type { AstroComponentFactory } from "astro/runtime/server/index.js";
+import "../styles/projects-design.css";
 
 import SquareImage from "../components/SquareImage.astro";
+import GlowText from "../components/GlowText.astro";
 import BaseLayout from "./BaseLayout.astro";
 import { formatDisplayDate } from "../utils/format-date.ts";
 
@@ -52,39 +54,58 @@ const structuredData = {
   socialType="article"
   structuredData={structuredData}
 >
-  <article class="project-layout editorial-measure">
-    <header class="project-layout__header editorial-page__header">
-      <p class="eyebrow">Project case study</p>
-      <h1>{data.title}</h1>
-      <p>{data.description}</p>
-      <dl class="project-layout__metadata">
-        <div>
-          <dt class="metadata">Date</dt>
-          <dd><time datetime={data.date.toISOString()}>{formatDisplayDate(data.date)}</time></dd>
-        </div>
-        <div>
-          <dt class="metadata">Disciplines</dt>
-          <dd>{data.disciplines.join(" · ")}</dd>
-        </div>
-        {data.status && (
-          <div>
-            <dt class="metadata">Status</dt>
-            <dd>{data.status}</dd>
-          </div>
-        )}
-        {data.role && (
-          <div>
-            <dt class="metadata">Role</dt>
-            <dd>{data.role}</dd>
-          </div>
-        )}
-        {hasCollaborators && (
-          <div>
-            <dt class="metadata">Collaborators</dt>
-            <dd>{data.collaborators?.join(" · ")}</dd>
-          </div>
-        )}
-      </dl>
+  <article class="project-layout">
+    <header class="project-layout__header">
+      <h1 data-ink-hover="text"><GlowText>{data.title}</GlowText></h1>
+
+      <div class="project-layout__overview">
+        <p class="project-layout__description">{data.description}</p>
+
+        <aside
+          class="project-layout__marginalia"
+          aria-label={`${data.title} details`}
+        >
+          <dl class="project-layout__metadata">
+            <div>
+              <dt class="metadata">Date</dt>
+              <dd><time datetime={data.date.toISOString()}>{formatDisplayDate(data.date)}</time></dd>
+            </div>
+            <div>
+              <dt class="metadata">Disciplines</dt>
+              <dd>{data.disciplines.join(" · ")}</dd>
+            </div>
+            {data.status && (
+              <div>
+                <dt class="metadata">Status</dt>
+                <dd>{data.status}</dd>
+              </div>
+            )}
+            {data.role && (
+              <div>
+                <dt class="metadata">Role</dt>
+                <dd>{data.role}</dd>
+              </div>
+            )}
+            {hasCollaborators && (
+              <div>
+                <dt class="metadata">Collaborators</dt>
+                <dd>{data.collaborators?.join(" · ")}</dd>
+              </div>
+            )}
+          </dl>
+
+          {projectLinks.length > 0 && (
+            <section class="project-layout__links" aria-labelledby="project-links-heading">
+              <h2 id="project-links-heading">Links</h2>
+              <ul>
+                {projectLinks.map((link) => (
+                  <li><a href={link.href} rel="noreferrer">{link.label}</a></li>
+                ))}
+              </ul>
+            </section>
+          )}
+        </aside>
+      </div>
     </header>
 
     {
@@ -94,22 +115,9 @@ const structuredData = {
             src={data.coverImage}
             alt={data.coverImageAlt}
             priority
-            sizes="(min-width: 48rem) 44rem, 100vw"
+            sizes="(min-width: 50rem) 48rem, calc(100vw - 2rem)"
           />
         </figure>
-      )
-    }
-
-    {
-      projectLinks.length > 0 && (
-        <section class="project-layout__links editorial-section" aria-labelledby="project-links-heading">
-          <h2 id="project-links-heading">Links</h2>
-          <ul class="editorial-list">
-            {projectLinks.map((link) => (
-              <li><a href={link.href} rel="noreferrer">{link.label}</a></li>
-            ))}
-          </ul>
-        </section>
       )
     }
 
@@ -127,7 +135,7 @@ const structuredData = {
                 <SquareImage
                   src={item.image}
                   alt={item.imageAlt}
-                  sizes="(min-width: 48rem) 21rem, 100vw"
+                  sizes="(min-width: 72rem) 23rem, (min-width: 56rem) 30vw, (min-width: 48rem) 48vw, calc(100vw - 2rem)"
                 />
                 {item.caption?.trim() && <figcaption>{item.caption}</figcaption>}
               </figure>
@@ -164,64 +172,3 @@ const structuredData = {
     }
   </article>
 </BaseLayout>
-
-<style>
-  .project-layout__metadata {
-    display: grid;
-    gap: 1rem;
-    margin: 2rem 0 0;
-  }
-
-  .project-layout__metadata div {
-    display: grid;
-    gap: 0.2rem;
-  }
-
-  .project-layout__metadata dt,
-  .project-layout__metadata dd {
-    margin: 0;
-  }
-
-  .project-layout__metadata dd {
-    font-family: var(--font-utility);
-    font-size: 0.9rem;
-  }
-
-  .project-layout__cover {
-    margin: 0 0 4rem;
-  }
-
-  .project-layout__body {
-    margin-bottom: 4rem;
-  }
-
-  .project-layout__body > :first-child {
-    margin-top: 0;
-  }
-
-  .project-layout__gallery-grid {
-    display: grid;
-    gap: 1rem;
-  }
-
-  .project-layout__gallery-grid figure {
-    margin: 0;
-  }
-
-  .project-layout__gallery-grid figcaption {
-    margin-top: 0.5rem;
-    color: var(--color-muted-ink);
-    font-family: var(--font-utility);
-    font-size: 0.8rem;
-  }
-
-  @media (min-width: 48rem) {
-    .project-layout__metadata {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
-    .project-layout__gallery-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-  }
-</style>
