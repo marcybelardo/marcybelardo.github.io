@@ -15,7 +15,7 @@ tags:
   - desktop
 featured: true
 featuredOrder: 6
-draft: false
+draft: true
 repositoryUrl: https://github.com/marcybelardo/chikachika
 ---
 
