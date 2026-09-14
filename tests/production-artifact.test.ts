@@ -79,13 +79,13 @@ test("portfolio-redesign.AC1.1 production artifact contains the complete static 
   );
 });
 
-test("production artifact uses the MB monogram SVG favicon", () => {
+test("production artifact uses the triptych SVG favicon", () => {
   const favicon = readArtifact("favicon.svg");
   const homepage = readArtifact("index.html");
 
   assert.match(favicon, /viewBox="0 0 128 128"/);
-  assert.match(favicon, /<title\b[^>]*>\s*MB\s*<\/title>/i);
-  assert.match(favicon, /#003153/i);
+  assert.match(favicon, /<title\b[^>]*>[^<]*Triptych[^<]*<\/title>/i);
+  assert.match(favicon, /#171717/i);
   assert.match(favicon, /#f6f4ee/i);
   assert.doesNotMatch(favicon, /<text\b/i);
   assert.match(

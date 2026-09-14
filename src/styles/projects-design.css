@@ -210,7 +210,49 @@
   font-size: 1.1rem;
 }
 
-.project-layout__body > :first-child {
+.project-layout .project-layout__body :is(h2, h3, h4, h5, h6) {
+  margin: 2.5rem 0 0.85rem;
+  font-weight: 600;
+  line-height: 1.2;
+  text-wrap: balance;
+}
+
+.project-layout .project-layout__body h2 {
+  font-size: clamp(1.9rem, 3vw, 2.5rem);
+}
+
+.project-layout .project-layout__body h3 {
+  font-size: clamp(1.5rem, 2.5vw, 1.85rem);
+}
+
+.project-layout .project-layout__body :is(h4, h5, h6) {
+  margin-top: 1.75rem;
+  font-size: 1.2rem;
+}
+
+.project-layout__body :is(ul, ol) {
+  margin-block: 1rem 1.5rem;
+  padding-inline-start: 1.5em;
+  list-style-position: outside;
+}
+
+.project-layout__body ul {
+  list-style-type: disc;
+}
+
+.project-layout__body ol {
+  list-style-type: decimal;
+}
+
+.project-layout__body li + li {
+  margin-top: 0.5rem;
+}
+
+.project-layout__body li > :is(ul, ol) {
+  margin-block: 0.5rem;
+}
+
+.project-layout .project-layout__body > :first-child {
   margin-top: 0;
 }
 
