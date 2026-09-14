@@ -109,12 +109,12 @@ test("representative pages contain only valid generated image markup", () => {
     const images = getImages(html);
     const isHomepage = htmlPath === resolve(distDirectory, "index.html");
     const heroImages = isHomepage ? images.filter((image) => image.includes('class="home-photograph__image"')) : [];
-    assert.ok(heroImages.length <= 1, "only one homepage photograph may use cover framing");
+    assert.equal(heroImages.length, isHomepage ? 3 : 0, "homepage must contain three photographs");
     heroImages.forEach((image) => {
       assert.match(image, /alt="[^"\s][^"]+"/);
       assert.match(
         image,
-        /sizes="\(max-width: 35rem\) 100vw, min\(72vw, 64rem\)"/,
+        /sizes="\(max-width: 35rem\) 33.33vw, min\(30vw, 30rem\)"/,
         "homepage photo sizes must match its constrained frame",
       );
       assert.match(image, /fetchpriority="high"/);

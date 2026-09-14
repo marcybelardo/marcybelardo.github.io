@@ -38,15 +38,20 @@ body:has(.portfolio-home) .social-links { display: none; }
   grid-row: 2;
   align-self: center;
   justify-self: end;
-  width: min(72vw, 64rem);
-  max-height: 53svh;
-  aspect-ratio: 16 / 9;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(0.25rem, 0.8vw, 0.75rem);
+  width: min(90vw, 90rem);
   margin: 0;
+}
+
+.home-photograph__frame {
+  position: relative;
+  aspect-ratio: 1;
   overflow: hidden;
 }
 
-.home-photograph__image,
-.home-photograph__placeholder {
+.home-photograph__image {
   position: absolute;
   inset: 0;
   display: block;
@@ -54,14 +59,8 @@ body:has(.portfolio-home) .social-links { display: none; }
   height: 100%;
   max-width: none;
   object-fit: cover;
-  object-position: center 30%;
+  object-position: center;
   background: #d9d8d2;
-}
-
-.home-photograph__placeholder {
-  display: grid;
-  place-items: center;
-  color: #565650;
 }
 
 .home-directions {
@@ -93,8 +92,6 @@ body:has(.portfolio-home) .social-links { display: none; }
 
   .home-photograph {
     width: 100%;
-    max-height: 42svh;
-    aspect-ratio: 4 / 3;
   }
 
   .home-directions { gap: 1rem; }

@@ -2,7 +2,7 @@
 
 Branch: `codex/photo-wide`.
 
-The homepage is now a single-screen photographic landing: name at the top, a smaller right-aligned photograph in the central space, and Projects, Blog, and About links along the bottom. Project and writing previews have been removed. A blank dark-ink square opens the accessible menu. The composition may scroll on short viewports or with enlarged text so content remains reachable.
+The homepage is now a single-screen photographic landing: name at the top, a right-aligned triptych of square photographs in the central space, and Projects, Blog, and About links along the bottom. Project and writing previews have been removed. A blank dark-ink square opens the accessible menu. The composition may scroll on short viewports or with enlarged text so content remains reachable.
 
 Fine pointers reveal a textured, multicolor glow behind the homepage title and links. The foreground text stays fully opaque black; an `aria-hidden` decorative text span sits beneath it, with a pointer-following radial mask and 8px blur that bleeds roughly 6–12px around letter edges. The black foreground span remains the only semantic text copy. The menu keeps its black square above an oversized, blurred textured field without a surface mask. Its homepage header follows the landing page's `clamp(1rem, 2vw, 2.5rem)` edge gutter, pins the square at far right, and opens the panel below/right of the title area. Touch, coarse-pointer, and no-JavaScript states retain plain black ink and the existing visible menu baseline.
 
@@ -20,7 +20,7 @@ Open `http://127.0.0.1:4321/` or `http://127.0.0.1:4321/about/`.
 
 ## Images and styles
 
-The homepage photo is `src/assets/marcy_sensouji.jpg`, showing Marceline Belardo in profile wearing glasses with a temple pagoda behind her at Sensōji in Tokyo. Its description is the `alt` constant in `src/components/PhotoStudy.astro`. Add both when changing the image. Cropping uses a centered horizontal position with a 30% vertical focal point; change `object-position` in `src/styles/home-design.css` to adjust it.
+The homepage uses `tokyo_electric.jpg`, `tokyo_shibuya.jpg`, and `homepage-photo.jpg` left to right. `PhotoStudy.astro` supplies descriptive alt text and responsive square images. The strip stays in three columns on desktop and mobile, with centered cover crops, narrow gaps, a desktop width of `min(90vw, 90rem)`, and full mobile width. Adjust `object-position` in `src/styles/home-design.css` to change the focal point.
 
 About uses `src/assets/marcy_mirror.jpg` in three native 2:3 portrait frames, with verified copy and alt text in `src/pages/about/index.astro`. Its grayscale triptych and contact line layout is in `src/styles/about-design.css`. The shared square menu is in `src/styles/compact-navigation.css`; shared interior starter styles are in `src/styles/interior-page.css`.
 

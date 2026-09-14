@@ -81,7 +81,7 @@ tags: []
 featured: false
 featuredOrder: 1
 draft: false
-coverImage: ../../assets/20260425_29.jpg
+coverImage: ../../assets/homepage-photo.jpg
 ---
 
 Temporary content validation fixture.
@@ -91,7 +91,7 @@ const invalidBlogEntry = `---
 title: Invalid Blog Image Alt Fixture
 date: 2026-06-16
 description: Temporary fixture for blog image alternative validation
-image: ../../assets/20260425_29.jpg
+image: ../../assets/homepage-photo.jpg
 tags:
   - validation
 draft: false
@@ -143,10 +143,10 @@ status: Published fixture
 featured: false
 featuredOrder: 5
 draft: false
-coverImage: ../../assets/20260425_29.jpg
+coverImage: ../../assets/homepage-photo.jpg
 coverImageAlt: A portrait image used by the optional project fixture
 gallery:
-  - image: ../../assets/20260425_29.jpg
+  - image: ../../assets/homepage-photo.jpg
     imageAlt: A second use of the fixture image in the optional project gallery
     caption: Optional gallery caption.
 repositoryUrl: https://github.com/marcybelardo/optional-project-fixture

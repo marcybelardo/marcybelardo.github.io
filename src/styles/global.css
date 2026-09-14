@@ -1,10 +1,26 @@
+@font-face {
+    font-family: "Source Sans 3";
+    src: url("/fonts/source-sans-3/SourceSans3VF-Upright.woff2") format("woff2");
+    font-style: normal;
+    font-weight: 200 900;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "Source Sans 3";
+    src: url("/fonts/source-sans-3/SourceSans3VF-Italic.woff2") format("woff2");
+    font-style: italic;
+    font-weight: 200 900;
+    font-display: swap;
+}
+
 :root {
     --color-paper: #f6f4ee;
     --color-ink: #171717;
     --color-muted-ink: #68655f;
     --color-rule: #c9c4b8;
     --color-prussian-blue: #003153;
-    --font-reading: Georgia, "Times New Roman", serif;
+    --font-reading: "Source Sans 3", "Helvetica Neue", Helvetica, Arial, sans-serif;
     --font-utility: "Helvetica Neue", Helvetica, Arial, sans-serif;
     --font-display: "Arial Narrow", "Liberation Sans Narrow", "Helvetica Neue", Arial, sans-serif;
     --editorial-measure: 72rem;

@@ -1,24 +1,20 @@
 ---
 import { Image } from "astro:assets";
-import type { ImageMetadata } from "astro";
+import electric from "../assets/tokyo_electric.jpg";
+import shibuya from "../assets/tokyo_shibuya.jpg";
+import portrait from "../assets/homepage-photo.jpg";
 
-const photos = import.meta.glob<{ default: ImageMetadata }>(
-  "../assets/marcy_sensouji.jpg", { eager: true },
-);
-const photo = Object.values(photos)[0]?.default;
-const alt =
-  "Marceline Belardo in profile wearing glasses, with a temple pagoda behind her at Sensōji in Tokyo";
-if (photo && !alt.trim()) {
-  throw new Error("Set the photograph alt text in PhotoStudy.astro before building.");
-}
+const photos = [
+  { src: electric, alt: "Utility poles and overhead wires against a blue sky in Tokyo" },
+  { src: shibuya, alt: "Crowds beneath colorful billboards and storefronts in Shibuya, Tokyo" },
+  { src: portrait, alt: "Marceline Belardo wearing glasses in a courtyard with golden-roofed buildings" },
+];
 ---
 <figure class="home-photograph">
-  {photo ? (
-    <Image src={photo} alt={alt} widths={[640, 960, 1440, 1920, 2400]}
-      sizes="(max-width: 35rem) 100vw, min(72vw, 64rem)" layout="constrained" fit="cover" priority class="home-photograph__image" />
-  ) : (
-    <div class="home-photograph__placeholder" role="img" aria-label="Photograph placeholder">
-      <span>Photograph</span>
+  {photos.map(({ src, alt }) => (
+    <div class="home-photograph__frame">
+      <Image src={src} alt={alt} width={960} height={960} widths={[240, 480, 720, 960]}
+        sizes="(max-width: 35rem) 33.33vw, min(30vw, 30rem)" layout="constrained" fit="cover" priority class="home-photograph__image" />
     </div>
-  )}
+  ))}
 </figure>
