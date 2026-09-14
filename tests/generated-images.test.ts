@@ -114,7 +114,7 @@ test("representative pages contain only valid generated image markup", () => {
       assert.match(image, /alt="[^"\s][^"]+"/);
       assert.match(
         image,
-        /sizes="\(max-width: 35rem\) 33.33vw, min\(30vw, 30rem\)"/,
+        /sizes="33\.33vw"/,
         "homepage photo sizes must match its constrained frame",
       );
       assert.match(image, /fetchpriority="high"/);

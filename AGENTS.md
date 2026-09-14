@@ -92,4 +92,4 @@ The Blog index and tag archives share `BlogIndexEntry`, which owns the post date
 
 ### Homepage triptych update
 
-`PhotoStudy.astro` now displays `tokyo_electric.jpg`, `tokyo_shibuya.jpg`, and `homepage-photo.jpg` left to right, each with descriptive alt text and a centered square cover crop. The three-column strip stays side by side at all widths, right-aligned at `min(90vw, 90rem)` on desktop and full width on mobile, with narrow responsive gaps. This supersedes the single-photo homepage specifications above; About and project image framing are unchanged.
+`PhotoStudy.astro` now displays `tokyo_electric.jpg`, `tokyo_shibuya.jpg`, and `homepage-photo.jpg` left to right, each with descriptive alt text and a centered square cover crop. The three-column strip stays side by side at all widths, full screen width on desktop and mobile, with narrow responsive gaps. This supersedes the single-photo homepage specifications above; About and project image framing are unchanged.

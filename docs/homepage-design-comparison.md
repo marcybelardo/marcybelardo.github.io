@@ -20,7 +20,7 @@ Open `http://127.0.0.1:4321/` or `http://127.0.0.1:4321/about/`.
 
 ## Images and styles
 
-The homepage uses `tokyo_electric.jpg`, `tokyo_shibuya.jpg`, and `homepage-photo.jpg` left to right. `PhotoStudy.astro` supplies descriptive alt text and responsive square images. The strip stays in three columns on desktop and mobile, with centered cover crops, narrow gaps, a desktop width of `min(90vw, 90rem)`, and full mobile width. Adjust `object-position` in `src/styles/home-design.css` to change the focal point.
+The homepage uses `tokyo_electric.jpg`, `tokyo_shibuya.jpg`, and `homepage-photo.jpg` left to right. `PhotoStudy.astro` supplies descriptive alt text and responsive square images. The strip stays in three columns on desktop and mobile, with centered cover crops, narrow gaps, full screen width on desktop and mobile. Adjust `object-position` in `src/styles/home-design.css` to change the focal point.
 
 About uses `src/assets/marcy_mirror.jpg` in three native 2:3 portrait frames, with verified copy and alt text in `src/pages/about/index.astro`. Its grayscale triptych and contact line layout is in `src/styles/about-design.css`. The shared square menu is in `src/styles/compact-navigation.css`; shared interior starter styles are in `src/styles/interior-page.css`.
 

@@ -14,7 +14,7 @@ const photos = [
   {photos.map(({ src, alt }) => (
     <div class="home-photograph__frame">
       <Image src={src} alt={alt} width={960} height={960} widths={[240, 480, 720, 960]}
-        sizes="(max-width: 35rem) 33.33vw, min(30vw, 30rem)" layout="constrained" fit="cover" priority class="home-photograph__image" />
+        sizes="33.33vw" layout="constrained" fit="cover" priority class="home-photograph__image" />
     </div>
   ))}
 </figure>
