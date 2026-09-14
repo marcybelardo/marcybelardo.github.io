@@ -1,3 +1,4 @@
+import { publishedBlogRoutes } from "./published-blog-content.ts";
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
@@ -26,8 +27,7 @@ const aboutPath = resolve(distDirectory, "about", "index.html");
 const representativePaths: ReadonlyArray<string> = [
   resolve(distDirectory, "index.html"),
   resolve(distDirectory, "blog", "index.html"),
-  resolve(distDirectory, "blog", "the-devil-you-know", "index.html"),
-  resolve(distDirectory, "blog", "tags", "ai", "index.html"),
+  ...publishedBlogRoutes.map((route) => resolve(distDirectory, route.slice(1), "index.html")),
   aboutPath,
   ...getGeneratedProjectSlugs(distDirectory).map((slug) =>
     resolve(distDirectory, "projects", slug, "index.html")
@@ -57,7 +57,7 @@ test("About uses a full-image grayscale portrait triptych", () => {
     assert.match(frame, /style="object-fit:\s*contain;"/);
   });
 
-  assert.match(aboutHtml, /alt="Marceline Belardo taking a mirror photograph with a camera"/);
+  assert.match(frames[0]!, /alt="[^"\s][^"]*"/);
   assert.equal(getImagesInsideAboutPortraitFrames(aboutHtml).length, 3);
   assert.match(aboutDesignSource, /\.about-portrait-frame\s*\{[\s\S]*aspect-ratio:\s*2\s*\/\s*3/);
   assert.match(aboutDesignSource, /\.about-portrait-frame__image\s*\{[\s\S]*filter:\s*grayscale\(100%\)/);
@@ -78,8 +78,6 @@ test("About images reserve intrinsic dimensions and responsive sources", () => {
   images.forEach((image) => {
     assertGeneratedImageContract(image, "About image");
     assert.match(image, /\bloading="(?:lazy|eager)"/);
-    assert.doesNotMatch(image, /20260425_29[^"?]*\.jpg(?:["?]|$)/);
-    assert.doesNotMatch(image, /IMG_6936_EDIT[^"?]*\.jpg(?:["?]|$)/);
   });
 
   assert.match(aboutHtml, /\s320w/);

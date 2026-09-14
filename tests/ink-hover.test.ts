@@ -327,11 +327,11 @@ test("ink hover styles keep the text glow and black menu face distinct", () => {
   assert.match(interiorPageStyles, /\.interior-page__section\s*\{/);
 });
 
-test("display headings share one compressed stack while reading and utility faces stay separate", () => {
-  assert.match(
-    globalStyles,
-    /--font-display:\s*"Arial Narrow",\s*"Liberation Sans Narrow",\s*"Helvetica Neue",\s*Arial,\s*sans-serif/,
-  );
+test("headings, reading text, and utility text use their shared font tokens", () => {
+  for (const role of ["display", "reading", "utility"]) {
+    const value = globalStyles.match(new RegExp(`--font-${role}:([^;}]+)`))?.[1]?.trim();
+    assert.ok(value, `global styles must define a non-empty ${role} font token`);
+  }
 
   const displayStyleSources = [
     homeDesignStyles,
@@ -339,7 +339,6 @@ test("display headings share one compressed stack while reading and utility face
     projectDesignStyles,
     blogDesignStyles,
   ].join("\n");
-  assert.doesNotMatch(displayStyleSources, /font-family:\s*"Arial Narrow"/);
   const displayTargets: Array<[RegExp, string]> = [
     [/\.portfolio-home\s*\{[^}]*font-family:\s*var\(--font-display\)/, "Home"],
     [/\.about-title h1\s*\{[^}]*font-family:\s*var\(--font-display\)/, "About title"],

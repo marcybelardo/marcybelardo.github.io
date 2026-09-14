@@ -1,3 +1,4 @@
+import { publishedBlogRoutes } from "./published-blog-content.ts";
 // pattern: Imperative Shell
 
 import assert from "node:assert/strict";
@@ -16,10 +17,7 @@ const requiredRoutes = [
   "/",
   "/about/",
   "/blog/",
-  "/blog/tags/ai/",
-  "/blog/tags/politics/",
-  "/blog/tags/technology/",
-  "/blog/the-devil-you-know/",
+  ...publishedBlogRoutes,
   "/projects/",
   ...getGeneratedProjectRoutes(distDirectory),
 ];
@@ -89,12 +87,12 @@ test("robots publishes canonical sitemap discovery", () => {
 test("404 output is noindex and keeps navigation plus a visible homepage fallback", () => {
   const notFound = readDiscoveryArtifact("404.html");
 
-  assert.match(notFound, /<title>Page not found \| Marceline Belardo<\/title>/);
+  assert.match(notFound, /<title>[^<\s][^<]*<\/title>/);
   assert.match(
     notFound,
-    /<meta name="description" content="The page you requested could not be found\."/,
+    /<meta name="description" content="[^"\s][^"]*"/,
   );
   assert.match(notFound, /<meta name="robots" content="noindex, nofollow"/);
   assert.match(notFound, /<nav[^>]*aria-label="Primary"/);
-  assert.match(notFound, /<a href="\/"[^>]*>[^<]*(?:home|Home)[^<]*<\/a>/);
+  assert.match(notFound, /<a href="\/"[^>]*>[^<\s][^<]*<\/a>/);
 });

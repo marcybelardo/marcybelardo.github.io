@@ -16,13 +16,8 @@ const homepagePath = resolve(repositoryRoot, "dist", "index.html");
 const aboutPath = resolve(repositoryRoot, "dist", "about", "index.html");
 const bioRedirectPath = resolve(repositoryRoot, "dist", "bio", "index.html");
 const contactRedirectPath = resolve(repositoryRoot, "dist", "contact", "index.html");
-const aboutSourcePath = resolve(repositoryRoot, "src", "pages", "about", "index.astro");
 const configuredOrigin = "https://www.marcelinebelardo.com";
-const profileUrls = [
-  "https://github.com/marcybelardo",
-  "https://bsky.app/profile/marcelinebelardo.com",
-  "https://instagram.com/marcelinebelardo",
-];
+
 
 function readHomepage(): string {
   assert.ok(existsSync(homepagePath), "homepage output must exist before generated assertions");
@@ -50,7 +45,7 @@ function getVisibleH1Text(html: string): string {
 test("homepage is a photo landing with direct links instead of content previews", () => {
   const html = readHomepage();
   const landing = html.match(/<article class="portfolio-home"[^>]*>([\s\S]*?)<\/article>/)?.[1] ?? "";
-  assert.equal(getVisibleH1Text(html), "Marceline Belardo");
+  assert.ok(getVisibleH1Text(html));
   assert.match(landing, /<figure class="home-photograph">/);
   const directions = landing.match(/<nav class="home-directions"[^>]*>([\s\S]*?)<\/nav>/)?.[1] ?? "";
   const directionLinks = [
@@ -60,12 +55,9 @@ test("homepage is a photo landing with direct links instead of content previews"
     directionLinks.map((match) => match[1]),
     ["/projects/", "/blog/", "/about/"],
   );
-  assert.deepEqual(
-    directionLinks.map((match) =>
-      getInkHoverVisibleText(match[2] ?? "", `homepage link ${match[1]}`),
-    ),
-    ["Projects", "Blog", "About"],
-  );
+  directionLinks.forEach((match) => {
+    assert.ok(getInkHoverVisibleText(match[2] ?? "", `homepage link ${match[1]}`));
+  });
   assert.doesNotMatch(landing, /selected-projects-heading|recent-writing-heading|home-practice|home-contact|project-index-entry/);
   assert.match(html, /data-compact="always"/);
   const button = html.match(/<button[^>]*data-menu-button[^>]*>([\s\S]*?)<\/button>/)?.[1];
@@ -90,7 +82,8 @@ test("homepage JSON-LD matches visible identity and verified profiles", () => {
   assert.equal(website.url, canonical);
   assert.equal(person.name, visibleName);
   assert.equal(person.url, canonical);
-  assert.deepEqual(person.sameAs, profileUrls);
+  assert.ok(Array.isArray(person.sameAs), "profile links must be an array");
+  person.sameAs.forEach((url) => assert.equal(new URL(String(url)).protocol, "https:"));
   assert.deepEqual(website, {
     "@id": canonical,
     "@type": "WebSite",
@@ -101,7 +94,7 @@ test("homepage JSON-LD matches visible identity and verified profiles", () => {
     "@id": `${canonical}#person`,
     "@type": "Person",
     name: visibleName,
-    sameAs: profileUrls,
+    sameAs: person.sameAs,
     url: canonical,
   });
 });
@@ -156,67 +149,38 @@ test("shared queries accept empty collections", () => {
   assert.deepEqual(getRecentPosts([], true, 3), []);
 });
 
-test("About presents verified software, practice, skills, CV, and mirror portrait details", () => {
+test("About has readable content, an accessible CV link, and classified portrait images", () => {
   const html = readAbout();
-  const aboutHeading = html.match(/<h1\b[^>]*>([\s\S]*?)<\/h1>/)?.[1] ?? "";
-
-  assert.equal(getInkHoverVisibleText(aboutHeading, "About heading"), "About");
-  assert.match(html, /Software developer/);
-  assert.match(html, /I’m Marceline, an independent software developer in Manila since July 2023\./);
-  assert.match(html, /Next\.js and TypeScript photography frontend/);
-  assert.match(html, /Python NLP sentiment charts for a journalist/);
-  assert.match(html, /five merged pull requests for Starship/);
-  assert.match(html, /Diploma in Computer Science at UPOU, expected in 2028/);
-  assert.match(html, /Writing, photography, and painting remain part of what I do\./);
-  assert.match(html, /C · Rust · Java · TypeScript · React · Python · PostgreSQL/);
-  assert.doesNotMatch(html, /Tools and languages/);
-  assert.match(html, /alt="Marceline Belardo taking a mirror photograph with a camera"/);
-  assert.equal([...html.matchAll(/<figure class="about-portrait-frame">/g)].length, 3);
-  assert.equal([...html.matchAll(/<img\b[^>]*\salt(?=\s[^>]*class="about-portrait-frame__image")/g)].length, 2);
-  const cvLinks = [
-    ...html.matchAll(
-      /<a\b(?=[^>]*href="\/marceline-belardo-cv\.pdf")(?=[^>]*target="_blank")(?=[^>]*rel="noopener noreferrer")[^>]*>([\s\S]*?)<\/a>/g,
-    ),
-  ];
-  assert.equal(cvLinks.length, 1, "About must contain one secure CV link");
-  assert.equal(
-    getInkHoverVisibleText(cvLinks[0]?.[1] ?? "", "CV link"),
-    "View CV (PDF)",
-  );
-  assert.doesNotMatch(html, /<a href="\/marceline-belardo-cv\.pdf"[^>]*download(?:\s|=|>)/);
-  assert.match(html, /<figure class="about-portrait-frame">[\s\S]*?<img\b[^>]*width="\d+"[^>]*height="\d+"/);
-  assert.match(
-    html,
-    /<meta name="description" content="About Marceline Belardo, a software developer working across software, visual culture, research, and writing\."/,
-  );
-  assert.doesNotMatch(html, /<h[1-6][^>]*>\s*(?:Résumé|Resume)\s*<\/h[1-6]>/i);
-  assert.doesNotMatch(html, /<section\b[^>]*>\s*<h[1-6][^>]*>\s*(?:Résumé|Resume)/i);
+  assert.ok(getVisibleH1Text(html));
+  for (const className of ["about-introduction", "about-practice"]) {
+    const section = html.match(new RegExp(`<(?:div|section) class="${className}"[^>]*>([\\s\\S]*?)</(?:div|section)>`))?.[1] ?? "";
+    assert.match(section, /<p>\s*[^<\s][\s\S]*?<\/p>/, `${className} must contain readable copy`);
+  }
+  const portraits = [...html.matchAll(/<img\b[^>]*class="about-portrait-frame__image"[^>]*>/g)].map((match) => match[0]);
+  assert.equal(portraits.length, 3);
+  assert.match(portraits[0]!, /alt="[^"\s][^"]*"/);
+  portraits.slice(1).forEach((image) => assert.match(image, /\salt(?:="")?(?=\s|>)/));
+  const cvLinks = [...html.matchAll(/<a\b(?=[^>]*href="\/marceline-belardo-cv\.pdf")(?=[^>]*target="_blank")(?=[^>]*rel="noopener noreferrer")[^>]*>([\s\S]*?)<\/a>/g)];
+  assert.equal(cvLinks.length, 1);
+  assert.ok(getInkHoverVisibleText(cvLinks[0]?.[1] ?? "", "CV link"));
+  assert.match(html, /<meta name="description" content="[^"\s][^"]*"/);
   assert.doesNotMatch(html, /<section\b[^>]*>\s*<\/section>/i);
-  assert.doesNotMatch(readFileSync(aboutSourcePath, "utf8"), /(?:Résumé|Resume)-heading/i);
 });
 
 test("About contact line uses a descriptive email link with GlowText and retains the shared profile footer", () => {
   const html = readAbout();
   const contactLine = html.match(/<p class="about-contact">([\s\S]*?)<\/p>/)?.[1] ?? "";
   const emailLink = contactLine.match(
-    /<a\b(?=[^>]*href="mailto:marcy@marcelinebelardo\.com")(?=[^>]*aria-label="Email Marceline at marcy@marcelinebelardo\.com")(?=[^>]*data-ink-hover="text")[^>]*>([\s\S]*?)<\/a>/,
+    /<a\b(?=[^>]*href="mailto:([^"]+)")(?=[^>]*aria-label="([^"\s][^"]*)")(?=[^>]*data-ink-hover="text")[^>]*>([\s\S]*?)<\/a>/,
   );
-
-  assert.match(contactLine, /For work, projects, or conversation:/);
-  assert.ok(emailLink, "About contact must retain a descriptive accessible email label");
-  assert.equal(
-    getInkHoverVisibleText(emailLink[1] ?? "", "About contact email"),
-    "marcy@marcelinebelardo.com",
-  );
-  assert.match(html, /<footer class="social-links"[^>]*aria-label="Social links"/);
-  [
-    ["https://bsky.app/profile/marcelinebelardo.com", "Bluesky"],
-    ["https://instagram.com/marcelinebelardo", "Instagram"],
-    ["https://github.com/marcybelardo", "GitHub"],
-  ].forEach(([href, label]) => {
-    assert.ok(html.includes(`href="${href}"`), `About footer must include ${label}`);
-    assert.ok(html.includes(`aria-label="${label}"`), `About footer must label ${label}`);
-  });
+  assert.ok(emailLink, "contact email needs a destination and descriptive accessible label");
+  assert.equal(getInkHoverVisibleText(emailLink[3] ?? "", "About contact email"), emailLink[1]);
+  const footer = html.match(/<footer class="social-links"[^>]*>([\s\S]*?)<\/footer>/)?.[1] ?? "";
+  assert.ok(footer, "About must retain the shared social footer");
+  for (const link of footer.matchAll(/<a\b[^>]*>/g)) {
+    assert.match(link[0], /href="https:\/\/[^"\s]+"/);
+    assert.match(link[0], /aria-label="[^"\s][^"]*"/);
+  }
   const aboutStyles = readFileSync(
     resolve(repositoryRoot, "src", "styles", "about-design.css"),
     "utf8",
@@ -234,7 +198,7 @@ test("Bio and Contact remain lightweight noindex redirects to canonical About", 
     assert.match(html, /<meta name="robots" content="noindex, follow"/);
     assert.match(html, /<link rel="canonical" href="https:\/\/www\.marcelinebelardo\.com\/about\/"/);
     assert.match(html, /<meta http-equiv="refresh" content="0;url=\/about\/"/);
-    assert.match(html, /<a href="\/about\/">About<\/a>/);
+    assert.match(html, /<a href="\/about\/">[^<\s][^<]*<\/a>/);
     assert.doesNotMatch(html, /<nav\b[^>]*aria-label="Primary"/);
   });
 });

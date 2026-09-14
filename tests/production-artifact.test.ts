@@ -1,3 +1,4 @@
+import { publishedPosts, publishedBlogRoutes } from "./published-blog-content.ts";
 // pattern: Imperative Shell
 
 import assert from "node:assert/strict";
@@ -35,7 +36,7 @@ const googleTagManagerContainerId = "GTM-N4JNKN2H";
 const primaryDestinations = ["/projects/", "/blog/", "/about/"];
 const retiredRoutes = ["code", "paintings", "photography"];
 const publishedProjectSlugs = getGeneratedProjectSlugs(distDirectory);
-const publishedBlogTags = ["ai", "politics", "technology"];
+
 const draftMarkers = /draft-route-fixture|draft-only-review|draft-project-fixture/i;
 const footnoteFixtureMarker = "A source with";
 
@@ -62,8 +63,7 @@ test("portfolio-redesign.AC1.1 production artifact contains the complete static 
     "/about/",
     "/bio/",
     "/contact/",
-    "/blog/the-devil-you-know/",
-    ...publishedBlogTags.map((tag) => `/blog/tags/${tag}/`),
+    ...publishedBlogRoutes,
     ...publishedProjectSlugs.map((slug) => `/projects/${slug}/`),
   ];
 
@@ -249,32 +249,35 @@ test("portfolio-redesign.AC5.2 structured data and visible media contracts remai
   assert.equal(website?.url, `${configuredOrigin}/`);
   assert.equal(website?.name, getSingleMatch(homepageHtml, /<title>([^<]+)<\/title>/g, "homepage title"));
   assert.equal(person?.url, `${configuredOrigin}/`);
-  assert.equal(person?.name, "Marceline Belardo");
+  assert.equal(person?.name, getInkHoverVisibleText(homepageHtml.match(/<h1\b[^>]*>([\s\S]*?)<\/h1>/)?.[1] ?? "", "homepage name"));
 
-  const blogHtml = readArtifact("blog/the-devil-you-know/index.html");
-  const blogData = getStructuredData(blogHtml, "blog detail");
-  const blogCanonical = `${configuredOrigin}/blog/the-devil-you-know/`;
+  for (const post of publishedPosts) {
+    const blogHtml = readArtifact(`blog/${post.id}/index.html`);
+    const blogData = getStructuredData(blogHtml, "blog detail");
+    const blogCanonical = `${configuredOrigin}/blog/${post.id}/`;
 
-  assert.equal(blogData["@type"], "BlogPosting");
-  assert.equal(blogData["@id"], blogCanonical);
-  assert.equal(blogData.url, blogCanonical);
-  assert.equal(
-    blogData.headline,
-    getInkHoverVisibleText(
-      blogHtml.match(/<h1\b[^>]*>([\s\S]*?)<\/h1>/)?.[1] ?? "",
-      "blog headline",
-    ).trim(),
-  );
-  assert.equal(
-    blogData.description,
-    getSingleMatch(blogHtml, /<meta name="description" content="([^"]+)"/g, "blog description"),
-  );
-  assert.deepEqual(
-    blogData.keywords,
-    [...blogHtml.matchAll(/<a href="\/blog\/tags\/[^/]+\/"[^>]*>([^<]+)<\/a>/g)].map(
-      (match) => decodeHtmlEntities(match[1] ?? "").trim(),
-    ),
-  );
+    assert.equal(blogData["@type"], "BlogPosting");
+    assert.equal(blogData["@id"], blogCanonical);
+    assert.equal(blogData.url, blogCanonical);
+    assert.equal(
+      blogData.headline,
+      getInkHoverVisibleText(
+        blogHtml.match(/<h1\b[^>]*>([\s\S]*?)<\/h1>/)?.[1] ?? "",
+        "blog headline",
+      ).trim(),
+    );
+    assert.equal(
+      blogData.description,
+      getSingleMatch(blogHtml, /<meta name="description" content="([^"]+)"/g, "blog description"),
+    );
+    assert.deepEqual(
+      blogData.keywords ?? [],
+      [...blogHtml.matchAll(/<a href="\/blog\/tags\/[^/]+\/"[^>]*>([^<]+)<\/a>/g)].map(
+        (match) => decodeHtmlEntities(match[1] ?? "").trim(),
+      ),
+    );
+
+  }
 
   publishedProjectSlugs.forEach((slug) => {
     const projectHtml = readArtifact(`projects/${slug}/index.html`);
@@ -354,7 +357,7 @@ test("portfolio-redesign.AC5.3 RSS and sitemap expose only canonical published U
     ...rss.matchAll(/<(?:link|guid)(?:\s[^>]*)?>([^<]+)<\/(?:link|guid)>/g),
   ].map((match) => match[1] ?? "");
 
-  assert.match(rss, /the-devil-you-know/);
+  assert.match(rss, /<rss\b/);
   assert.doesNotMatch(sitemap, /https:\/\/www\.marcelinebelardo\.com\/(?:bio|contact)\//);
   publishedProjectSlugs.forEach((slug) => {
     assert.match(
@@ -381,13 +384,15 @@ test("portfolio-redesign.AC5.4 robots publishes the canonical sitemap discovery 
 });
 
 test("portfolio-redesign.AC5.5 preserves the published blog detail URL in HTML and RSS", () => {
-  const canonicalPostUrl = `${configuredOrigin}/blog/the-devil-you-know/`;
-  const detailHtml = readArtifact("blog/the-devil-you-know/index.html");
-  const rss = readArtifact("rss.xml");
+  for (const post of publishedPosts) {
+    const canonicalPostUrl = `${configuredOrigin}/blog/${post.id}/`;
+    const detailHtml = readArtifact(`blog/${post.id}/index.html`);
+    const rss = readArtifact("rss.xml");
 
-  assert.match(detailHtml, new RegExp(`<link rel="canonical" href="${canonicalPostUrl.replaceAll(".", "\\.")}"`));
-  assert.match(rss, new RegExp(`<link>${canonicalPostUrl.replaceAll(".", "\\.")}<\/link>`));
-  assert.match(rss, new RegExp(`<guid isPermaLink="true">${canonicalPostUrl.replaceAll(".", "\\.")}<\/guid>`));
+    assert.match(detailHtml, new RegExp(`<link rel="canonical" href="${canonicalPostUrl.replaceAll(".", "\\.")}"`));
+    assert.match(rss, new RegExp(`<link>${canonicalPostUrl.replaceAll(".", "\\.")}<\/link>`));
+    assert.match(rss, new RegExp(`<guid isPermaLink="true">${canonicalPostUrl.replaceAll(".", "\\.")}<\/guid>`));
+  }
 });
 
 test("portfolio-redesign.AC5.6 retired section routes remain absent", () => {
@@ -468,7 +473,7 @@ test("production artifact exposes the configured Standard.site publication and d
   const detailPages = getHtmlFiles(distDirectory).filter((htmlPath) =>
     /\/blog\/[^/]+\/index\.html$/.test(htmlPath),
   );
-  assert.ok(detailPages.length > 0, "configured Standard.site output needs published blog details");
+  assert.equal(detailPages.length, publishedPosts.length, "Standard.site covers every published post");
 
   detailPages.forEach((htmlPath) => {
     const html = readFileSync(htmlPath, "utf8");

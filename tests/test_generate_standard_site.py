@@ -120,8 +120,8 @@ class ConverterContract(unittest.TestCase):
                 {
                     "$type": "site.standard.publication",
                     "url": "https://www.marcelinebelardo.com",
-                    "name": "Art Computer Insanity Posting",
-                    "description": "Marceline Belardo's thoughts on tech, politics, and art",
+                    "name": self.converter.NAME,
+                    "description": self.converter.PUB_DESCRIPTION,
                 },
             )
             self.assertEqual(document["site"], "https://www.marcelinebelardo.com")
@@ -278,11 +278,18 @@ class ConverterContract(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             output = Path(temporary) / "generated" / "standard-site"
             blog = ROOT / "src" / "content" / "blog"
+            sources = [self.converter.parse_frontmatter(path) for path in blog.rglob("*")
+                       if path.is_file() and path.suffix in {".md", ".mdx"}]
+            published = [source for source in sources if not source.get("draft", False)]
             self.converter.convert(blog, output, repo_root=Path(temporary))
             self.assertEqual(
                 sorted(path.relative_to(output).as_posix() for path in output.rglob("*.json")),
-                ["documents/the-devil-you-know.json", "publication.json"],
+                sorted([f"documents/{source['slug']}.json" for source in published] + ["publication.json"]),
             )
+            for source in published:
+                document = json.loads((output / "documents" / f"{source['slug']}.json").read_text())
+                self.assertEqual(document["title"], source["title"])
+                self.assertEqual(document["description"], source["description"])
 
     def test_cli_defaults_summary_and_exit_status(self):
         with tempfile.TemporaryDirectory() as temporary:

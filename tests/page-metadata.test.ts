@@ -8,13 +8,14 @@ import {
   NOINDEX_ROBOTS,
   serializeJsonLd,
   SITE_ORIGIN,
+  SITE_NAME,
   validateCanonicalUrl,
 } from "../src/metadata/page-metadata.ts";
 
 test("site titles compose page labels with the site name", () => {
-  assert.equal(composeSiteTitle("Marceline Belardo"), "Marceline Belardo");
-  assert.equal(composeSiteTitle("Code"), "Code | Marceline Belardo");
-  assert.equal(composeSiteTitle("  Blog  "), "Blog | Marceline Belardo");
+  assert.equal(composeSiteTitle(SITE_NAME), SITE_NAME);
+  assert.equal(composeSiteTitle("Code"), `Code | ${SITE_NAME}`);
+  assert.equal(composeSiteTitle("  Blog  "), `Blog | ${SITE_NAME}`);
 });
 
 test("canonical URLs use the configured site origin", () => {

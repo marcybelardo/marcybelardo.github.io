@@ -93,3 +93,7 @@ The Blog index and tag archives share `BlogIndexEntry`, which owns the post date
 ### Homepage triptych update
 
 `PhotoStudy.astro` now displays `tokyo_electric.jpg`, `tokyo_shibuya.jpg`, and `homepage-photo.jpg` left to right, each with descriptive alt text and a centered square cover crop. The three-column strip stays side by side at all widths, full screen width on desktop and mobile, with narrow responsive gaps. This supersedes the single-photo homepage specifications above; About and project image framing are unchanged.
+
+Typography tests validate non-empty shared display, reading, and utility tokens and their use by page elements; they must not pin specific font family names or stack ordering. Font choices remain editable in `global.css`.
+
+Generated-content tests follow current published Markdown via `tests/published-blog-content.ts`, compare metadata/index/RSS values with source content, and validate About, contact, portrait alt text, and author signatures by semantic structure and cross-output consistency. Do not freeze editable prose, profile URLs, titles, dates, tags, or publication counts in assertions. Exact text expectations belong to controlled fixtures; the footnote/RSS fixture build creates its own temporary post instead of modifying a real article.

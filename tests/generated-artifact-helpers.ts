@@ -43,11 +43,12 @@ export function getRouteFromHtmlPath(
 /** Decodes the HTML entities emitted in generated attribute and text values. */
 export function decodeHtmlEntities(value: string): string {
   return value.replace(
-    /&(amp|quot|#39|#x27|lt|gt);/g,
+    /&(amp|quot|apos|#39|#x27|lt|gt);/g,
     (entity, name: string) => {
       const entities: Readonly<Record<string, string>> = {
         amp: "&",
         quot: '"',
+        apos: "'",
         "#39": "'",
         "#x27": "'",
         lt: "<",

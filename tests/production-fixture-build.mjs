@@ -24,7 +24,7 @@ const draftProjectFixturePath = resolve(projectsDirectory, "__draft-project-fixt
 const optionalProjectFixturePath = resolve(projectsDirectory, "__optional-project-fixture.md");
 const noOptionalsProjectFixturePath = resolve(projectsDirectory, "__no-optionals-project-fixture.md");
 const rssFixturePath = resolve(blogDirectory, "__rss-production-fixture.md");
-const publishedPostPath = resolve(blogDirectory, "the-devil-you-know.md");
+const footnoteFixturePath = resolve(blogDirectory, "__footnote-production-fixture.md");
 
 const optionalProjectOutputPath = resolve(
   repositoryRoot,
@@ -40,7 +40,7 @@ const noOptionalsProjectOutputPath = resolve(
 );
 const footnoteFixtureOutputPath = resolve(
   repositoryRoot,
-  "dist/blog/the-devil-you-know/index.html",
+  "dist/blog/footnote-production-fixture/index.html",
 );
 const rssOutputPath = resolve(repositoryRoot, "dist/rss.xml");
 
@@ -67,6 +67,7 @@ const fixturePaths = [
   optionalProjectFixturePath,
   noOptionalsProjectFixturePath,
   rssFixturePath,
+  footnoteFixturePath,
   ...invalidUrlFixtures.map(({ path }) => path),
 ];
 
@@ -159,7 +160,7 @@ relatedProjects:
   - ${relatedProjectSlug}
   - missing-project
 relatedWriting:
-  - the-devil-you-know
+  - footnote-production-fixture
   - missing-writing
 ---
 
@@ -239,12 +240,7 @@ const expectedFixtureBodyHtml =
   '<p>A <strong>formatted</strong> footnote with a <a href="https://external.example/footnote?one=1&#x26;two=2">non-site link</a>. <a href="#user-content-fnref-fixture" data-footnote-backref="" aria-label="Back to reference 1" class="data-footnote-backref">↩</a></p>\n' +
   '</li>\n' +
   '</ol>\n' +
-  '</section><footer class="blog-author-signature"> <hr> <p> <em>\n' +
-  'Marceline Belardo is a stay-at-home software developer, conceptual artist, and reluctant content creator. She is based in Makati City, Philippines. She writes these blogs as a public service, and you can see new posts by following her on <a href="https://bsky.app/profile/marcelinebelardo.com">BlueSky @marcelinebelardo.com</a>, or by using the <a href="' +
-  `${siteOrigin}/rss.xml` +
-  '">RSS feed</a> with your favorite reader. If you\'d like to support her, consider some words of encouragement, or if your company is hiring, find out how to contact her at the <a href="' +
-  `${siteOrigin}/about/` +
-  '">About page</a>.\n</em> </p> </footer>';
+  '</section>';
 
 function createInvalidUrlFixture(field, value) {
   return `---
@@ -418,7 +414,7 @@ function assertProjectFixtureOutput(relatedProjectSlug) {
     html,
     new RegExp(`Related projects[\\s\\S]*href="/projects/${relatedProjectSlug}/"`),
   );
-  assert.match(html, /Related writing[\s\S]*href="\/blog\/the-devil-you-know\/"/);
+  assert.match(html, /Related writing[\s\S]*href="\/blog\/footnote-production-fixture\/"/);
   assert.doesNotMatch(html, /missing-project|missing-writing|href="#"|href=""|<p>\s*<img\b/);
   assert.equal(
     readFileSync(resolve(repositoryRoot, "dist/sitemap-0.xml"), "utf8").includes(
@@ -535,7 +531,13 @@ function assertFixtureItem(item) {
   );
 
   const html = getContent(item);
-  assert.equal(html, expectedFixtureBodyHtml, "decoded fixture RSS HTML must be exact");
+  const signature = html.match(/<footer class="blog-author-signature">[\s\S]*?<\/footer>/)?.[0];
+  assert.ok(signature, "RSS must include the shared author signature");
+  assert.equal(html.replace(signature, ""), expectedFixtureBodyHtml, "decoded fixture body HTML must be exact");
+  const detail = readFileSync(resolve(repositoryRoot, "dist/blog/rss-production-fixture/index.html"), "utf8");
+  const detailSignature = detail.match(/<footer class="blog-author-signature">[\s\S]*?<\/footer>/)?.[0];
+  assert.ok(detailSignature);
+  assert.equal(signature, detailSignature.replace(/(href|src)="\/(?!\/)/g, `$1="${siteOrigin}/`));
   assert.match(html, /^<p>RSS_FIXTURE_FIRST_MARKER_7c1b:/);
   assert.match(html, /<p>RSS_FIXTURE_LAST_MARKER_9d2f<\/p>\n<section data-footnotes=/);
   assert.match(html, /<h2 id="formatted-rss-fixture-section">Formatted RSS Fixture Section<\/h2>/);
@@ -557,32 +559,31 @@ function assertFeed(rss) {
   assert.match(rss, /<rss version="2\.0" xmlns:content="http:\/\/purl\.org\/rss\/1\.0\/modules\/content\/">/);
   assert.match(rss, /<channel>[\s\S]*<\/channel><\/rss>$/);
   assert.equal(countMatches(rss, /<item>/g), countMatches(rss, /<\/item>/g));
-  assert.equal(countMatches(rss, /<item>/g), 2, "fixture build must expose exactly two published items");
-  assert.equal(countMatches(rss, /<content:encoded>/g), 2, "every published item must expose exactly one content:encoded element");
-  assert.equal(countMatches(rss, /<\/content:encoded>/g), 2);
-  assert.match(rss, /<description>Marceline Belardo&apos;s thoughts on tech, politics, and art<\/description>/);
+  const itemCount = countMatches(rss, /<item>/g);
+  assert.ok(itemCount >= 2, "both controlled published fixtures must appear");
+  assert.equal(countMatches(rss, /<content:encoded>/g), itemCount, "every published item must expose exactly one content:encoded element");
+  assert.equal(countMatches(rss, /<\/content:encoded>/g), itemCount);
+  assert.match(rss, /<description>[^<]+<\/description>/);
   assert.match(rss, /<title>RSS Fixture &amp; &lt;Quotes&gt; &quot;Round Trip&quot;<\/title>/);
   assert.match(rss, /<description>RSS fixture &amp; &lt;description&gt; &quot;round trip&quot; &apos;apostrophe&apos;<\/description>/);
   assert.match(rss, /<category>Fixture &amp; XML<\/category>/);
   assert.match(rss, /<category>Quotes &lt;Tags&gt;<\/category>/);
   assert.match(rss, /<content:encoded>&lt;p&gt;/);
   assert.doesNotMatch(rss, /<content:encoded>[\s\S]*<p>/);
-  assert.doesNotMatch(rss, /Blog 2|draft-route-fixture|draft-only-review/i);
+  assert.doesNotMatch(rss, /draft-route-fixture|draft-only-review/i);
 
   const items = [...rss.matchAll(/<item>([\s\S]*?)<\/item>/g)].map((match) => match[1] ?? "");
   const titles = items.map((item) => getTagValue(item, "title"));
   const links = items.map((item) => getTagValue(item, "link"));
 
-  assert.deepEqual(titles, [fixtureTitle, "The Devil You Know, the Devil You Don't"]);
-  assert.deepEqual(links, [fixtureLink, `${siteOrigin}/blog/the-devil-you-know/`]);
+  assert.ok(titles.includes(fixtureTitle));
+  assert.ok(links.includes(`${siteOrigin}/blog/footnote-production-fixture/`));
+  assert.ok(links.includes(fixtureLink));
   items.forEach((item, index) => {
-    assert.equal(
-      countMatches(item, /Marceline Belardo is a stay-at-home software developer/g),
-      1,
-      `the shared signature must occur exactly once in item ${index + 1}`,
-    );
+    assert.equal(countMatches(getContent(item), /<footer class="blog-author-signature">/g), 1,
+      `the shared signature must occur exactly once in item ${index + 1}`);
   });
-  assertFixtureItem(items[0] ?? "");
+  assertFixtureItem(items.find((item) => getTagValue(item, "link") === fixtureLink) ?? "");
 }
 
 function runNegativeValidationChecks() {
@@ -607,12 +608,19 @@ for (const fixturePath of fixturePaths) {
   }
 }
 
-const originalPost = readFileSync(publishedPostPath, "utf8");
+const footnoteFixtureFrontmatter = `---
+slug: footnote-production-fixture
+title: Controlled Footnote Fixture
+date: 2026-06-01
+description: Controlled content for footnotes and related writing.
+---
+A controlled published post.
+`;
 const footnoteBody = readFileSync(
   resolve(repositoryRoot, "tests/fixtures/footnotes.md"),
   "utf8",
 );
-const footnoteFixturePost = `${originalPost.trimEnd()}\n\n${footnoteBody}`;
+const footnoteFixturePost = `${footnoteFixtureFrontmatter.trimEnd()}\n\n${footnoteBody}`;
 const relatedProjectSlug = getRelatedProjectSlug();
 
 try {
@@ -627,7 +635,7 @@ try {
   );
   writeFileSync(noOptionalsProjectFixturePath, noOptionalsProjectFixture, "utf8");
   writeFileSync(rssFixturePath, rssFixture, "utf8");
-  writeFileSync(publishedPostPath, footnoteFixturePost, "utf8");
+  writeFileSync(footnoteFixturePath, footnoteFixturePost, "utf8");
 
   runCommand("pnpm", ["build"], "combined production fixture build failed");
 
@@ -637,6 +645,5 @@ try {
   assert.ok(existsSync(rssOutputPath), "production RSS fixture output was not generated");
   assertFeed(readFileSync(rssOutputPath, "utf8"));
 } finally {
-  writeFileSync(publishedPostPath, originalPost, "utf8");
   fixturePaths.forEach((fixturePath) => rmSync(fixturePath, { force: true }));
 }

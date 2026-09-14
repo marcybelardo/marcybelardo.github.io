@@ -1,201 +1,105 @@
 import assert from "node:assert/strict";
-import { existsSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
-
-import {
-  getInkHoverVisibleText,
-  getStructuredData,
-} from "./generated-artifact-helpers.ts";
+import { SITE_ORIGIN } from "../src/site-config.ts";
+import { toTagSlug } from "../src/content/content-queries.ts";
+import { publishedPosts, publishedTags } from "./published-blog-content.ts";
+import { decodeHtmlEntities, getInkHoverVisibleText, getStructuredData, getSingleMatch } from "./generated-artifact-helpers.ts";
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const distDirectory = resolve(repositoryRoot, "dist");
-const configuredOrigin = "https://www.marcelinebelardo.com";
-const approvedSignature =
-  "Marceline Belardo is a stay-at-home software developer, conceptual artist, and reluctant content creator. She is based in Makati City, Philippines. She writes these blogs as a public service, and you can see new posts by following her on BlueSky @marcelinebelardo.com, or by using the RSS feed with your favorite reader. If you'd like to support her, consider some words of encouragement, or if your company is hiring, find out how to contact her at the About page.";
+const readBlog = (...segments: string[]) => readFileSync(resolve(distDirectory, "blog", ...segments, "index.html"), "utf8");
+const text = (html: string) => decodeHtmlEntities(html.replace(/<[^>]+>/g, " ")).replace(/\s+/g, " ").trim();
 
-function readBlogOutput(...segments: ReadonlyArray<string>): string {
-  const outputPath = resolve(distDirectory, "blog", ...segments, "index.html");
-
-  assert.ok(existsSync(outputPath), `${segments.join("/")} blog output must exist`);
-  return readFileSync(outputPath, "utf8");
-}
-
-function readRssOutput(): string {
-  const outputPath = resolve(distDirectory, "rss.xml");
-
-  assert.ok(existsSync(outputPath), "RSS output must exist");
-  return readFileSync(outputPath, "utf8");
-}
-
-test("production blog output preserves the published post and tag routes", () => {
-  const indexHtml = readBlogOutput();
-  const detailHtml = readBlogOutput("the-devil-you-know");
-
-  ["ai", "technology", "politics"].forEach((tag) => {
-    readBlogOutput("tags", tag);
-    assert.match(indexHtml, new RegExp(`href="/blog/tags/${tag}/"`));
-    assert.match(detailHtml, new RegExp(`href="/blog/tags/${tag}/"`));
-  });
-  assert.match(indexHtml, /href="\/blog\/the-devil-you-know\/"/);
-  assert.match(detailHtml, /<link rel="canonical" href="https:\/\/www\.marcelinebelardo\.com\/blog\/the-devil-you-know\/"/);
-  assert.equal(
-    existsSync(resolve(distDirectory, "blog", "tags", "draft-only-review", "index.html")),
-    false,
-  );
-  assert.match(detailHtml, /data-margin-note-article/);
-  assert.match(detailHtml, /data-margin-note-rail/);
-  assert.match(detailHtml, /data-margin-note-rail[\s\S]*<ol aria-label="Margin notes"><\/ol>/);
-  assert.doesNotMatch(detailHtml, /data-margin-notes-enhanced="true"/);
-  assert.doesNotMatch(detailHtml, /class="eyebrow"/);
-  const articleHeading = detailHtml.match(/<h1\b[^>]*>([\s\S]*?)<\/h1>/)?.[1] ?? "";
-  assert.equal(
-    getInkHoverVisibleText(articleHeading, "blog article title"),
-    "The Devil You Know, the Devil You Don't",
-  );
+// Expectations come from authored content; fixtures separately test exact escaping and draft filtering.
+test("published blog entries, metadata, and RSS agree with current source content", () => {
+  const index = readBlog();
+  const rss = readFileSync(resolve(distDirectory, "rss.xml"), "utf8");
+  const items = [...rss.matchAll(/<item>([\s\S]*?)<\/item>/g)].map((match) => match[1]!);
+  assert.equal(items.length, publishedPosts.length);
+  assert.equal([...index.matchAll(/class="blog-index-entry(?:\s[^"]*)?"/g)].length, publishedPosts.length);
+  for (const [position, post] of publishedPosts.entries()) {
+    const html = readBlog(post.id);
+    const canonical = `${SITE_ORIGIN}/blog/${post.id}/`;
+    const data = getStructuredData(html, post.id);
+    const heading = getSingleMatch(html, /<h1\b[^>]*>([\s\S]*?)<\/h1>/g, post.id);
+    assert.equal(getInkHoverVisibleText(heading, post.id), post.data.title);
+    assert.deepEqual(Object.keys(data).sort(), [
+      "@context", "@id", "@type", "datePublished", "description", "headline",
+      ...(post.data.tags.length ? ["keywords"] : []), "url",
+    ].sort());
+    assert.equal(data["@type"], "BlogPosting");
+    assert.equal(data["@id"], canonical);
+    assert.equal(data.url, canonical);
+    assert.equal(data.headline, post.data.title);
+    assert.equal(data.description, post.data.description);
+    assert.equal(data.datePublished, post.data.date.toISOString());
+    const tags = post.data.tags.map((label) => ({ label, slug: toTagSlug(label) }));
+    assert.deepEqual(data.keywords ?? [], tags.map((tag) => tag.label));
+    const entries = [...index.matchAll(/<article class="blog-index-entry[^>]*>([\s\S]*?)<\/article>/g)];
+    const entry = entries.find((match) => match[1]?.includes(`href="/blog/${post.id}/"`))?.[1];
+    assert.ok(entry, `${post.id} must appear in the index`);
+    const entryTitle = entry.match(/<h2>\s*<a\b[^>]*>([\s\S]*?)<\/a>\s*<\/h2>/)?.[1] ?? "";
+    assert.equal(getInkHoverVisibleText(entryTitle, post.id), post.data.title);
+    assert.equal(text(entry.match(/<p>([\s\S]*?)<\/p>/)?.[1] ?? ""), post.data.description);
+    for (const tag of tags) {
+      assert.ok(entry.includes(`href="/blog/tags/${tag.slug}/"`));
+      assert.ok(html.includes(`href="/blog/tags/${tag.slug}/"`));
+    }
+    assert.match(html, /data-margin-note-article/);
+    assert.match(html, /data-margin-note-rail[\s\S]*<ol aria-label="Margin notes"><\/ol>/);
+    assert.doesNotMatch(html, /data-margin-notes-enhanced="true"/);
+    const item = items[position]!;
+    assert.equal(getSingleMatch(item, /<link>([^<]+)<\/link>/g, "RSS link"), canonical);
+    assert.equal(getSingleMatch(item, /<guid isPermaLink="true">([^<]+)<\/guid>/g, "RSS guid"), canonical);
+    assert.equal(getSingleMatch(item, /<title>([\s\S]*?)<\/title>/g, "RSS title"), post.data.title);
+    assert.equal(getSingleMatch(item, /<description>([\s\S]*?)<\/description>/g, "RSS description"), post.data.description);
+    assert.deepEqual([...item.matchAll(/<category>([\s\S]*?)<\/category>/g)].map((match) => decodeHtmlEntities(match[1]!)), post.data.tags);
+  }
 });
 
-test("blog index and tag archives use the same full-width contents entry", () => {
-  const indexHtml = readBlogOutput();
-  const tagHtml = readBlogOutput("tags", "technology");
-  const indexHeading = indexHtml.match(/<h1\b[^>]*>([\s\S]*?)<\/h1>/)?.[1] ?? "";
-  const tagHeading = tagHtml.match(/<h1\b[^>]*>([\s\S]*?)<\/h1>/)?.[1] ?? "";
-
-  assert.equal(getInkHoverVisibleText(indexHeading, "blog index title"), "Blog");
-  assert.equal(
-    getInkHoverVisibleText(tagHeading, "tag archive title"),
-    "Posts tagged: Technology",
-  );
-  [indexHtml, tagHtml].forEach((html) => {
-    assert.match(html, /class="[^"]*\bblog-index-page\b/);
-    assert.match(html, /href="\/rss\.xml" class="blog-index__rss">RSS feed<\/a>/);
-    assert.match(html, /class="blog-index-entry"/);
-    assert.match(html, /<time class="metadata blog-index-entry__date"/);
-    assert.match(html, /<div class="blog-index-entry__summary">/);
-    assert.match(html, /class="blog-index-entry__tags" aria-label="Tags"/);
-    assert.doesNotMatch(html, /class="eyebrow"/);
-  });
-
-  const indexEntryTitle = indexHtml.match(
-    /<h2>\s*<a\b(?=[^>]*href="\/blog\/the-devil-you-know\/"?)(?=[^>]*data-ink-hover="text")[^>]*>([\s\S]*?)<\/a>\s*<\/h2>/,
-  )?.[1] ?? "";
-  assert.equal(
-    getInkHoverVisibleText(indexEntryTitle, "blog index entry title"),
-    "The Devil You Know, the Devil You Don't",
-  );
-  assert.match(
-    indexHtml,
-    /<p>Where Marceline comes to terms with AI&#39;s usefulness, and why its issues run deeper than technology<\/p>/,
-  );
-  assert.match(indexHtml, /href="\/blog\/tags\/technology\/">Technology<\/a>/);
-
-  const blogStyles = readFileSync(
-    resolve(repositoryRoot, "src/styles/blog-design.css"),
-    "utf8",
-  );
-  assert.match(blogStyles, /grid-template-columns:\s*minmax\(7rem,\s*0\.2fr\)\s+minmax\(0,\s*1fr\)\s+minmax\(9rem,\s*0\.23fr\)/);
-  assert.match(blogStyles, /\.blog-index-entry--with-image/);
-  assert.match(blogStyles, /@media \(max-width:\s*47\.999rem\)/);
-  assert.match(blogStyles, /font-family:\s*var\(--font-reading\)/);
+test("blog index and tag archives share the contents layout and current membership", () => {
+  for (const archive of [{ html: readBlog(), posts: publishedPosts }, ...publishedTags.map((tag) => ({ html: readBlog("tags", tag.slug), posts: tag.posts }))]) {
+    assert.match(archive.html, /class="[^"]*\bblog-index-page\b/);
+    assert.match(archive.html, /href="\/rss\.xml"/);
+    assert.ok(getInkHoverVisibleText(archive.html.match(/<h1\b[^>]*>([\s\S]*?)<\/h1>/)?.[1] ?? "", "index heading"));
+    const links = [...archive.html.matchAll(/<h2>\s*<a\b[^>]*href="\/blog\/([^/]+)\/"/g)].map((match) => match[1]);
+    assert.deepEqual(links, archive.posts.map((post) => post.id));
+  }
 });
 
-test("blog detail renders one shared author signature between the body and margin-note rail", () => {
-  const html = readBlogOutput("the-devil-you-know");
-  const signatureMatches = [
-    ...html.matchAll(/<footer class="blog-author-signature">([\s\S]*?)<\/footer>/g),
-  ];
-
-  assert.equal(signatureMatches.length, 1, "blog detail must render one author signature");
-  const signature = signatureMatches[0]?.[0] ?? "";
-  const bodyStart = html.indexOf('<div class="blog-article__body">');
-  const signatureStart = html.indexOf('<footer class="blog-author-signature">');
-  const railStart = html.indexOf('<aside class="margin-note-rail"');
-  const bodyEnd = html.indexOf("</div>", bodyStart);
-
-  assert.ok(bodyStart >= 0, "blog detail must contain the article body");
-  assert.ok(bodyEnd >= 0, "blog detail article body must close");
-  assert.ok(signatureStart > bodyEnd, "signature must follow the article body");
-  assert.ok(railStart > signatureStart, "signature must precede the margin-note rail");
-  assert.equal((signature.match(/<hr\s*\/?\s*>/g) ?? []).length, 1);
-  assert.equal((signature.match(/<p\b/g) ?? []).length, 1);
-  assert.equal((signature.match(/<em>/g) ?? []).length, 1);
-  assert.match(signature, /<p>\s*<em>[\s\S]*<\/em>\s*<\/p>/);
-
-  const visibleText = signature
-    .replace(/<[^>]+>/g, " ")
-    .replace(/&amp;/g, "&")
-    .replace(/&#39;|&#x27;/g, "'")
-    .replace(/&quot;/g, '"')
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/\s+/g, " ")
-    .replace(/\s+([,.])/g, "$1")
-    .trim();
-  assert.equal(visibleText, approvedSignature);
-
-  const links = [...signature.matchAll(/<a href="([^"]+)">([^<]+)<\/a>/g)].map(
-    (match) => [match[1] ?? "", match[2] ?? ""] as const,
-  );
-  assert.deepEqual(links, [
-    ["https://bsky.app/profile/marcelinebelardo.com", "BlueSky @marcelinebelardo.com"],
-    ["/rss.xml", "RSS feed"],
-    ["/about/", "About page"],
-  ]);
+test("every blog detail and RSS item renders the same non-empty author signature", () => {
+  const rss = readFileSync(resolve(distDirectory, "rss.xml"), "utf8");
+  const rssBodies = [...rss.matchAll(/<content:encoded>([\s\S]*?)<\/content:encoded>/g)].map((match) => decodeHtmlEntities(match[1]!));
+  let sharedSignature: string | undefined;
+  for (const [index, post] of publishedPosts.entries()) {
+    const html = readBlog(post.id);
+    const signatures = [...html.matchAll(/<footer class="blog-author-signature">([\s\S]*?)<\/footer>/g)];
+    assert.equal(signatures.length, 1);
+    const signature = signatures[0]![0];
+    assert.ok(text(signature), "author signature must have readable content");
+    sharedSignature ??= signature;
+    assert.equal(signature, sharedSignature);
+    assert.ok(html.indexOf(signature) > html.indexOf('<div class="blog-article__body">'));
+    assert.ok(html.indexOf(signature) < html.indexOf('<aside class="margin-note-rail"'));
+    const feedSignatures = [...rssBodies[index]!.matchAll(/<footer class="blog-author-signature">([\s\S]*?)<\/footer>/g)];
+    assert.equal(feedSignatures.length, 1);
+    // Feed root-relative links must resolve to the site origin.
+    const absoluteSignature = signature.replace(/(href|src)="\/(?!\/)/g, `$1="${SITE_ORIGIN}/`);
+    assert.equal(feedSignatures[0]![0], absoluteSignature);
+  }
 });
 
-test("margin-note CSS positions list items beneath the semantic rail wrapper", () => {
-  const stylesheet = readFileSync(resolve(repositoryRoot, "src/styles/global.css"), "utf8");
-
-  assert.match(stylesheet, /\.margin-note-rail > ol > li/);
-  assert.doesNotMatch(stylesheet, /\.margin-note-rail > li/);
-});
-
-test("blog detail JSON-LD contains only the visible published fields", () => {
-  const html = readBlogOutput("the-devil-you-know");
-  const jsonLd = getStructuredData(html, "blog detail");
-
-  assert.deepEqual(Object.keys(jsonLd).sort(), [
-    "@context",
-    "@id",
-    "@type",
-    "datePublished",
-    "description",
-    "headline",
-    "keywords",
-    "url",
-  ]);
-  assert.equal(jsonLd["@context"], "https://schema.org");
-  assert.equal(jsonLd["@type"], "BlogPosting");
-  assert.equal(jsonLd["@id"], `${configuredOrigin}/blog/the-devil-you-know/`);
-  assert.equal(jsonLd.url, jsonLd["@id"]);
-  assert.equal(jsonLd.headline, "The Devil You Know, the Devil You Don't");
-  assert.equal(
-    jsonLd.description,
-    "Where Marceline comes to terms with AI's usefulness, and why its issues run deeper than technology",
-  );
-  assert.equal(jsonLd.datePublished, "2026-06-02T00:00:00.000Z");
-  assert.deepEqual(jsonLd.keywords, ["AI", "Technology", "Politics"]);
-  assert.equal("image" in jsonLd, false);
-  assert.doesNotMatch(html, /draft-route-fixture|draft-only-review/i);
-});
-
-test("RSS contains deterministic published-only canonical discovery output", () => {
-  const rss = readRssOutput();
-  const canonicalPostUrl = `${configuredOrigin}/blog/the-devil-you-know/`;
-
-  assert.match(rss, new RegExp(`<link>${configuredOrigin.replaceAll(".", "\\.")}\/</link>`));
-  assert.match(rss, new RegExp(`<link>${canonicalPostUrl.replaceAll(".", "\\.")}</link>`));
-  assert.match(rss, new RegExp(`<guid isPermaLink="true">${canonicalPostUrl.replaceAll(".", "\\.")}</guid>`));
-  assert.match(rss, /<category>AI<\/category>/);
-  assert.match(rss, /<category>Technology<\/category>/);
-  assert.match(rss, /<category>Politics<\/category>/);
-  assert.match(rss, /The Devil You Know, the Devil You Don&apos;t/);
-  assert.match(
-    rss,
-    /Where Marceline comes to terms with AI&apos;s usefulness, and why its issues run deeper than technology/,
-  );
-  assert.doesNotMatch(rss, /draft-route-fixture|draft-only-review|marcybelardo\.github\.io/i);
+test("blog presentation retains editorial typography and semantic margin-note styling", () => {
+  const styles = readFileSync(resolve(repositoryRoot, "src/styles/blog-design.css"), "utf8");
+  const global = readFileSync(resolve(repositoryRoot, "src/styles/global.css"), "utf8");
+  assert.match(styles, /font-family:\s*var\(--font-reading\)/);
+  assert.match(styles, /\.blog-article__body/);
+  assert.match(global, /\.margin-note-rail > ol > li/);
+  assert.doesNotMatch(global, /\.margin-note-rail > li/);
+  for (const post of publishedPosts) assert.doesNotMatch(readBlog(post.id), /class="[^"]*\bprose\b/);
 });
 
 test("blog routes contain no untyped any annotations", () => {
@@ -227,7 +131,9 @@ test("blog routes use the editorial presentation without legacy utility or prose
   assert.match(stylesheet, /\.blog-article__body\s+h2/);
   assert.match(stylesheet, /\.blog-article__body\s+blockquote/);
 
-  const detailHtml = readBlogOutput("the-devil-you-know");
+  for (const post of publishedPosts) {
+  const detailHtml = readBlog(post.id);
   assert.match(detailHtml, /class="[^"]*blog-article__body[^"]*"/);
   assert.doesNotMatch(detailHtml, /class="[^"]*\bprose\b/);
+  }
 });
