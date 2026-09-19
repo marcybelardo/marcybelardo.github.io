@@ -190,6 +190,27 @@ test("About contact line uses a descriptive email link with GlowText and retains
   assert.doesNotMatch(aboutStyles, /body:has\(\.about-page\)\s+\.social-links\s*\{\s*display:\s*none;/);
 });
 
+test("About single-column layout places practice before introduction", () => {
+  const aboutStyles = readFileSync(
+    resolve(repositoryRoot, "src", "styles", "about-design.css"),
+    "utf8",
+  );
+  const mobileBlock = aboutStyles.match(
+    /@media \(max-width: 35rem\)\s*\{([\s\S]*?)\n\}/,
+  )?.[1];
+  assert.ok(mobileBlock, "the single-column media query block must exist");
+  assert.match(
+    mobileBlock,
+    /\.about-practice\s*\{[^}]*grid-row:\s*3/,
+    "the single-column practice block must take grid-row 3",
+  );
+  assert.match(
+    mobileBlock,
+    /\.about-introduction\s*\{[^}]*grid-row:\s*4/,
+    "the single-column introduction block must take grid-row 4, after practice",
+  );
+});
+
 test("Bio and Contact remain lightweight noindex redirects to canonical About", () => {
   [bioRedirectPath, contactRedirectPath].forEach((redirectPath) => {
     assert.ok(existsSync(redirectPath), `${redirectPath} must exist`);

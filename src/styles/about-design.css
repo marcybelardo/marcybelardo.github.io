@@ -139,14 +139,19 @@ body:has(.about-page) .social-links {
 
   .about-title { grid-column: 1; grid-row: 1; }
   .about-portrait-triptych { grid-column: 1; grid-row: 2; }
-  .about-introduction {
+  .about-practice {
     grid-column: 1;
     grid-row: 3;
+    justify-self: start;
+    max-width: 30ch;
+  }
+  .about-introduction {
+    grid-column: 1;
+    grid-row: 4;
     justify-self: start;
     max-width: 48ch;
     padding: 0;
   }
-  .about-practice { grid-column: 1; grid-row: 4; }
   .about-skills { grid-column: 1; grid-row: 5; justify-self: start; }
   .about-contact { grid-row: 6; }
 }
