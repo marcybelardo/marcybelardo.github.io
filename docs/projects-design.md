@@ -1,6 +1,6 @@
 # Projects catalogue and case studies
 
-The Projects index presents published work as a spacious typographic catalogue. Each entry places its ordinal and year at the left, its linked title and existing description in the main column, and available disciplines, status, and tags in a metadata rail. The `GlowText` treatment is used for the page title and project links. A cover adds a dedicated square-image column; entries without covers collapse that column so the catalogue does not reserve blank space.
+The Projects index presents published work as an image-led editorial catalogue. At desktop widths each row has one substantial square preview and one text column: ordinal/year, linked title, existing description, and available disciplines, status, and tags. Below 56rem, the square preview sits above the entry text and keeps a readable width. The `GlowText` treatment is used for the page title and project links. A verified cover uses `SquareImage` with meaningful alt text and responsive image sources. When no cover exists, the same slot contains the quiet, non-interactive text `Project preview forthcoming`; adding a real `coverImage` and `coverImageAlt` automatically replaces it. The placeholder is an index-only state, not an image or case-study content.
 
 The index title, project entry titles, project detail title, and its gallery/related section headings use the shared `--font-display` compressed sans stack. Ordinals, metadata, and captions remain regular utility sans.
 

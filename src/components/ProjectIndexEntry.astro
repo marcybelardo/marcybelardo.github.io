@@ -14,23 +14,21 @@ const { project, ordinal } = Astro.props;
 const { data } = project;
 const year = data.date.getFullYear();
 const projectUrl = `/projects/${project.id}/`;
-const hasCover = Boolean(data.coverImage && data.coverImageAlt);
 ---
 
-<article
-  class:list={[
-    "project-index-entry",
-    hasCover && "project-index-entry--has-cover",
-  ]}
->
+<article class="project-index-entry">
   {
-    data.coverImage && data.coverImageAlt && (
+    data.coverImage && data.coverImageAlt ? (
       <SquareImage
         src={data.coverImage}
         alt={data.coverImageAlt}
         class="project-index-entry__image"
-        sizes="(min-width: 72rem) 12rem, (min-width: 48rem) 10rem, 12rem"
+        sizes="(min-width: 56rem) 34vw, (min-width: 35rem) min(100vw - 2rem, 28rem), min(100vw - 2rem, 28rem)"
       />
+    ) : (
+      <div class="project-index-entry__placeholder" role="note">
+        <span>Project preview forthcoming</span>
+      </div>
     )
   }
 

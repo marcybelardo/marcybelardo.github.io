@@ -82,6 +82,16 @@ test("the project index renders a full-width typographic catalogue of stable pro
     assert.match(entry, /class="project-index-entry__ordinal"[\s\S]*?<time\b[^>]*>(?:19|20)\d{2}<\/time>/);
     assert.match(entry, /class="project-index-entry__main"[\s\S]*?<p class="project-index-entry__description">[^<]+<\/p>/);
     assert.match(entry, /<aside class="project-index-entry__metadata"[\s\S]*?<dt>Disciplines<\/dt>/);
+    const hasImage = /class="square-image project-index-entry__image"/.test(entry);
+    const hasPlaceholder = /class="project-index-entry__placeholder"/.test(entry);
+    assert.notEqual(hasImage, hasPlaceholder, `entry ${index + 1} must have exactly one preview variant`);
+    if (hasImage) {
+      assert.match(entry, /<img\b[^>]*\balt="[^"\s][^"]*"/);
+      assert.match(entry, /<img\b[^>]*\bsrcset="[^"]+"/);
+    } else {
+      assert.match(entry, /<div class="project-index-entry__placeholder" role="note">\s*<span>Project preview forthcoming<\/span>\s*<\/div>/);
+      assert.doesNotMatch(entry, /<img\b|<a\b[^>]*project-index-entry__placeholder/);
+    }
   });
 });
 
@@ -101,6 +111,9 @@ test("the project index emits the published project metadata", () => {
     ) ?? "";
 
     assert.ok(entry, `${projectId} must have one project index entry`);
+    const hasImage = /class="square-image project-index-entry__image"/.test(entry);
+    const hasPlaceholder = /class="project-index-entry__placeholder"/.test(entry);
+    assert.notEqual(hasImage, hasPlaceholder, `${projectId} must have one index preview variant`);
     assert.match(
       entry,
       /<time\b[^>]*datetime="[^"]+"[^>]*>(?:19|20)\d{2}<\/time>/,
@@ -159,7 +172,9 @@ test("project stylesheet provides responsive catalogue and readable case-study c
   const styles = readFileSync(projectsStylesPath, "utf8");
 
   assert.match(styles, /\.projects-index__header h1\s*\{[^}]*font-size:\s*clamp\(/);
-  assert.match(styles, /\.project-index-entry--has-cover\s*\{\s*grid-template-columns:/);
+  assert.match(styles, /\.project-index-entry__image,\s*\.project-index-entry__placeholder\s*\{[^}]*aspect-ratio:\s*1/);
+  assert.match(styles, /@media\s*\(min-width:\s*56rem\)[\s\S]*?\.project-index-entry\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*0\.52fr\)\s+minmax\(0,\s*1fr\)/);
+  assert.doesNotMatch(styles, /project-index-entry--has-cover/);
   assert.match(styles, /\.project-layout__overview\s*\{\s*display:\s*grid/);
   assert.match(styles, /\.project-layout__body\s*\{\s*width:\s*min\(100%,\s*var\(--reading-measure\)\)/);
   assert.match(styles, /@media\s*\(min-width:\s*56rem\)/);
@@ -174,7 +189,18 @@ test("every published project has a stable static case-study route", () => {
   });
 });
 
-test("project output has no empty controls, placeholders, cards, or draft content", () => {
+test("project index placeholders stay accessible and project details never contain preview placeholders", () => {
+  const indexHtml = readFileSync(projectsIndexPath, "utf8");
+  const placeholders = [...indexHtml.matchAll(/<div class="project-index-entry__placeholder"[^>]*>([\s\S]*?)<\/div>/g)];
+  placeholders.forEach((match) => {
+    assert.match(match[0] ?? "", /role="note"/);
+    assert.match(match[1] ?? "", /Project preview forthcoming/);
+    assert.doesNotMatch(match[0] ?? "", /<a\b|<button\b|<img\b/);
+  });
+  projectIds.forEach((projectId) => assert.doesNotMatch(readProjectPage(projectId), /Project preview forthcoming|project-index-entry__placeholder/));
+});
+
+test("project output has no empty controls, placeholders outside the index, cards, or draft content", () => {
   const projectOutputFiles = getProjectOutputFiles(
     resolve(repositoryRoot, "dist", "projects"),
   );
@@ -196,6 +222,8 @@ test("project output has no empty controls, placeholders, cards, or draft conten
   const sitemap = readFileSync(resolve(repositoryRoot, "dist/sitemap-0.xml"), "utf8");
 
   assert.doesNotMatch(projectOutput, /href="\s*"|href="#"/);
+  assert.doesNotMatch(detailHtml.join("\n"), /Project preview forthcoming|project-index-entry__placeholder/);
+  assert.doesNotMatch(projectOutput.replace(indexHtml, ""), /Project preview forthcoming|project-index-entry__placeholder/);
   assert.doesNotMatch(projectOutput, /ProjectCard|project-card|card__|card-/);
 
   [indexHtml, ...detailHtml, relationOutput, sitemap].forEach((output) => {

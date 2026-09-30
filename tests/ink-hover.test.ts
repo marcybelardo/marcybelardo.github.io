@@ -321,10 +321,27 @@ test("ink hover styles keep the text glow and black menu face distinct", () => {
     /primary-navigation__menu-button[^}]*\{[^}]*background:\s*var\(--color-ink\)/,
   );
   assert.match(compactNavigationStyles, /primary-navigation\[data-js-ready\] \.primary-navigation__panel\[data-open="false"\]/);
-  assert.match(compactNavigationStyles, /primary-navigation:not\(\[data-js-ready\]\) \.primary-navigation__panel\s*\{[^}]*position:\s*static/);
   assert.match(interiorPageStyles, /--interior-page-gutter:/);
   assert.match(interiorPageStyles, /\.interior-page__header\s*\{/);
   assert.match(interiorPageStyles, /\.interior-page__section\s*\{/);
+});
+
+test("no-JavaScript navigation stays in flow, shrinks, and wraps links within the header", () => {
+  assert.match(
+    compactNavigationStyles,
+    /\.primary-navigation:not\(\[data-js-ready\]\)\s*\{[^}]*min-width:\s*0/,
+    "the navigation can shrink beside the home brand",
+  );
+  assert.match(
+    compactNavigationStyles,
+    /\.primary-navigation:not\(\[data-js-ready\]\) \.primary-navigation__panel\s*\{[^}]*position:\s*static;[^}]*min-width:\s*0/,
+    "the visible no-JavaScript panel can shrink within the header instead of inheriting the enhanced menu minimum width",
+  );
+  assert.match(
+    compactNavigationStyles,
+    /\.primary-navigation:not\(\[data-js-ready\]\) \.primary-navigation__list\s*\{[^}]*flex-wrap:\s*wrap/,
+    "no-JavaScript destination links stay visible by wrapping within the available width",
+  );
 });
 
 test("headings, reading text, and utility text use their shared font tokens", () => {
@@ -340,7 +357,7 @@ test("headings, reading text, and utility text use their shared font tokens", ()
     blogDesignStyles,
   ].join("\n");
   const displayTargets: Array<[RegExp, string]> = [
-    [/\.portfolio-home\s*\{[^}]*font-family:\s*var\(--font-display\)/, "Home"],
+    [/\.portfolio-home h1\s*\{[^}]*font-family:\s*var\(--font-display\)/, "Home title"],
     [/\.about-title h1\s*\{[^}]*font-family:\s*var\(--font-display\)/, "About title"],
     [/\.projects-index__header h1\s*\{[^}]*font-family:\s*var\(--font-display\)/, "Projects title"],
     [/\.project-index-entry__main h2\s*\{[^}]*font-family:\s*var\(--font-display\)/, "project entry titles"],
@@ -354,6 +371,7 @@ test("headings, reading text, and utility text use their shared font tokens", ()
     assert.match(displayStyleSources, pattern, `${label} use the display face`);
   });
 
+  assert.match(homeDesignStyles, /\.home-introduction p\s*\{[^}]*font-family:\s*var\(--font-reading\)/);
   assert.match(blogDesignStyles, /\.blog-article__body\s*\{[^}]*font-family:\s*var\(--font-reading\)/);
   assert.match(projectDesignStyles, /\.project-index-entry__metadata dd\s*\{[^}]*font-family:\s*var\(--font-utility\)/);
   assert.match(blogDesignStyles, /\.blog-index-entry__tags\s*\{[^}]*font-family:\s*var\(--font-utility\)/);

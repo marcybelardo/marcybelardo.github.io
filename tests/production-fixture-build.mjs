@@ -3,14 +3,17 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import {
+  cpSync,
   existsSync,
   readFileSync,
   readdirSync,
   rmSync,
   writeFileSync,
 } from "node:fs";
-import { dirname, resolve } from "node:path";
+import { dirname, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
+import { assertReviewOutputDestination as validateReviewOutputDestination } from "./production-fixture-output-guard.mjs";
+import { resolveRetainedResource } from "./production-fixture-resource-resolver.mjs";
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const projectsDirectory = resolve(repositoryRoot, "src/content/projects");
@@ -25,6 +28,26 @@ const optionalProjectFixturePath = resolve(projectsDirectory, "__optional-projec
 const noOptionalsProjectFixturePath = resolve(projectsDirectory, "__no-optionals-project-fixture.md");
 const rssFixturePath = resolve(blogDirectory, "__rss-production-fixture.md");
 const footnoteFixturePath = resolve(blogDirectory, "__footnote-production-fixture.md");
+const coveredReviewProjectPath = resolve(projectsDirectory, "__design-preview-covered.md");
+const minimalReviewProjectPath = resolve(projectsDirectory, "__design-preview-minimal.md");
+const reviewBlogFixturePaths = [
+  "__design-review-multiple-one.md",
+  "__design-review-multiple-two.md",
+  "__design-review-multiple-three.md",
+  "__design-review-single.md",
+  "__design-review-draft.md",
+].map((filename) => resolve(blogDirectory, filename));
+const reviewOutputArgument = process.argv.indexOf("--review-output");
+if (reviewOutputArgument >= 0 && !process.argv[reviewOutputArgument + 1]) {
+  throw new Error("--review-output requires a destination directory");
+}
+if (reviewOutputArgument >= 0 && process.argv[reviewOutputArgument + 2]) {
+  throw new Error("--review-output accepts exactly one destination directory");
+}
+const reviewOutputDirectory = reviewOutputArgument >= 0
+  ? resolve(process.argv[reviewOutputArgument + 1])
+  : null;
+const simulatedFixtureFailure = process.env.PORTFOLIO_FIXTURE_SIMULATE_FAILURE === "1";
 
 const optionalProjectOutputPath = resolve(
   repositoryRoot,
@@ -68,6 +91,9 @@ const fixturePaths = [
   noOptionalsProjectFixturePath,
   rssFixturePath,
   footnoteFixturePath,
+  coveredReviewProjectPath,
+  minimalReviewProjectPath,
+  ...reviewBlogFixturePaths,
   ...invalidUrlFixtures.map(({ path }) => path),
 ];
 
@@ -179,6 +205,40 @@ disciplines:
 This fixture exercises the complete absence of optional project fields.
 `;
 
+const projectReviewFixture = (slug, hasCover, date, title) => `---
+slug: ${slug}
+title: ${title}
+date: ${date}
+description: A controlled fixture for reviewing the project index preview layout.
+disciplines:
+  - software
+  - visual
+status: Review fixture
+featured: false
+${hasCover ? "coverImage: ../../assets/homepage-photo.jpg\ncoverImageAlt: A real photograph used as the covered project fixture\n" : ""}---
+
+Controlled project preview fixture.
+`;
+
+const reviewBlogFixtures = [
+  { slug: "design-review-multiple-one", title: "Design Review Multiple One", date: "2026-06-28", tags: ["Design Review Multiple"] },
+  { slug: "design-review-multiple-two", title: "Design Review Multiple Two", date: "2026-06-27", tags: ["Design Review Multiple"], image: true },
+  { slug: "design-review-multiple-three", title: "Design Review Multiple Three", date: "2026-06-26", tags: ["Design Review Multiple"] },
+  { slug: "design-review-single", title: "Design Review Single", date: "2026-06-25", tags: ["Design Review Single"] },
+  { slug: "design-review-draft", title: "Design Review Draft", date: "2026-06-24", tags: ["Design Review Multiple"], draft: true },
+].map((fixture) => `---
+slug: ${fixture.slug}
+title: ${fixture.title}
+date: ${fixture.date}
+description: Controlled published article for archive layout review.
+tags:
+${fixture.tags.map((tag) => `  - ${tag}`).join("\n")}
+${fixture.image ? "image: ../../assets/homepage-photo.jpg\nimageAlt: A real photograph used as the optional blog fixture cover\n" : ""}draft: ${fixture.draft ? "true" : "false"}
+---
+
+A controlled archive review fixture.
+`);
+
 const fixtureSlug = "rss-production-fixture";
 const fixtureTitle = 'RSS Fixture & <Quotes> "Round Trip"';
 const fixtureDescription = 'RSS fixture & <description> "round trip" \'apostrophe\'';
@@ -256,6 +316,7 @@ ${field}: ${value}
 Temporary URL validation fixture.
 `;
 }
+
 
 function runCommand(command, args, failureMessage) {
   const result = spawnSync(command, args, {
@@ -367,6 +428,125 @@ function assertSquareImageContract(wrapper, label) {
   assert.match(wrapper, /<img\b[^>]*\bsizes="[^"]+"/, `${label} must emit responsive sizing`);
 }
 
+function getProjectIndexEntry(html, slug) {
+  return [
+    ...html.matchAll(/<article class="project-index-entry"[^>]*>[\s\S]*?<\/article>/g),
+  ].find((match) => match[0]?.includes(`href="/projects/${slug}/"`))?.[0] ?? "";
+}
+
+function assertDesignReviewFixtureOutput() {
+  const indexHtml = readFileSync(resolve(repositoryRoot, "dist/projects/index.html"), "utf8");
+  const covered = getProjectIndexEntry(indexHtml, "design-preview-covered");
+  const minimal = getProjectIndexEntry(indexHtml, "design-preview-minimal");
+
+  assert.ok(covered, "covered project review fixture must appear in the Projects index");
+  assert.ok(minimal, "minimal project review fixture must appear in the Projects index");
+  assert.equal((covered.match(/class="square-image project-index-entry__image"/g) ?? []).length, 1);
+  assert.match(covered, /<img\b[^>]*\balt="A real photograph used as the covered project fixture"/);
+  assert.match(covered, /<img\b[^>]*\bsrcset="[^"]+"/);
+  assert.doesNotMatch(covered, /Project preview forthcoming/);
+  assert.equal((minimal.match(/class="project-index-entry__placeholder"/g) ?? []).length, 1);
+  assert.match(minimal, /role="note"[\s\S]*Project preview forthcoming/);
+  assert.doesNotMatch(minimal, /<img\b/);
+
+  const multiPath = resolve(repositoryRoot, "dist/blog/tags/design-review-multiple/index.html");
+  const singlePath = resolve(repositoryRoot, "dist/blog/tags/design-review-single/index.html");
+  assert.ok(existsSync(multiPath), "multi-entry review tag archive must exist");
+  assert.ok(existsSync(singlePath), "single-entry review tag archive must exist");
+  const multi = readFileSync(multiPath, "utf8");
+  const single = readFileSync(singlePath, "utf8");
+  const multiSlugs = [...multi.matchAll(/<h2>\s*<a\b[^>]*href="\/blog\/([^/]+)\/"/g)].map((match) => match[1]);
+  const singleSlugs = [...single.matchAll(/<h2>\s*<a\b[^>]*href="\/blog\/([^/]+)\/"/g)].map((match) => match[1]);
+  assert.deepEqual(multiSlugs, ["design-review-multiple-one", "design-review-multiple-two", "design-review-multiple-three"]);
+  assert.deepEqual(singleSlugs, ["design-review-single"]);
+  assert.match(multi, /class="blog-index-entry__image-link"/);
+  assert.equal((multi.match(/class="blog-index-entry(?:\s[^"]*)?"/g) ?? []).length, 3);
+  assert.equal((single.match(/class="blog-index-entry(?:\s[^"]*)?"/g) ?? []).length, 1);
+  assert.doesNotMatch(multi + single, /design-review-draft/);
+}
+
+function retainedOutputFiles(directory) {
+  const files = [];
+  const visit = (currentDirectory) => {
+    readdirSync(currentDirectory, { withFileTypes: true }).forEach((entry) => {
+      const entryPath = resolve(currentDirectory, entry.name);
+      if (entry.isDirectory()) {
+        visit(entryPath);
+      } else if (entry.isFile()) {
+        files.push(entryPath);
+      }
+    });
+  };
+  visit(directory);
+  return files;
+}
+
+function assertRetainedReferenceExists(directory, source, referringFile) {
+  const trimmedSource = source.trim().replace(/^['"]|['"]$/g, "");
+  if (!trimmedSource || trimmedSource.startsWith("#") || /^(?:[a-z][a-z\d+.-]*:|\/\/)/i.test(trimmedSource)) {
+    return;
+  }
+  if (referringFile.endsWith("/blog/rss-production-fixture/index.html") &&
+    /^\/(?:fixture-root|quoted-root|quoted-image\.svg)(?:\/|\?|$)/.test(trimmedSource)) {
+    return;
+  }
+
+  const resource = resolveRetainedResource(directory, trimmedSource, referringFile);
+  const resolvedAssetPath = resource.isDirectory ? resolve(resource.path, "index.html") : resource.path;
+  assert.ok(existsSync(resolvedAssetPath), `retained reference must exist: ${source} from ${referringFile}`);
+}
+
+function assertRetainedReferences(directory, files) {
+  files.forEach((filePath) => {
+    if (filePath.endsWith(".html")) {
+      const html = readFileSync(filePath, "utf8");
+      for (const match of html.matchAll(/\bsrc="([^"]+)"/g)) {
+        assertRetainedReferenceExists(directory, match[1] ?? "", filePath);
+      }
+      for (const match of html.matchAll(/<link\b(?=[^>]*\brel="(?:stylesheet|icon|preload|modulepreload)[^"]*")[^>]*\bhref="([^"]+)"/g)) {
+        assertRetainedReferenceExists(directory, match[1] ?? "", filePath);
+      }
+      for (const match of html.matchAll(/\bsrcset="([^"]+)"/g)) {
+        for (const candidate of (match[1] ?? "").split(",")) {
+          assertRetainedReferenceExists(directory, candidate.trim().split(/\s+/)[0] ?? "", filePath);
+        }
+      }
+    } else if (filePath.endsWith(".css")) {
+      const css = readFileSync(filePath, "utf8");
+      for (const match of css.matchAll(/url\(\s*([^)]+?)\s*\)/g)) {
+        assertRetainedReferenceExists(directory, match[1] ?? "", filePath);
+      }
+      for (const match of css.matchAll(/@import\s+(?:url\()?\s*['"]([^'"]+)['"]/g)) {
+        assertRetainedReferenceExists(directory, match[1] ?? "", filePath);
+      }
+    }
+  });
+}
+
+function assertRetainedReviewOutput(directory) {
+  const projectsPath = resolve(directory, "projects/index.html");
+  const multiPath = resolve(directory, "blog/tags/design-review-multiple/index.html");
+  const singlePath = resolve(directory, "blog/tags/design-review-single/index.html");
+  assert.ok(existsSync(projectsPath), "retained output must include the Projects index");
+  assert.ok(existsSync(multiPath), "retained output must include the multi-entry archive");
+  assert.ok(existsSync(singlePath), "retained output must include the single-entry archive");
+  const projects = readFileSync(projectsPath, "utf8");
+  assert.ok(getProjectIndexEntry(projects, "design-preview-minimal").includes("Project preview forthcoming"));
+  assert.ok(getProjectIndexEntry(projects, "design-preview-covered").includes("<img"));
+  assert.equal((readFileSync(multiPath, "utf8").match(/class="blog-index-entry(?:\s[^"]*)?"/g) ?? []).length, 3);
+  assert.equal((readFileSync(singlePath, "utf8").match(/class="blog-index-entry(?:\s[^"]*)?"/g) ?? []).length, 1);
+  const files = retainedOutputFiles(directory);
+  assertRetainedReferences(directory, files);
+  const projectImages = [...projects.matchAll(/<img\b[^>]*\bsrc="([^"]+)"/g)];
+  assert.ok(projectImages.length > 0, "retained project review must include a real local image");
+}
+
+function assertTemporaryFixturesRemoved(label) {
+  fixturePaths.forEach((fixturePath) => {
+    assert.equal(existsSync(fixturePath), false, `${label}: temporary fixture remains at ${fixturePath}`);
+  });
+}
+
 function assertProjectFixtureOutput(relatedProjectSlug) {
   assert.equal(
     existsSync(draftProjectOutputPath),
@@ -392,7 +572,6 @@ function assertProjectFixtureOutput(relatedProjectSlug) {
   const squareImageWrappers = getSquareImageWrappers(html);
 
   assert.ok(optionalIndexEntry, "optional project must appear in the generated catalogue");
-  assert.match(optionalIndexEntry, /project-index-entry--has-cover/);
   assert.match(optionalIndexEntry, /square-image project-index-entry__image/);
   assert.match(optionalIndexEntry, /<dt>Disciplines<\/dt>[\s\S]*?<dd>software · visual<\/dd>/);
   assert.match(optionalIndexEntry, /<dt>Status<\/dt>[\s\S]*?<dd>Published fixture<\/dd>/);
@@ -602,6 +781,10 @@ function runNegativeValidationChecks() {
   });
 }
 
+if (reviewOutputDirectory) {
+  validateReviewOutputDestination(reviewOutputDirectory, { repositoryRoot });
+}
+
 for (const fixturePath of fixturePaths) {
   if (existsSync(fixturePath)) {
     throw new Error(`refusing to overwrite ${fixturePath}`);
@@ -636,14 +819,47 @@ try {
   writeFileSync(noOptionalsProjectFixturePath, noOptionalsProjectFixture, "utf8");
   writeFileSync(rssFixturePath, rssFixture, "utf8");
   writeFileSync(footnoteFixturePath, footnoteFixturePost, "utf8");
+  writeFileSync(coveredReviewProjectPath, projectReviewFixture(
+    "design-preview-covered", true, "2026-06-30", "Design Preview Covered",
+  ), "utf8");
+  writeFileSync(minimalReviewProjectPath, projectReviewFixture(
+    "design-preview-minimal", false, "2026-06-29", "Design Preview Minimal",
+  ), "utf8");
+  reviewBlogFixturePaths.forEach((fixturePath, index) => {
+    writeFileSync(fixturePath, reviewBlogFixtures[index], "utf8");
+  });
+
+  if (simulatedFixtureFailure) {
+    throw new Error("simulated fixture build failure for cleanup verification");
+  }
 
   runCommand("pnpm", ["build"], "combined production fixture build failed");
 
   assertDraftRouteOutput();
   assertProjectFixtureOutput(relatedProjectSlug);
+  assertDesignReviewFixtureOutput();
   assertFootnoteFixtureOutput();
   assert.ok(existsSync(rssOutputPath), "production RSS fixture output was not generated");
   assertFeed(readFileSync(rssOutputPath, "utf8"));
+  if (reviewOutputDirectory) {
+    cpSync(resolve(repositoryRoot, "dist"), reviewOutputDirectory, { recursive: true, errorOnExist: true });
+    assertRetainedReviewOutput(reviewOutputDirectory);
+    console.log(`Retained complete fixture output at ${reviewOutputDirectory}`);
+  }
 } finally {
   fixturePaths.forEach((fixturePath) => rmSync(fixturePath, { force: true }));
+}
+
+assertTemporaryFixturesRemoved("normal fixture build");
+if (!simulatedFixtureFailure) {
+  const failure = spawnSync(process.execPath, [
+    resolve(repositoryRoot, "tests/production-fixture-build.mjs"),
+  ], {
+    cwd: repositoryRoot,
+    encoding: "utf8",
+    env: { ...process.env, PORTFOLIO_FIXTURE_SIMULATE_FAILURE: "1" },
+  });
+  assert.notEqual(failure.status, 0, "simulated fixture build must fail intentionally");
+  assert.match(`${failure.stdout ?? ""}\n${failure.stderr ?? ""}`, /simulated fixture build failure/);
+  assertTemporaryFixturesRemoved("simulated fixture build failure");
 }

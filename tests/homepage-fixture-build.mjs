@@ -67,6 +67,16 @@ try {
   assert.doesNotMatch(html, /aria-label="Selected projects"/);
   assert.doesNotMatch(html, /id="recent-writing-heading"/);
   assert.doesNotMatch(html, /aria-label="Recent writing"/);
+
+  const blogIndexPath = resolve(repositoryRoot, "dist/blog/index.html");
+  assert.ok(existsSync(blogIndexPath), "empty blog index output must exist");
+  const blogHtml = readFileSync(blogIndexPath, "utf8");
+  assert.match(blogHtml, /<h1[^>]*>[\s\S]*?Blog[\s\S]*?<\/h1>/);
+  assert.match(blogHtml, /href="\/rss\.xml"/);
+  assert.match(blogHtml, /class="editorial-empty"/);
+  assert.doesNotMatch(blogHtml, /class="blog-index-entry|<ol class="blog-index__list"/);
+  assert.equal(existsSync(resolve(repositoryRoot, "dist/blog/tags/index.html")), false);
+  assert.equal(existsSync(resolve(repositoryRoot, "dist/blog/tags/draft-only-review/index.html")), false);
 } finally {
   copiedEntries.reverse().forEach(({ sourcePath, fixturePath }) => {
     copyFileSync(fixturePath, sourcePath);
