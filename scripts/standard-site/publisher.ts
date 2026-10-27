@@ -1,8 +1,9 @@
 // pattern: Imperative Shell
 
+import { readFile } from "node:fs/promises";
 import { createServer, type Server } from "node:http";
-import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
 import { Client } from "@atcute/client";
 import type {} from "@atcute/atproto";
@@ -12,7 +13,6 @@ import { SiteStandardDocument, SiteStandardPublication } from "@atcute/standard-
 import {
   OAuthClient,
   MemoryStore,
-  scope,
   type OAuthSession,
 } from "@atcute/oauth-node-client";
 import {
@@ -26,35 +26,37 @@ import {
 import { NodeDnsHandleResolver } from "@atcute/identity-resolver-node";
 
 import {
-  convertBlogDirectory,
-  validateDocumentRecord,
-  validatePublicationRecord,
-} from "../../src/standard-site/converter.ts";
-import { STANDARD_SITE_DEFAULT_DID } from "../../src/site-config.ts";
-import {
   DOCUMENT_COLLECTION,
   PUBLICATION_COLLECTION,
-  PublisherError,
+  documentAtUri,
+} from "../../src/standard-site/identity.ts";
+import {
+  documentPathForSlug,
+  validateRecordExport,
   type DocumentRecord,
   type PlannedRecord,
+  type PublicationRecord,
+  type RecordExport,
+  type StandardRecord,
+} from "../../src/standard-site/records.ts";
+import { STANDARD_SITE_DEFAULT_DID } from "../../src/site-config.ts";
+import {
+  BLOG_SOURCE_DIRECTORY,
+  preflightBlogSources,
+  type BlogSourcePreflight,
+} from "./source-preflight.ts";
+import {
+  PdsError,
+  PublisherError,
+  type PlannedAction,
   type PublicationPlan,
   type PublisherPds,
-  type PublicationRecord,
-  type PreparedRecords,
-  PdsError,
   type RecordPlan,
   type RemoteRecord,
-  type StandardRecord,
-  type SourcePost,
 } from "./types.ts";
 
-export interface PublisherOptions {
-  readonly authority: string;
-  readonly siteOrigin?: string;
-  readonly publicationName?: string;
-  readonly publicationDescription?: string;
-  readonly publicationUri?: string;
-}
+/** Record export path inside the Astro output directory. */
+export const RECORDS_EXPORT_PATH = "standard-site/records.json";
 
 export interface PublishSummary {
   readonly created: number;
@@ -119,15 +121,25 @@ export function planRecord(
   };
 }
 
-function assertRecord(plan: PlannedRecord): void {
+/**
+ * Validate a planned record against the pinned Standard.site lexicon.
+ *
+ * The shared records validator already checks this shape at the export
+ * boundary; this is the planner's own guard for records built in memory. The
+ * only policy a schema cannot express is that `textContent` must be present
+ * and a string, including for an article with no text.
+ */
+export function assertRecord(plan: PlannedRecord): void {
   try {
     if (plan.collection === PUBLICATION_COLLECTION) {
-      validatePublicationRecord(plan.value);
       parse(SiteStandardPublication.mainSchema, plan.value);
-    } else {
-      validateDocumentRecord(plan.value);
-      parse(SiteStandardDocument.mainSchema, plan.value);
+      return;
     }
+    const textContent = (plan.value as DocumentRecord).textContent;
+    if (typeof textContent !== "string") {
+      throw new PublisherError("document textContent must be a string");
+    }
+    parse(SiteStandardDocument.mainSchema, plan.value);
   } catch (error) {
     throw new PublisherError(
       `invalid ${plan.collection} record ${plan.uri}: ${error instanceof Error ? error.message : String(error)}`,
@@ -136,66 +148,26 @@ function assertRecord(plan: PlannedRecord): void {
   }
 }
 
-/** Convert the source collection into validated, deterministic planned records. */
-export async function prepareRecords(
-  blogDirectory: string,
-  options: PublisherOptions,
-): Promise<PreparedRecords> {
-  const result = await convertBlogDirectory(blogDirectory, options);
-  const publication: PublicationRecord = result.publication;
-  const publicationPlan: PlannedRecord<PublicationRecord> = {
-    collection: PUBLICATION_COLLECTION,
-    rkey: result.publicationUri.slice(result.publicationUri.lastIndexOf("/") + 1),
-    uri: result.publicationUri,
-    value: publication,
-  };
-  assertRecord(publicationPlan);
-
-  const documents = result.documents.map((post) => {
-    const planned: PlannedRecord<DocumentRecord> = {
-      collection: DOCUMENT_COLLECTION,
-      rkey: post.rkey,
-      uri: post.uri,
-      value: post.document,
-    };
-    assertRecord(planned);
-    return planned;
-  });
-
-  const posts: SourcePost[] = result.documents.map((post) => ({
-    sourcePath: post.source.path,
-    slug: post.slug,
-    title: post.source.frontmatter.title,
-    date: post.source.frontmatter.date,
-    description: post.source.frontmatter.description ?? "",
-    tags: post.source.frontmatter.tags,
-    draft: false,
-    textContent: post.document.textContent,
-  }));
-
-  return {
-    posts,
-    excludedDrafts: result.drafts.map((draft) => draft.path),
-    publicationUri: result.publicationUri,
-    publication,
-    documents,
-  };
+/** The records the build exported, in the shape the planner consumes. */
+export interface PlannedPublicationRecords {
+  readonly publication: PlannedRecord<PublicationRecord>;
+  readonly documents: readonly PlannedRecord<DocumentRecord>[];
 }
 
 /** Read the current records and create a deterministic create/update/no-op plan. */
 export async function planPublication(
-  prepared: PreparedRecords,
+  records: PlannedPublicationRecords,
   pds: PublisherPds,
   did: string,
 ): Promise<PublicationPlan> {
-  const publicationUri = prepared.publicationUri;
+  const publicationUri = records.publication.uri;
   const rkey = publicationUri.slice(publicationUri.lastIndexOf("/") + 1);
   if (!publicationUri.startsWith(`at://${did}/${PUBLICATION_COLLECTION}/`)) {
     throw new PublisherError(
       `publication URI ${publicationUri} does not belong to the authenticated DID ${did}`,
     );
   }
-  prepared.documents.forEach((document) => {
+  records.documents.forEach((document) => {
     if (!document.uri.startsWith(`at://${did}/${DOCUMENT_COLLECTION}/`)) {
       throw new PublisherError(
         `document URI ${document.uri} does not belong to the authenticated DID ${did}`,
@@ -211,19 +183,20 @@ export async function planPublication(
     collection: PUBLICATION_COLLECTION,
     rkey,
     uri: publicationUri,
-    value: prepared.publication,
+    value: records.publication.value,
   };
   assertRecord(publication);
+  records.documents.forEach(assertRecord);
 
   const [remotePublication, ...remoteDocuments] = await Promise.all([
     pds.getRecord(publication.collection, publication.rkey),
-    ...prepared.documents.map((document) => pds.getRecord(document.collection, document.rkey)),
+    ...records.documents.map((document) => pds.getRecord(document.collection, document.rkey)),
   ]);
 
   if (remotePublication !== null && remotePublication.uri !== publication.uri) {
     throw new PublisherError(`PDS returned ${remotePublication.uri} for ${publication.uri}`);
   }
-  prepared.documents.forEach((document, index) => {
+  records.documents.forEach((document, index) => {
     const remote = remoteDocuments[index];
     if (remote !== undefined && remote !== null && remote.uri !== document.uri) {
       throw new PublisherError(`PDS returned ${remote.uri} for ${document.uri}`);
@@ -233,7 +206,7 @@ export async function planPublication(
   return {
     did,
     publication: planRecord(publication, remotePublication ?? null),
-    documents: prepared.documents.map((document, index) =>
+    documents: records.documents.map((document, index) =>
       planRecord(document, remoteDocuments[index] ?? null),
     ),
   };
@@ -369,7 +342,13 @@ export interface OAuthLoginOptions {
   readonly scope?: string;
 }
 
-const STANDARD_SITE_OAUTH_SCOPE = `atproto ${scope.include({ nsid: "site.standard.authFull" })}`;
+/**
+ * Narrow write permission set: only creates and updates of the two record
+ * collections the publisher manages. Deletes and media uploads are outside
+ * this scope by design.
+ */
+export const STANDARD_SITE_OAUTH_SCOPE =
+  "atproto repo:site.standard.publication?action=create&action=update repo:site.standard.document?action=create&action=update";
 
 const OAUTH_FETCH_ATTEMPTS = 3;
 const OAUTH_FETCH_TIMEOUT_MS = 15_000;
@@ -600,57 +579,347 @@ export async function authenticateLoopback(options: OAuthLoginOptions): Promise<
   }
 }
 
-function parseArgs(argv: readonly string[]): { write: boolean; help: boolean } {
+/** Build the site with Astro's public programmatic API, outside the CLI. */
+export async function buildStandardSite(repositoryRoot: string): Promise<void> {
+  const { build } = await import("astro");
+  await build({ root: repositoryRoot, mode: "production", outDir: "./dist" });
+}
+
+/** Read the record export from the fresh build; a missing file means disabled. */
+export async function readRecordsExportFile(path: string): Promise<unknown> {
+  let text: string;
+  try {
+    text = await readFile(path, "utf8");
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return null;
+    throw new PublisherError(`could not read the Standard.site record export at ${path}`, {
+      cause: error,
+    });
+  }
+  try {
+    return JSON.parse(text) as unknown;
+  } catch (error) {
+    throw new PublisherError(
+      `Standard.site record export at ${path} is not valid JSON`,
+      { cause: error },
+    );
+  }
+}
+
+/** Authenticate, enforce the publication owner, and expose the PDS boundary. */
+export async function authenticatePublisher(options: {
+  readonly identifier: string;
+  readonly authority: string;
+}): Promise<AuthenticatedPublisher> {
+  const session = await authenticateLoopback({ identifier: options.identifier });
+  if (session.did !== options.authority) {
+    throw new PublisherError(
+      `OAuth signed in as ${session.did}, but the publication authority is ${options.authority}`,
+    );
+  }
+  const client = new Client({ handler: session });
+  return { did: session.did, pds: createAtcutePds(client, session.did) };
+}
+
+/**
+ * Compare the fresh build's membership with the preflight source set.
+ *
+ * Every published source must produce exactly one document with the same
+ * deterministic identity and route, and the export's draft/legacy counts must
+ * describe the same sources. A published post without an explicit slug keeps
+ * its website route but has no exported identity, so it blocks publishing.
+ */
+export function assertRecordExportMembership(
+  authority: string,
+  source: BlogSourcePreflight,
+  recordExport: RecordExport,
+): void {
+  if (recordExport.did === null || recordExport.publication === null) {
+    throw new PublisherError("cannot compare a disabled Standard.site record export");
+  }
+  const publicationUri = recordExport.publication.uri;
+  if (recordExport.documents.some((document) => document.value.site !== publicationUri)) {
+    throw new PublisherError("record export documents must reference the publication");
+  }
+  const expected = new Map<string, string>();
+  for (const slug of source.publishedSlugs) {
+    let uri: string;
+    try {
+      uri = documentAtUri(authority, slug);
+    } catch (error) {
+      throw new PublisherError(
+        `${slug}: invalid published blog ID: ${error instanceof Error ? error.message : String(error)}`,
+        { cause: error },
+      );
+    }
+    expected.set(uri, slug);
+  }
+
+  const actual = new Map<string, string>();
+  for (const document of recordExport.documents) {
+    actual.set(document.uri, document.value.path);
+  }
+
+  const missing = [...expected.keys()].filter((uri) => !actual.has(uri));
+  const unexpected = [...actual.keys()].filter((uri) => !expected.has(uri));
+  if (missing.length > 0 || unexpected.length > 0) {
+    throw new PublisherError(
+      `record export does not match the blog sources: missing ${missing.join(", ") || "none"}; unexpected ${unexpected.join(", ") || "none"}`,
+    );
+  }
+
+  for (const [uri, slug] of expected) {
+    const path = actual.get(uri);
+    if (path !== documentPathForSlug(slug)) {
+      throw new PublisherError(
+        `document ${uri} path must be ${documentPathForSlug(slug)}, found ${String(path)}`,
+      );
+    }
+  }
+
+  if (recordExport.draftsExcluded !== source.draftsExcluded) {
+    throw new PublisherError(
+      `record export excluded ${recordExport.draftsExcluded} draft(s), but the sources contain ${source.draftsExcluded}`,
+    );
+  }
+
+  const expectedLegacy = [...source.missingSlugIds].sort((left, right) => left.localeCompare(right));
+  const actualLegacy = [...recordExport.missingSlugIds].sort((left, right) => left.localeCompare(right));
+  if (expectedLegacy.join("\n") !== actualLegacy.join("\n")) {
+    throw new PublisherError(
+      `record export legacy IDs do not match the sources: expected ${expectedLegacy.join(", ") || "none"}; found ${actualLegacy.join(", ") || "none"}`,
+    );
+  }
+
+  if (actualLegacy.length > 0) {
+    throw new PublisherError(
+      `published blog posts without an explicit slug are not exported and block publishing: ${actualLegacy.join(", ")}`,
+    );
+  }
+}
+
+export interface PublishWorkflowOptions {
+  readonly repositoryRoot: string;
+  /** DID that owns the publication records. */
+  readonly authority: string;
+  /** Optional OAuth account identifier when the authority is resolved via handle. */
+  readonly account?: string;
+  readonly write: boolean;
+  readonly blogDirectory?: string;
+}
+
+export interface AuthenticatedPublisher {
+  readonly did: string;
+  readonly pds: PublisherPds;
+}
+
+/** Injectable boundaries; the CLI supplies the real implementations. */
+export interface PublishWorkflowDependencies {
+  readonly preflight: (
+    repositoryRoot: string,
+    blogDirectory: string,
+  ) => Promise<BlogSourcePreflight>;
+  readonly build: (repositoryRoot: string) => Promise<void>;
+  readonly readRecordsExport: (path: string) => Promise<unknown>;
+  readonly authenticate: (options: {
+    readonly identifier: string;
+    readonly authority: string;
+  }) => Promise<AuthenticatedPublisher>;
+  readonly log: (message: string) => void;
+}
+
+export interface PublishWorkflowResult {
+  readonly mode: "dry-run" | "write";
+  readonly did: string;
+  readonly publicationUri: string;
+  readonly draftsExcluded: number;
+  readonly missingSlugIds: readonly string[];
+  readonly summary: PublishSummary;
+  readonly records: readonly RecordPlan[];
+  readonly applied?: PublishResult;
+}
+
+const defaultDependencies: PublishWorkflowDependencies = {
+  preflight: preflightBlogSources,
+  build: buildStandardSite,
+  readRecordsExport: readRecordsExportFile,
+  authenticate: authenticatePublisher,
+  log: (message) => console.log(message),
+};
+
+function summarizePlans(records: readonly RecordPlan[]): Record<PlannedAction, number> {
+  return records.reduce(
+    (summary, record) => {
+      summary[record.action] += 1;
+      return summary;
+    },
+    { create: 0, update: 0, unchanged: 0 } as Record<PlannedAction, number>,
+  );
+}
+
+/**
+ * Run the ordered publish workflow:
+ * source preflight, fresh production build, export read/validation, membership
+ * comparison, authentication, then planning and an optional write.
+ *
+ * Every rejection before authentication leaves the network untouched; a failed
+ * build is never followed by reading an older export.
+ */
+export async function publishStandardSite(
+  options: PublishWorkflowOptions,
+  overrides: Partial<PublishWorkflowDependencies> = {},
+): Promise<PublishWorkflowResult> {
+  const dependencies: PublishWorkflowDependencies = { ...defaultDependencies, ...overrides };
+  const authority = options.authority;
+  if (!authority.startsWith("did:")) {
+    throw new PublisherError(
+      "PUBLIC_STANDARD_SITE_DID must be a DID for PDS publication; use STANDARD_SITE_ACCOUNT for a handle",
+    );
+  }
+
+  const blogDirectory = options.blogDirectory ?? BLOG_SOURCE_DIRECTORY;
+  const exportPath = resolve(options.repositoryRoot, "dist", RECORDS_EXPORT_PATH);
+
+  // 1. Inspect the sources. Failures here must not build or authenticate.
+  const source = await dependencies.preflight(options.repositoryRoot, blogDirectory);
+
+  // 2. Always run an awaited, fresh production build before reading records.
+  await dependencies.build(options.repositoryRoot);
+
+  // 3. Read and validate the export from this build only.
+  const rawExport = await dependencies.readRecordsExport(exportPath);
+  if (rawExport === null || rawExport === undefined) {
+    throw new PublisherError(
+      `Standard.site publishing is disabled: ${exportPath} was not generated by the fresh build`,
+    );
+  }
+  const recordExport = validateRecordExport(rawExport, authority);
+  if (recordExport.did === null || recordExport.publication === null) {
+    throw new PublisherError(
+      `Standard.site publishing is disabled: ${exportPath} has no configured publication DID`,
+    );
+  }
+  assertRecord(recordExport.publication);
+  recordExport.documents.forEach(assertRecord);
+
+  // 4. The build must describe exactly the sources preflight inspected.
+  assertRecordExportMembership(authority, source, recordExport);
+
+  // 5. Only a complete, consistent export can reach authentication.
+  const identifier = selectOAuthIdentifier(authority, options.account);
+  const authenticated = await dependencies.authenticate({ identifier, authority });
+  if (authenticated.did !== authority) {
+    throw new PublisherError(
+      `OAuth signed in as ${authenticated.did}, but the publication authority is ${authority}`,
+    );
+  }
+
+  // 6. Plan against the live PDS, then write only with an explicit request.
+  const plan = await planPublication(recordExport, authenticated.pds, authenticated.did);
+  const allPlans = plansInWriteOrder(plan);
+  const counts = summarizePlans(allPlans);
+  const summary: PublishSummary = {
+    created: counts.create,
+    updated: counts.update,
+    unchanged: counts.unchanged,
+    draftsExcluded: recordExport.draftsExcluded,
+  };
+  dependencies.log(
+    `Standard.site plan: ${summary.created} create, ${summary.updated} update, ${summary.unchanged} unchanged; ${summary.draftsExcluded} draft(s) excluded.`,
+  );
+  allPlans
+    .filter((record) => record.action !== "unchanged")
+    .forEach((record) =>
+      dependencies.log(
+        `- ${record.action} ${record.planned.uri} (${record.changes.join(", ")})`,
+      ),
+    );
+
+  if (!options.write) {
+    dependencies.log("Dry run complete; no records were written. Re-run with --write to apply this plan.");
+    return {
+      mode: "dry-run",
+      did: authenticated.did,
+      publicationUri: recordExport.publication.uri,
+      draftsExcluded: summary.draftsExcluded,
+      missingSlugIds: recordExport.missingSlugIds,
+      summary,
+      records: allPlans,
+    };
+  }
+
+  const applied = await applyPublicationPlan(
+    plan,
+    authenticated.pds,
+    authenticated.did,
+    recordExport.draftsExcluded,
+  );
+  dependencies.log(
+    `Published Standard.site records: ${applied.created} created, ${applied.updated} updated, ${applied.unchanged} unchanged.`,
+  );
+  return {
+    mode: "write",
+    did: authenticated.did,
+    publicationUri: recordExport.publication.uri,
+    draftsExcluded: summary.draftsExcluded,
+    missingSlugIds: recordExport.missingSlugIds,
+    summary,
+    records: allPlans,
+    applied,
+  };
+}
+
+export const PUBLISHER_USAGE =
+  "Usage: pnpm standard-site:publish [--write]\n\nDefault mode is a dry run. --write applies creates and updates after OAuth.";
+
+export function parseArgs(argv: readonly string[]): { write: boolean; help: boolean } {
   return {
     write: argv.includes("--write"),
     help: argv.includes("--help") || argv.includes("-h"),
   };
 }
 
-async function main(): Promise<void> {
-  const { write, help } = parseArgs(process.argv.slice(2));
-  if (help) {
-    console.log(
-      "Usage: pnpm standard-site:publish [--write]\n\nDefault mode is a dry run. --write applies creates and updates after OAuth.",
-    );
-    return;
-  }
+export interface PublisherCliContext {
+  readonly repositoryRoot: string;
+  readonly authority: string;
+  readonly account?: string;
+}
 
+/**
+ * CLI entry point with injected workflow boundaries.
+ *
+ * `--help` returns before any preflight, build, read, or authentication, so it
+ * is always side-effect free.
+ */
+export async function runPublisherCli(
+  argv: readonly string[],
+  context: PublisherCliContext,
+  overrides: Partial<PublishWorkflowDependencies> = {},
+): Promise<PublishWorkflowResult | null> {
+  const { write, help } = parseArgs(argv);
+  if (help) {
+    (overrides.log ?? defaultDependencies.log)(PUBLISHER_USAGE);
+    return null;
+  }
+  return publishStandardSite(
+    {
+      repositoryRoot: context.repositoryRoot,
+      authority: context.authority,
+      account: context.account,
+      write,
+    },
+    overrides,
+  );
+}
+
+async function main(): Promise<void> {
   const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
   const authority = process.env.PUBLIC_STANDARD_SITE_DID ?? STANDARD_SITE_DEFAULT_DID;
-  const account = selectOAuthIdentifier(authority, process.env.STANDARD_SITE_ACCOUNT);
-  if (!authority.startsWith("did:")) {
-    throw new PublisherError("PUBLIC_STANDARD_SITE_DID must be a DID for PDS publication; use STANDARD_SITE_ACCOUNT for a handle");
-  }
-  const prepared = await prepareRecords(resolve(repositoryRoot, "src/content/blog"), { authority });
-  const session = await authenticateLoopback({ identifier: account });
-  if (session.did !== authority && authority.startsWith("did:")) {
-    throw new PublisherError(`OAuth signed in as ${session.did}, but the publication authority is ${authority}`);
-  }
-
-  const client = new Client({ handler: session });
-  const pds = createAtcutePds(client, session.did);
-  const plan = await planPublication(prepared, pds, session.did);
-  const allPlans = plansInWriteOrder(plan);
-  const counts = allPlans.reduce(
-    (summary, record) => ({ ...summary, [record.action]: summary[record.action] + 1 }),
-    { create: 0, update: 0, unchanged: 0 } as Record<"create" | "update" | "unchanged", number>,
-  );
-  console.log(
-    `Standard.site plan: ${counts.create} create, ${counts.update} update, ${counts.unchanged} unchanged; ${prepared.excludedDrafts.length} draft(s) excluded.`,
-  );
-  allPlans
-    .filter((record) => record.action !== "unchanged")
-    .forEach((record) => console.log(`- ${record.action} ${record.planned.uri} (${record.changes.join(", ")})`));
-  if (!write) {
-    console.log("Dry run complete; no records were written. Re-run with --write to apply this plan.");
-    return;
-  }
-
-  const result = await applyPublicationPlan(plan, pds, session.did, prepared.excludedDrafts.length);
-  console.log(
-    `Published Standard.site records: ${result.created} created, ${result.updated} updated, ${result.unchanged} unchanged.`,
-  );
+  await runPublisherCli(process.argv.slice(2), {
+    repositoryRoot,
+    authority,
+    account: process.env.STANDARD_SITE_ACCOUNT,
+  });
 }
 
 const isMain = process.argv[1] !== undefined && resolve(process.argv[1]) === fileURLToPath(import.meta.url);

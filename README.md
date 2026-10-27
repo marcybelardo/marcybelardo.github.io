@@ -152,17 +152,23 @@ Blog rules:
 
 Run `pnpm verify` after adding or editing a post.
 
-## Standard.site metadata converter
+## Standard.site publishing
 
-The optional Standard.site metadata converter requires Python 3.11+ and runs with `python3 scripts/generate_standard_site.py`. It writes ignored outputs to `generated/standard-site/publication.json` and `generated/standard-site/documents/<slug>.json`, mapping published-only blog metadata. After manual publication, pass the returned URI with `--publication-uri` when regenerating. The converter has no authentication, PDS access, network, synchronization, verification, or Astro-link behavior; it never performs auth, PDS, network, sync, verification, or Astro publication-link work.
+Write blog Markdown, deploy the website, then publish manually with the local OAuth CLI:
 
-## Standard.site publisher
+```sh
+pnpm standard-site:publish          # fresh build, authorize, preview changes; no writes
+pnpm standard-site:publish --write  # fresh build, authorize, explicitly apply changes
+pnpm standard-site:publish --help   # no build, authentication, or network access
+```
 
-The TypeScript publisher in `scripts/standard-site/publisher.ts` is the supported end-to-end path. It reads `src/content/blog/`, applies the same published/draft rules as the site, converts Markdown/MDX to plaintext `site.standard.document` records, and validates records with atcute's Standard.site schemas. Publication and document record keys are deterministic TIDs derived from the immutable publication seed and each explicit blog slug; a slug change is therefore a migration.
+Astro exports validated published entries and their rendered article HTML to `/standard-site/records.json`. This static, public feed retains full plaintext article content, including image alt text and footnote definitions, but excludes layouts and the author signature. It contains no credentials, source paths, or draft content/identifiers; only an aggregate draft count is public. Ordinary builds never authenticate or contact a PDS. Only content the existing Astro configuration can render is supported; no MDX integration is added.
 
-The command starts atcute's OAuth loopback flow on `127.0.0.1`, requests the Standard.site `site.standard.authFull` scope, and prints an authorization URL. It is a dry run unless `--write` is supplied. The write path creates or updates the publication first, then documents in slug order, using `swapRecord` CIDs and a read-back verification after every write. Remote lexicon validation is left optimistic because records are validated locally against the pinned Standard.site schemas; this allows PDSs that do not have the community lexicons registered locally to accept them. Discovery requests use bounded retries for transient network failures. The publisher never deletes records, uploads media, or mutates the source Markdown. By default OAuth resolves the configured publication DID directly; set `STANDARD_SITE_ACCOUNT` when authorizing a different handle and `PUBLIC_STANDARD_SITE_DID` when intentionally publishing under a migrated DID.
+The publisher rejects symlinks, invalid UTF-8, and duplicate published slugs before building, awaits a fresh production build, then validates the local JSON and checks source membership before OAuth. It never fetches the deployed feed or falls back to stale output. A legacy post without an explicit slug retains its website route but blocks publishing until given an intentional stable slug. Publication and document TID record keys are unchanged; changing a published slug or owner DID requires an explicit migration. First-run plaintext formatting differences can produce updates without changing identities.
 
-The website advertises the publication at `/.well-known/site.standard.publication` and adds a `rel="site.standard.document"` link to each published blog detail page. The default owner is the DID currently resolved from `marcelinebelardo.com`; set the public DID override during a planned identity migration.
+Authorization uses atcute's loopback flow on `127.0.0.1` with `atproto` and create/update-only scopes for `site.standard.publication` and `site.standard.document`. Publishing is a dry run by default. Writes apply the publication before documents, suppress no-ops, require compare-and-swap CIDs, and verify each exact value by reading it back. Local pinned-schema validation, optimistic remote validation, bounded discovery GET retries, and no write retries are retained. There are no deletions or media uploads, and publishing is not automatic deployment synchronization.
+
+The website advertises the publication at `/.well-known/site.standard.publication` and published documents through `rel="site.standard.document"` links. The default owner is the DID currently resolved from `marcelinebelardo.com`; `STANDARD_SITE_ACCOUNT` selects the login account, and `PUBLIC_STANDARD_SITE_DID` is reserved for deliberate owner migrations. An explicitly empty public DID disables discovery/document links and publishing; it does not restore the default. See [publisher operations and architecture](docs/standard-site-publisher.md).
 
 ## RSS, author signature, and CV asset
 

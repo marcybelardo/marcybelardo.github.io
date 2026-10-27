@@ -14,6 +14,17 @@ import { dirname, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { assertReviewOutputDestination as validateReviewOutputDestination } from "./production-fixture-output-guard.mjs";
 import { resolveRetainedResource } from "./production-fixture-resource-resolver.mjs";
+// Node strips types for these `.ts` modules, so the fixture derives the same
+// identities as the site without duplicating the slug/AT-URI contract.
+import { STANDARD_SITE_DEFAULT_DID, SITE_ORIGIN } from "../src/site-config.ts";
+import { validateRecordExport } from "../src/standard-site/records.ts";
+import { parseFrontmatter } from "@astrojs/markdown-remark";
+import {
+  deriveStableTid,
+  documentAtUri,
+  isTid,
+  publicationRecordKey,
+} from "../src/standard-site/identity.ts";
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const projectsDirectory = resolve(repositoryRoot, "src/content/projects");
@@ -28,6 +39,22 @@ const optionalProjectFixturePath = resolve(projectsDirectory, "__optional-projec
 const noOptionalsProjectFixturePath = resolve(projectsDirectory, "__no-optionals-project-fixture.md");
 const rssFixturePath = resolve(blogDirectory, "__rss-production-fixture.md");
 const footnoteFixturePath = resolve(blogDirectory, "__footnote-production-fixture.md");
+const standardSiteExportFixturePath = resolve(
+  blogDirectory,
+  "__standard-site-export-fixture.md",
+);
+const standardSiteDraftFixturePath = resolve(
+  blogDirectory,
+  "__standard-site-draft-fixture.md",
+);
+const standardSiteDraftSluglessFixturePath = resolve(
+  blogDirectory,
+  "__standard-site-draft-slugless-fixture.md",
+);
+const standardSiteLegacySluglessFixturePath = resolve(
+  blogDirectory,
+  "__standard-site-legacy-slugless-fixture.md",
+);
 const coveredReviewProjectPath = resolve(projectsDirectory, "__design-preview-covered.md");
 const minimalReviewProjectPath = resolve(projectsDirectory, "__design-preview-minimal.md");
 const reviewBlogFixturePaths = [
@@ -66,6 +93,20 @@ const footnoteFixtureOutputPath = resolve(
   "dist/blog/footnote-production-fixture/index.html",
 );
 const rssOutputPath = resolve(repositoryRoot, "dist/rss.xml");
+const standardSiteExportOutputPath = resolve(
+  repositoryRoot,
+  "dist/standard-site/records.json",
+);
+const standardSiteDiscoveryOutputPath = resolve(
+  repositoryRoot,
+  "dist/.well-known/site.standard.publication",
+);
+const standardSitePublicationUri =
+  `at://${STANDARD_SITE_DEFAULT_DID}/site.standard.publication/${publicationRecordKey()}`;
+const standardSiteExportSlug = "standard-site-export-fixture";
+const standardSiteDraftSlug = "standard-site-draft-fixture";
+const standardSiteDraftSluglessId = "standard-site-draft-slugless";
+const standardSiteLegacySluglessId = "standard-site-legacy-slugless";
 
 const invalidUrlFixtures = [
   { field: "repositoryUrl", value: '""' },
@@ -91,6 +132,10 @@ const fixturePaths = [
   noOptionalsProjectFixturePath,
   rssFixturePath,
   footnoteFixturePath,
+  standardSiteExportFixturePath,
+  standardSiteDraftFixturePath,
+  standardSiteDraftSluglessFixturePath,
+  standardSiteLegacySluglessFixturePath,
   coveredReviewProjectPath,
   minimalReviewProjectPath,
   ...reviewBlogFixturePaths,
@@ -302,6 +347,79 @@ const expectedFixtureBodyHtml =
   '</ol>\n' +
   '</section>';
 
+// The controlled export fixture covers every article construct the records
+// export must carry: YAML frontmatter, raw HTML, a code fence, a GFM table, a
+// body image, and a footnote referenced twice. Sentinels keep each assertion
+// anchored to exactly the text this fixture authored.
+const standardSiteExportFixture = `---
+slug: ${standardSiteExportSlug}
+title: Standard Site Export Fixture
+date: 2026-07-04
+description: Controlled fixture for the Standard.site records export.
+tags:
+  - Export Fixture
+  - Standard Site
+draft: false
+---
+
+STANDARD_SITE_YAML_MARKER_a41f: controlled fixture prose from the frontmatter body.
+
+## Controlled HTML Section
+
+<p id="fixture-html-marker">STANDARD_SITE_HTML_MARKER_b52a: <strong>strong fixture</strong> and <em>emphasis</em>.</p>
+
+\`\`\`js
+const STANDARD_SITE_CODE_MARKER_c63b = 42;
+\`\`\`
+
+| Column | Value |
+| --- | --- |
+| STANDARD_SITE_TABLE_MARKER_d74c | STANDARD_SITE_TABLE_CELL_e85d |
+
+![STANDARD_SITE_IMAGE_ALT_f96e](../../assets/homepage-photo.jpg)
+
+STANDARD_SITE_FOOTNOTE_REF_g07f repeated reference[^export-note] and a second reference[^export-note].
+
+[^export-note]: STANDARD_SITE_FOOTNOTE_DEFINITION_h18a repeated definition body.
+
+STANDARD_SITE_LAST_MARKER_i29b
+`;
+
+const standardSiteDraftFixture = `---
+slug: ${standardSiteDraftSlug}
+title: Standard Site Draft Fixture
+date: 2026-07-05
+description: Controlled draft fixture for the Standard.site records export.
+tags:
+  - Export Fixture
+draft: true
+---
+
+STANDARD_SITE_DRAFT_SENTINEL_z19b must never reach the records export.
+`;
+
+const standardSiteDraftSluglessFixture = `---
+title: Standard Site Draft Slugless
+date: 2026-07-06
+description: Controlled slugless draft fixture for the Standard.site records export.
+draft: true
+---
+
+STANDARD_SITE_DRAFT_SLUGLESS_SENTINEL_y28c must never reach the records export.
+`;
+
+const standardSiteLegacySluglessFixture = `---
+title: Standard Site Legacy Slugless
+date: 2026-07-07
+description: Controlled slugless published fixture for the Standard.site records export.
+tags:
+  - Legacy Fixture
+draft: false
+---
+
+STANDARD_SITE_LEGACY_SENTINEL_x37d builds its title-derived route.
+`;
+
 function createInvalidUrlFixture(field, value) {
   return `---
 slug: invalid-${field}-${value === '""' ? "empty" : "fragment"}
@@ -318,11 +436,11 @@ Temporary URL validation fixture.
 }
 
 
-function runCommand(command, args, failureMessage) {
+function runCommand(command, args, failureMessage, extraEnvironment = {}) {
   const result = spawnSync(command, args, {
     cwd: repositoryRoot,
     encoding: "utf8",
-    env: { ...process.env, CI: "true" },
+    env: { ...process.env, CI: "true", ...extraEnvironment },
   });
   const output = `${result.stdout ?? ""}\n${result.stderr ?? ""}`;
 
@@ -656,6 +774,511 @@ function assertFootnoteFixtureOutput() {
   assertFootnoteBaseline(html);
 }
 
+function runFixtureCheck(name, check) {
+  try {
+    check();
+    console.log(`fixture check passed: ${name}`);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(`fixture check failed: ${name}\n${message}`, { cause: error });
+  }
+}
+
+function readStandardSiteExportRaw() {
+  assert.ok(
+    existsSync(standardSiteExportOutputPath),
+    "the production build must emit dist/standard-site/records.json",
+  );
+
+  return readFileSync(standardSiteExportOutputPath, "utf8");
+}
+
+function parseStandardSiteExport(raw) {
+  try {
+    return validateRecordExport(JSON.parse(raw));
+  } catch (error) {
+    assert.fail(
+      `dist/standard-site/records.json must be valid JSON: ${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
+}
+
+/**
+ * Assert the planned-record envelope every consumer reads: `collection`, `rkey`,
+ * `uri`, and the lexicon `value`.
+ */
+function assertPlannedRecord(planned, collection, label) {
+  assert.ok(planned && typeof planned === "object", `${label} must be a planned record`);
+  assert.equal(planned.collection, collection, `${label}.collection`);
+  assert.equal(typeof planned.rkey, "string", `${label}.rkey must be a string`);
+  assert.ok(isTid(planned.rkey), `${label}.rkey must be a TID`);
+  assert.equal(
+    planned.uri,
+    `at://${STANDARD_SITE_DEFAULT_DID}/${collection}/${planned.rkey}`,
+    `${label}.uri must match its DID, collection, and rkey`,
+  );
+  assert.ok(planned.value && typeof planned.value === "object", `${label}.value must be the record`);
+  assert.equal(planned.value.$type, collection, `${label}.value.$type`);
+}
+
+/** Read the document slug from its canonical path in the planned record. */
+function getPlannedDocumentSlug(planned) {
+  const path = planned?.value?.path;
+  assert.equal(typeof path, "string", "a planned document must carry its canonical path");
+
+  const match = /^\/blog\/([^/]+)\/$/u.exec(path);
+  assert.ok(match, `a planned document path must be a blog detail route: ${path}`);
+
+  return match[1];
+}
+
+function findExportDocument(exportData, slug) {
+  assert.ok(Array.isArray(exportData.documents), "records.json must plan document records");
+
+  return exportData.documents.find((entry) => getPlannedDocumentSlug(entry) === slug) ?? null;
+}
+
+// Only a count is public: exposing draft IDs would violate the feed contract.
+function assertDraftsExcluded(value) {
+  assert.ok(Number.isInteger(value), "draftsExcluded must be an integer count");
+  const countDrafts = (directory) => readdirSync(directory, { withFileTypes: true })
+    .reduce((count, entry) => {
+      const path = resolve(directory, entry.name);
+      if (entry.isDirectory()) return count + countDrafts(path);
+      if (!entry.isFile() || !/\.mdx?$/.test(entry.name)) return count;
+      return count + Number(parseFrontmatter(readFileSync(path, "utf8")).frontmatter.draft === true);
+    }, 0);
+  assert.equal(value, countDrafts(blogDirectory), "all authored drafts must be counted exactly");
+}
+
+/** Collapse whitespace so plaintext assertions do not depend on block spacing. */
+function normalizeExportText(value) {
+  return value.replace(/\s+/gu, " ").trim();
+}
+
+function countExportText(haystack, needle) {
+  const normalizedHaystack = normalizeExportText(haystack);
+  const normalizedNeedle = normalizeExportText(needle);
+  let count = 0;
+  let index = normalizedNeedle ? normalizedHaystack.indexOf(normalizedNeedle) : -1;
+
+  while (index !== -1) {
+    count += 1;
+    index = normalizedHaystack.indexOf(normalizedNeedle, index + normalizedNeedle.length);
+  }
+
+  return count;
+}
+
+/**
+ * standard_site_export_fixture
+ *
+ * Envelope version and publication identity, plus the full text of the
+ * controlled article: frontmatter-driven prose, raw HTML, a code fence, a GFM
+ * table, a body image alt, a footnote referenced twice, and article order.
+ */
+function assertStandardSiteExportFixture(exportData) {
+  assert.equal(exportData.version, 1, "records.json must declare envelope version 1");
+  assert.equal(
+    exportData.did,
+    STANDARD_SITE_DEFAULT_DID,
+    "records.json must carry the configured publication DID",
+  );
+
+  const publication = exportData.publication;
+  assertPlannedRecord(publication, "site.standard.publication", "publication");
+  assert.equal(
+    publication.rkey,
+    publicationRecordKey(),
+    "the planned publication must use the deterministic publication record key",
+  );
+  assert.equal(publication.uri, standardSitePublicationUri);
+  assert.equal(publication.value.url, SITE_ORIGIN);
+  assert.ok(
+    typeof publication.value.name === "string" && publication.value.name.trim().length > 0,
+    "the planned publication must carry a non-empty name",
+  );
+  assert.ok(
+    typeof publication.value.description === "string" &&
+      publication.value.description.trim().length > 0,
+    "the planned publication must carry a non-empty description",
+  );
+
+  const slugs = exportData.documents.map((entry) => getPlannedDocumentSlug(entry));
+  assert.ok(slugs.length > 0, "records.json must plan document records");
+  assert.deepEqual(
+    slugs,
+    [...slugs].sort(),
+    "planned documents must be ordered by slug for deterministic output",
+  );
+
+  const fixture = findExportDocument(exportData, standardSiteExportSlug);
+  assert.ok(fixture, "the controlled export fixture must appear in the planned documents");
+
+  assertPlannedRecord(fixture, "site.standard.document", "fixture document");
+  assert.equal(
+    fixture.rkey,
+    deriveStableTid(`document:${standardSiteExportSlug}`),
+    "a planned document must use its deterministic document record key",
+  );
+  assert.equal(fixture.uri, documentAtUri(STANDARD_SITE_DEFAULT_DID, standardSiteExportSlug));
+  assert.equal(fixture.value.site, standardSitePublicationUri);
+  assert.equal(fixture.value.title, "Standard Site Export Fixture");
+  assert.equal(
+    fixture.value.description,
+    "Controlled fixture for the Standard.site records export.",
+  );
+  assert.equal(fixture.value.publishedAt, "2026-07-04T00:00:00.000Z");
+  assert.equal(fixture.value.path, `/blog/${standardSiteExportSlug}/`);
+  assert.deepEqual(fixture.value.tags, ["Export Fixture", "Standard Site"]);
+
+  const text = fixture.value.textContent;
+  assert.equal(typeof text, "string", "document textContent must be a string");
+  assert.ok(normalizeExportText(text).length > 0, "document textContent must carry the article");
+
+  [
+    "STANDARD_SITE_YAML_MARKER_a41f: controlled fixture prose from the frontmatter body.",
+    "Controlled HTML Section",
+    "STANDARD_SITE_HTML_MARKER_b52a: strong fixture and emphasis.",
+    "const STANDARD_SITE_CODE_MARKER_c63b = 42;",
+    "STANDARD_SITE_IMAGE_ALT_f96e",
+    "STANDARD_SITE_LAST_MARKER_i29b",
+  ].forEach((expected) => {
+    assert.equal(
+      countExportText(text, expected),
+      1,
+      `exported text must carry exactly one copy of the controlled text: ${expected}`,
+    );
+  });
+
+  assert.equal(
+    countExportText(text, "STANDARD_SITE_TABLE_MARKER_d74c"),
+    1,
+    "table cell text must reach the exported text",
+  );
+  assert.equal(
+    countExportText(text, "STANDARD_SITE_TABLE_CELL_e85d"),
+    1,
+    "table cell text must reach the exported text",
+  );
+  assert.equal(
+    countExportText(text, "STANDARD_SITE_FOOTNOTE_REF_g07f repeated reference"),
+    1,
+    "footnote references must reach the exported text",
+  );
+  assert.equal(
+    countExportText(text, "STANDARD_SITE_FOOTNOTE_DEFINITION_h18a repeated definition body."),
+    1,
+    "a footnote referenced twice must contribute exactly one definition copy",
+  );
+
+  const normalizedText = normalizeExportText(text);
+  assert.ok(
+    normalizedText.indexOf("STANDARD_SITE_YAML_MARKER_a41f") <
+      normalizedText.lastIndexOf("STANDARD_SITE_LAST_MARKER_i29b"),
+    "exported text must preserve article order",
+  );
+}
+
+/**
+ * standard_site_export_privacy_and_legacy
+ *
+ * No drafts (with or without an explicit slug) reach the export, no layout or
+ * signature chrome reaches textContent, and a legacy title-derived route keeps
+ * building while its route ID is listed in `missingSlugIds`.
+ */
+function assertStandardSiteExportPrivacyAndLegacy(exportData) {
+  assertDraftsExcluded(exportData.draftsExcluded);
+
+  const exportRaw = JSON.stringify(exportData);
+  [
+    "STANDARD_SITE_DRAFT_SENTINEL_z19b",
+    "STANDARD_SITE_DRAFT_SLUGLESS_SENTINEL_y28c",
+  ].forEach((sentinel) => {
+    assert.equal(
+      exportRaw.includes(sentinel),
+      false,
+      `draft body text must never reach the export: ${sentinel}`,
+    );
+  });
+  assert.equal(
+    findExportDocument(exportData, standardSiteDraftSlug),
+    null,
+    "a draft with an explicit slug must not be planned",
+  );
+  assert.equal(
+    findExportDocument(exportData, standardSiteDraftSluglessId),
+    null,
+    "a draft without a slug must not be planned",
+  );
+  [
+    resolve(repositoryRoot, `dist/blog/${standardSiteDraftSlug}/index.html`),
+    resolve(repositoryRoot, `dist/blog/${standardSiteDraftSluglessId}/index.html`),
+  ].forEach((outputPath) => {
+    assert.equal(
+      existsSync(outputPath),
+      false,
+      `draft routes must not build in production: ${outputPath}`,
+    );
+  });
+
+  assert.ok(Array.isArray(exportData.missingSlugIds), "missingSlugIds must be an array");
+  assert.deepEqual(
+    exportData.missingSlugIds,
+    [...exportData.missingSlugIds].sort(),
+    "missingSlugIds must be ordered for deterministic output",
+  );
+  assert.ok(
+    exportData.missingSlugIds.includes(standardSiteLegacySluglessId),
+    "a published post without a frontmatter slug must be listed by its title-derived route ID",
+  );
+  assert.equal(
+    exportData.missingSlugIds.includes(standardSiteDraftSluglessId),
+    false,
+    "a draft without a slug is an excluded draft, not a missing-slug published post",
+  );
+
+  const legacyRoutePath = resolve(
+    repositoryRoot,
+    `dist/blog/${standardSiteLegacySluglessId}/index.html`,
+  );
+  assert.equal(
+    existsSync(legacyRoutePath),
+    true,
+    "a legacy title-derived route must keep building in production",
+  );
+  const legacyHtml = readFileSync(legacyRoutePath, "utf8");
+  assert.match(legacyHtml, /STANDARD_SITE_LEGACY_SENTINEL_x37d/);
+  assert.doesNotMatch(
+    legacyHtml,
+    /rel="site\.standard\.document"/,
+    "a title-derived route advertises no document identity until it gains an explicit slug",
+  );
+
+  assert.equal(
+    findExportDocument(exportData, standardSiteLegacySluglessId),
+    null,
+    "a published post without an explicit slug must not be planned as a document",
+  );
+  assert.equal(
+    exportRaw.includes("STANDARD_SITE_LEGACY_SENTINEL_x37d"),
+    false,
+    "the omitted legacy route must not leak its body into the export",
+  );
+
+  const fixtureText = findExportDocument(exportData, standardSiteExportSlug)?.value?.textContent ?? "";
+  assert.doesNotMatch(fixtureText, /<[a-z!/]/iu, "exported text must not contain markup");
+  assert.doesNotMatch(
+    fixtureText,
+    /class=|aria-hidden|data-footnote/u,
+    "layout attributes must not reach exported text",
+  );
+  assert.doesNotMatch(
+    fixtureText,
+    /\/_astro\//u,
+    "generated asset paths must not reach exported text",
+  );
+  assert.doesNotMatch(
+    fixtureText,
+    /Marceline Belardo is a stay-at-home software developer/u,
+    "the shared author signature is site chrome, not article text",
+  );
+  assert.doesNotMatch(
+    fixtureText,
+    /\bdraft:|\bslug:|^---$/mu,
+    "YAML frontmatter syntax must not reach exported text",
+  );
+  assert.doesNotMatch(
+    fixtureText,
+    /src\/content|assets\/|__standard-site/u,
+    "source paths must not reach exported text",
+  );
+}
+
+/**
+ * standard_site_export_discovery_consistency
+ *
+ * Discovery, route links, and planned identities must all describe the same
+ * publication, and the export must stay out of the sitemap.
+ */
+function assertStandardSiteExportDiscoveryConsistency(exportData) {
+  assert.ok(
+    existsSync(standardSiteDiscoveryOutputPath),
+    "the Standard.site discovery endpoint must be emitted",
+  );
+  assert.equal(
+    readFileSync(standardSiteDiscoveryOutputPath, "utf8").trim(),
+    standardSitePublicationUri,
+    "discovery must advertise the same publication identity as the export",
+  );
+
+  const missingSlugIds = new Set(exportData.missingSlugIds);
+  const plannedUris = new Map(
+    exportData.documents.map((planned) => {
+      const slug = getPlannedDocumentSlug(planned);
+      assertPlannedRecord(planned, "site.standard.document", `document ${slug}`);
+      assert.equal(
+        planned.rkey,
+        deriveStableTid(`document:${slug}`),
+        `document ${slug} must use its deterministic record key`,
+      );
+      assert.equal(
+        planned.uri,
+        documentAtUri(STANDARD_SITE_DEFAULT_DID, slug),
+        `document ${slug} must use its deterministic AT-URI`,
+      );
+      return [slug, planned.uri];
+    }),
+  );
+  assert.equal(
+    plannedUris.size,
+    exportData.documents.length,
+    "each planned document must have a distinct slug",
+  );
+  missingSlugIds.forEach((id) => {
+    assert.equal(
+      plannedUris.has(id),
+      false,
+      `the missing-slug route ${id} must not be planned as a document`,
+    );
+  });
+
+  const blogRoot = resolve(repositoryRoot, "dist/blog");
+  const advertised = new Map();
+  readdirSync(blogRoot, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory() && entry.name !== "tags")
+    .forEach((entry) => {
+      const pagePath = resolve(blogRoot, entry.name, "index.html");
+      if (!existsSync(pagePath)) {
+        return;
+      }
+      const linkTag = readFileSync(pagePath, "utf8").match(
+        /<link\b[^>]*rel="site\.standard\.document"[^>]*>/,
+      )?.[0];
+      if (!linkTag) {
+        return;
+      }
+      const href = linkTag.match(/\bhref="([^"]+)"/)?.[1] ?? "";
+      assert.equal(
+        href,
+        plannedUris.get(entry.name),
+        `route ${entry.name} must advertise the planned document identity`,
+      );
+      advertised.set(href, entry.name);
+    });
+
+  assert.deepEqual(
+    [...advertised.keys()].sort(),
+    [...plannedUris.values()].sort(),
+    "every advertised document link must match a planned document identity",
+  );
+
+  [
+    "dist/sitemap-0.xml",
+    "dist/sitemap-index.xml",
+  ].forEach((fileName) => {
+    const sitemapPath = resolve(repositoryRoot, fileName);
+    if (!existsSync(sitemapPath)) {
+      return;
+    }
+    const sitemap = readFileSync(sitemapPath, "utf8");
+    assert.doesNotMatch(
+      sitemap,
+      /standard-site\/records\.json/u,
+      `${fileName} must not list the records export`,
+    );
+    assert.doesNotMatch(
+      sitemap,
+      /site\.standard\.publication/u,
+      `${fileName} must not list the records export`,
+    );
+  });
+}
+
+/**
+ * standard_site_export_is_deterministic
+ *
+ * Two production builds over the same content must emit byte-identical JSON.
+ */
+function assertStandardSiteExportIsDeterministic(firstRaw) {
+  const secondRaw = readStandardSiteExportRaw();
+
+  assert.equal(
+    secondRaw,
+    firstRaw,
+    "two production builds over the same content must emit identical records.json bytes",
+  );
+
+  const plannedShape = (raw) =>
+    JSON.parse(raw).documents.map((planned) => [
+      getPlannedDocumentSlug(planned),
+      planned.collection,
+      planned.rkey,
+      planned.uri,
+      planned.value.textContent,
+    ]);
+
+  assert.deepEqual(
+    plannedShape(secondRaw),
+    plannedShape(firstRaw),
+    "the rebuild must keep every planned document identity and its full text",
+  );
+}
+
+/**
+ * standard_site_export_disabled_build
+ *
+ * An explicit empty PUBLIC_STANDARD_SITE_DID disables the export: no identity,
+ * no publication, no documents, no discovery, and no route advertisement.
+ */
+function assertDisabledStandardSiteExport() {
+  assert.ok(
+    existsSync(standardSiteExportOutputPath),
+    "a disabled build must still emit the export envelope",
+  );
+
+  const exportData = parseStandardSiteExport(readStandardSiteExportRaw());
+  assert.equal(exportData.version, 1);
+  assert.equal(
+    exportData.did,
+    null,
+    "an empty PUBLIC_STANDARD_SITE_DID must disable the publication identity",
+  );
+  assert.equal(exportData.publication, null, "a disabled export must plan no publication");
+  assert.deepEqual(exportData.documents, [], "a disabled export must plan no documents");
+  assert.equal(exportData.draftsExcluded, 0, "a disabled export must report no draft details");
+  assert.deepEqual(
+    exportData.missingSlugIds,
+    [],
+    "a disabled export must list no missing-slug route IDs",
+  );
+  assert.doesNotMatch(
+    JSON.stringify(exportData),
+    /at:\/\//u,
+    "a disabled export must not publish any record identity",
+  );
+  assert.equal(
+    existsSync(standardSiteDiscoveryOutputPath),
+    false,
+    "a disabled publication must not emit discovery",
+  );
+
+  const blogRoot = resolve(repositoryRoot, "dist/blog");
+  readdirSync(blogRoot, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory() && entry.name !== "tags")
+    .forEach((entry) => {
+      const pagePath = resolve(blogRoot, entry.name, "index.html");
+      if (!existsSync(pagePath)) {
+        return;
+      }
+      assert.doesNotMatch(
+        readFileSync(pagePath, "utf8"),
+        /rel="site\.standard\.document"/,
+        `a disabled publication must not advertise ${entry.name}`,
+      );
+    });
+}
+
 function countMatches(value, pattern) {
   return [...value.matchAll(pattern)].length;
 }
@@ -819,6 +1442,18 @@ try {
   writeFileSync(noOptionalsProjectFixturePath, noOptionalsProjectFixture, "utf8");
   writeFileSync(rssFixturePath, rssFixture, "utf8");
   writeFileSync(footnoteFixturePath, footnoteFixturePost, "utf8");
+  writeFileSync(standardSiteExportFixturePath, standardSiteExportFixture, "utf8");
+  writeFileSync(standardSiteDraftFixturePath, standardSiteDraftFixture, "utf8");
+  writeFileSync(
+    standardSiteDraftSluglessFixturePath,
+    standardSiteDraftSluglessFixture,
+    "utf8",
+  );
+  writeFileSync(
+    standardSiteLegacySluglessFixturePath,
+    standardSiteLegacySluglessFixture,
+    "utf8",
+  );
   writeFileSync(coveredReviewProjectPath, projectReviewFixture(
     "design-preview-covered", true, "2026-06-30", "Design Preview Covered",
   ), "utf8");
@@ -841,11 +1476,40 @@ try {
   assertFootnoteFixtureOutput();
   assert.ok(existsSync(rssOutputPath), "production RSS fixture output was not generated");
   assertFeed(readFileSync(rssOutputPath, "utf8"));
+
+  const standardSiteExportRaw = readStandardSiteExportRaw();
+  const standardSiteExport = parseStandardSiteExport(standardSiteExportRaw);
+  runFixtureCheck("standard_site_export_fixture", () =>
+    assertStandardSiteExportFixture(standardSiteExport),
+  );
+  runFixtureCheck("standard_site_export_privacy_and_legacy", () =>
+    assertStandardSiteExportPrivacyAndLegacy(standardSiteExport),
+  );
+  runFixtureCheck("standard_site_export_discovery_consistency", () =>
+    assertStandardSiteExportDiscoveryConsistency(standardSiteExport),
+  );
+
   if (reviewOutputDirectory) {
     cpSync(resolve(repositoryRoot, "dist"), reviewOutputDirectory, { recursive: true, errorOnExist: true });
     assertRetainedReviewOutput(reviewOutputDirectory);
     console.log(`Retained complete fixture output at ${reviewOutputDirectory}`);
   }
+
+  // Astro normally empties outDir between builds; removing the artifacts first
+  // keeps the disabled-build assertions about *emission*, not stale files.
+  rmSync(standardSiteExportOutputPath, { force: true });
+  rmSync(standardSiteDiscoveryOutputPath, { force: true });
+  runCommand("pnpm", ["build"], "disabled Standard.site export build failed", {
+    PUBLIC_STANDARD_SITE_DID: "",
+  });
+  runFixtureCheck("standard_site_export_disabled_build", assertDisabledStandardSiteExport);
+
+  // Rebuild with the configured identity so the harness leaves an enabled build
+  // behind, and prove the interruption did not change the planned records.
+  runCommand("pnpm", ["build"], "deterministic Standard.site export rebuild failed");
+  runFixtureCheck("standard_site_export_is_deterministic", () =>
+    assertStandardSiteExportIsDeterministic(standardSiteExportRaw),
+  );
 } finally {
   fixturePaths.forEach((fixturePath) => rmSync(fixturePath, { force: true }));
 }

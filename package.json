@@ -11,7 +11,7 @@
     "preview": "astro preview",
     "astro": "astro",
     "standard-site:publish": "node --experimental-strip-types scripts/standard-site/publisher.ts",
-    "test": "python3 -m unittest discover -s tests -p 'test_generate_standard_site.py' && node --test tests/production-fixture-output-guard.test.mjs && node --test tests/production-fixture-resource-resolver.test.mjs && node tests/production-fixture-build.mjs && node tests/homepage-fixture-build.mjs && pnpm build && node --experimental-strip-types --test --test-concurrency=1 tests/*.test.ts",
+    "test": "node --test tests/production-fixture-output-guard.test.mjs && node --test tests/production-fixture-resource-resolver.test.mjs && node tests/production-fixture-build.mjs && node tests/homepage-fixture-build.mjs && pnpm build && node --experimental-strip-types --test --test-concurrency=1 tests/*.test.ts",
     "verify": "pnpm run test"
   },
   "dependencies": {
@@ -26,6 +26,8 @@
     "@atcute/oauth-node-client": "2.0.1",
     "@atcute/standard-site": "2.0.2",
     "astro": "^6.3.5",
+    "hast-util-from-html": "2.0.3",
+    "hast-util-to-text": "4.0.2",
     "sharp": "0.34.5"
   }
 }

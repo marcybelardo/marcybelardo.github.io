@@ -8,7 +8,7 @@ import {
   getStandardSitePublicationUri,
   validateStandardSiteDocumentUri,
 } from "../src/site-config.ts";
-import { documentAtUri, publicationRecordKey } from "../src/standard-site/converter.ts";
+import { documentAtUri, publicationRecordKey } from "../src/standard-site/identity.ts";
 
 const configuredDid = "did:plc:example123";
 
