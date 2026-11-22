@@ -27,6 +27,9 @@ pnpm-debug.log*
 # jetbrains setting folder
 .idea/
 
+# Obsidian vault settings
+.obsidian/
+
 # disposable Standard.site metadata conversion output
 generated/standard-site/
 __pycache__/
