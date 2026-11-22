@@ -17,7 +17,8 @@ const aboutPath = resolve(repositoryRoot, "dist", "about", "index.html");
 const bioRedirectPath = resolve(repositoryRoot, "dist", "bio", "index.html");
 const contactRedirectPath = resolve(repositoryRoot, "dist", "contact", "index.html");
 const configuredOrigin = "https://www.marcelinebelardo.com";
-
+const homepageSource = readFileSync(resolve(repositoryRoot, "src/pages/index.astro"), "utf8");
+const homepageStyles = readFileSync(resolve(repositoryRoot, "src/styles/home-design.css"), "utf8");
 
 function readHomepage(): string {
   assert.ok(existsSync(homepagePath), "homepage output must exist before generated assertions");
@@ -63,6 +64,29 @@ test("homepage is a photo landing with direct links instead of content previews"
   const button = html.match(/<button[^>]*data-menu-button[^>]*>([\s\S]*?)<\/button>/)?.[1];
   assert.equal(button?.trim(), "", "the menu control is a shape without visible text");
   assert.match(html, /aria-label="Close primary navigation"/);
+});
+
+test("homepage introduction keeps a name-only heading and source-derived subordinate phrase", () => {
+  const html = readHomepage();
+  const landing = html.match(/<article class="portfolio-home"[^>]*>([\s\S]*?)<\/article>/)?.[1] ?? "";
+  const introduction = landing.match(/<header class="home-introduction">([\s\S]*?)<\/header>/)?.[1] ?? "";
+  const sourceIntroduction = homepageSource.match(/<header class="home-introduction">([\s\S]*?)<\/header>/)?.[1] ?? "";
+  const sourcePhrase = sourceIntroduction.match(/<p>([^<]+)<\/p>/)?.[1] ?? "";
+  const renderedPhrase = introduction.match(/<p>([\s\S]*?)<\/p>/)?.[1] ?? "";
+  const plainText = (value: string) => value.replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
+
+  assert.ok(sourcePhrase, "homepage source must define the introduction phrase");
+  assert.equal(plainText(renderedPhrase), sourcePhrase);
+  assert.equal(plainText(getVisibleH1Text(html)), "Marceline Belardo");
+  assert.match(introduction, /<h1\b[^>]*>[\s\S]*?<\/h1>[\s\S]*?<p>/);
+  assert.doesNotMatch(renderedPhrase, /ink-hover__glow-copy|aria-hidden/);
+  assert.match(homepageStyles, /\.home-introduction\s*\{[^}]*padding-right:/);
+  assert.match(homepageStyles, /\.home-introduction p\s*\{[^}]*color:\s*var\(--color-muted-ink\)/);
+  assert.match(homepageStyles, /\.home-introduction p\s*\{[^}]*font-family:\s*var\(--font-reading\)/);
+  assert.match(homepageStyles, /\.home-introduction p\s*\{[^}]*font-size:\s*clamp\(1\.1rem,\s*2vw,\s*1\.6rem\)/);
+  assert.match(homepageStyles, /\.portfolio-home\s*\{[^}]*min-height:\s*100svh/);
+  const screenStyles = homepageStyles.split("@media print")[0] ?? "";
+  assert.doesNotMatch(screenStyles, /^\s*height:\s*100svh/m);
 });
 
 test("homepage JSON-LD matches visible identity and verified profiles", () => {

@@ -15,7 +15,7 @@ yarn-error.log*
 pnpm-debug.log*
 
 # Nix and direnv state
-/.direnv
+/.direnv/
 
 # environment variables
 .env
@@ -30,7 +30,5 @@ pnpm-debug.log*
 # Obsidian vault settings
 .obsidian/
 
-# disposable Standard.site metadata conversion output
-generated/standard-site/
 __pycache__/
 tests/__pycache__/

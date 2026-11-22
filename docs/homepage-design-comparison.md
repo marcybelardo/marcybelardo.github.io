@@ -2,7 +2,7 @@
 
 Branch: `codex/photo-wide`.
 
-The homepage is now a single-screen photographic landing: name at the top, a right-aligned triptych of square photographs in the central space, and Projects, Blog, and About links along the bottom. Project and writing previews have been removed. A blank dark-ink square opens the accessible menu. The composition may scroll on short viewports or with enlarged text so content remains reachable.
+The homepage is a viewport-height photographic landing: the name-only heading and a subordinate muted introduction sit at the top, the unchanged triptych of square photographs occupies the central space, and Projects, Blog, and About links sit along the bottom. The introduction reads `is building software, making images, and writing about technology`; it is ordinary reading text rather than glowing display text. Project and writing previews remain absent. A blank dark-ink square opens the accessible menu. The composition grows and may scroll on short viewports or with enlarged text so content remains reachable.
 
 Fine pointers reveal a textured, multicolor glow behind the homepage title and links. The foreground text stays fully opaque black; an `aria-hidden` decorative text span sits beneath it, with a pointer-following radial mask and 8px blur that bleeds roughly 6–12px around letter edges. The black foreground span remains the only semantic text copy. The menu keeps its black square above an oversized, blurred textured field without a surface mask. Its homepage header follows the landing page's `clamp(1rem, 2vw, 2.5rem)` edge gutter, pins the square at far right, and opens the panel below/right of the title area. Touch, coarse-pointer, and no-JavaScript states retain plain black ink and the existing visible menu baseline.
 
@@ -14,9 +14,9 @@ The same compact menu now anchors Home, About, Projects, Blog, project details, 
 
 ## Preview
 
-From the repository root, run `nix develop --command pnpm --dir .worktrees/photo-wide dev --host 127.0.0.1 --port 4321`.
+From the repository root, run `pnpm dev --host 127.0.0.1 --port 4321`.
 
-Open `http://127.0.0.1:4321/` or `http://127.0.0.1:4321/about/`.
+Open `http://127.0.0.1:4321/` or `http://127.0.0.1:4321/about/`. For the controlled preview fixtures, run `node tests/production-fixture-build.mjs --review-output /tmp/marceline-layout-review` with a fresh path outside the repository. This retains the complete fixture `dist` including generated image assets; serve it with `pnpm astro preview --outDir /tmp/marceline-layout-review`, then remove that directory after review. The normal `pnpm verify` run does not retain review output.
 
 ## Images and styles
 

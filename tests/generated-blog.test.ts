@@ -92,6 +92,32 @@ test("every blog detail and RSS item renders the same non-empty author signature
   }
 });
 
+test("blog archive spacing is tighter, count-independent, and uses one first-row boundary", () => {
+  const styles = readFileSync(resolve(repositoryRoot, "src/styles/blog-design.css"), "utf8");
+  assert.match(styles, /\.editorial-main:has\(\.blog-index-page\)\s*\{[^}]*padding-top:\s*clamp\(5rem,\s*9vh,\s*7rem\)/);
+  assert.match(styles, /\.blog-index__header\s*\{[^}]*margin:\s*0 0 clamp\(1\.5rem,\s*3vh,\s*2\.5rem\)[^}]*padding-bottom:\s*1rem/);
+  assert.match(styles, /\.blog-index__list > li\s*\{[^}]*padding:\s*clamp\(1\.5rem,\s*2\.5vw,\s*2\.25rem\) 0[^}]*border-top:\s*1px solid/);
+  assert.match(styles, /\.blog-index__list > li:first-child\s*\{\s*border-top:\s*0;\s*\}/);
+  assert.match(styles, /\.blog-index__list > li:last-child\s*\{\s*border-bottom:\s*1px solid/);
+  assert.doesNotMatch(styles, /(?:nth-child|:only-child|data-count|single-entry|multi-entry)/);
+  const mobile = styles.match(/@media \(max-width: 47\.999rem\)\s*\{([\s\S]*?)\n\}/)?.[1] ?? "";
+  assert.match(mobile, /padding-top:\s*clamp\(5rem,\s*9vh,\s*7rem\)/);
+  assert.match(mobile, /margin-bottom:\s*clamp\(1\.5rem,\s*3vh,\s*2\.5rem\)/);
+  assert.doesNotMatch(styles, /\.blog-article__body\s*\{[^}]*padding/);
+});
+
+test("narrow archive headers stack long titles above a visible RSS link", () => {
+  const styles = readFileSync(resolve(repositoryRoot, "src/styles/blog-design.css"), "utf8");
+  const header = styles.match(/\.blog-index__header\s*\{([^}]*)\}/)?.[1] ?? "";
+  const rss = styles.match(/\.blog-index__rss\s*\{([^}]*)\}/)?.[1] ?? "";
+  const mobile = styles.split("@media (max-width: 47.999rem)")[1] ?? "";
+
+  assert.match(header, /justify-content:\s*space-between/);
+  assert.match(rss, /flex:\s*0 0 auto/);
+  assert.match(mobile, /\.blog-index__header\s*\{[^}]*flex-direction:\s*column[^}]*align-items:\s*start/);
+  assert.match(mobile, /\.blog-index-page \.blog-index__header h1\s*\{[^}]*width:\s*100%[^}]*min-width:\s*0[^}]*overflow-wrap:\s*anywhere/);
+});
+
 test("blog presentation retains editorial typography and semantic margin-note styling", () => {
   const styles = readFileSync(resolve(repositoryRoot, "src/styles/blog-design.css"), "utf8");
   const global = readFileSync(resolve(repositoryRoot, "src/styles/global.css"), "utf8");

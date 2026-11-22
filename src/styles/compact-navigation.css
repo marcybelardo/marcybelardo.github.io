@@ -94,8 +94,13 @@
 }
 
 /* Without JavaScript, keep every destination visible and in the document flow. */
+.primary-navigation:not([data-js-ready]) {
+  min-width: 0;
+}
+
 .primary-navigation:not([data-js-ready]) .primary-navigation__panel {
   position: static;
+  min-width: 0;
   padding: 0;
   border: 0;
   box-shadow: none;
