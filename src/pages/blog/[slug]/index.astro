@@ -82,6 +82,7 @@ const structuredData = {
   >
     <header class="editorial-page__header blog-article__header">
       <h1 data-ink-hover="text"><GlowText>{post.data.title}</GlowText></h1>
+      <p class="blog-article__description">{description}</p>
       <div class="metadata blog-article__metadata">
         <time datetime={post.data.date.toISOString()}>
           {formatDisplayDate(post.data.date)}

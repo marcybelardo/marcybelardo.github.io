@@ -8,10 +8,10 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 
 const aboutContent = {
     introduction:
-        "I’m Marceline, a software engineer focusing on designing reliable systems and workflows. I've worked in open source, maintained some projects of my own, and built web apps and data analysis pipelines for clients. I'm now focused on exploring modern AI development, especially around harness engineering and skill deployment.",
-    work: "I work with Rust, Python, and TypeScript most often, but I'm capable in many different languages and frameworks. I've contributed to Starship.rs and fht-compositor, and I'm currently working my own projects, namely Jixia, an agentic framework for self-taught courses, and Chikachika, a local-first overlay engine for live streamers written in Rust.",
+        "I am Marceline, computer science and mathematics student, writer, and artist based in Makati City, Philippines. Currently completing the Diploma of Computer Science at the University of the Philippines, and looking forward to future mathematics study and graduate research.",
+    work: "My work revolves around critical views of technology, AI, and computing. I am especially interested in how new technologies and modes of understanding change the way we live, and how these things relate to our visual and aesthetic experiences. I also maintain a visual practice in painting, photography, and conceptual art.",
     practice:
-        "I'm currently interested in how we can create better and more usable software for people, and how we can make those standards simple and reproducible. I'm fascinated also by how computer systems work, how we interact with them, and how we respond to these wild new times in history. In my free time, I am also a painter, photographer, and conceptual artist.",
+        "Before returning to formal study, I worked across software engineering, open source, and client web/data work—mostly in Rust, Python, and TypeScript. That technical background grounds my current experiments, including Jixia (an agentic harness for self-directed study) and Chikachika (a local-first streaming overlay engine in Rust).",
     portraitAlt: "Marceline Belardo taking a mirror photograph with a camera",
     email: {
         address: "marcy@marcelinebelardo.com",
@@ -23,7 +23,7 @@ const portraitSizes = "(min-width: 55rem) 15vw, (min-width: 35rem) 18vw, 30vw";
 
 <BaseLayout
     title="About"
-    description="About Marceline Belardo, a software developer working across software, visual culture, research, and writing."
+    description="About Marceline Belardo, computer science and mathematics student, writer, and artist reflecting on technology and philosophy"
 >
     <article class="about-page">
         <header class="about-title">
@@ -34,14 +34,6 @@ const portraitSizes = "(min-width: 55rem) 15vw, (min-width: 35rem) 18vw, 30vw";
         <div class="about-introduction">
             <p>{aboutContent.work}</p>
             <p>{aboutContent.practice}</p>
-            <a
-                data-ink-hover="text"
-                href="/marceline-belardo-cv.pdf"
-                target="_blank"
-                rel="noopener noreferrer"
-            >
-                <GlowText>View CV (PDF)</GlowText>
-            </a>
         </div>
         <div
             class="about-portrait-triptych"
@@ -89,13 +81,22 @@ const portraitSizes = "(min-width: 55rem) 15vw, (min-width: 35rem) 18vw, 30vw";
             <p>{aboutContent.introduction}</p>
         </section>
         <p class="about-contact">
-            For work, projects, or conversation:
+            For correspondence, collaborations, or select project work:
             <a
                 href={`mailto:${aboutContent.email.address}`}
                 aria-label={aboutContent.email.label}
                 data-ink-hover="text"
             >
                 <GlowText>{aboutContent.email.address}</GlowText>
+            </a>
+            ·
+            <a
+                data-ink-hover="text"
+                href="/marceline-belardo-cv.pdf"
+                target="_blank"
+                rel="noopener noreferrer"
+            >
+                <GlowText>CV (PDF)</GlowText>
             </a>
         </p>
     </article>

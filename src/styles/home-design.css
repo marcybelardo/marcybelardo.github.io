@@ -29,29 +29,45 @@ body:has(.portfolio-home) .social-links {
     z-index: 2;
 }
 
-.portfolio-home h1 {
+.home-header {
     margin: 0 var(--edge);
     padding-right: clamp(5rem, 8vw, 8rem);
+}
+
+.portfolio-home h1 {
+    margin: 0;
     font-size: clamp(3rem, 8.4vw, 10rem);
+    font-weight: 500;
+    letter-spacing: -0.04em;
+    line-height: 0.94;
+}
+
+.home-subtitle {
+    margin: 0.75rem 0 0;
+    color: var(--color-muted-ink);
+    font-family: var(--font-utility);
+    font-size: clamp(0.95rem, 1.3vw, 1.15rem);
     font-weight: 400;
-    letter-spacing: -0.065em;
-    line-height: 0.9;
+    letter-spacing: 0;
+    line-height: 1.4;
 }
 
 .home-photograph {
     position: relative;
     grid-row: 2;
     align-self: center;
-    justify-self: end;
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: clamp(0.25rem, 0.8vw, 0.75rem);
-    width: 100%;
-    margin: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: clamp(0.75rem, 2.5vw, 2.25rem);
+    width: calc(100% - 2 * var(--edge));
+    margin: 0 var(--edge);
 }
 
 .home-photograph__frame {
     position: relative;
+    flex: 0 1 min(30%, 21rem);
+    width: min(30%, 21rem);
     aspect-ratio: 1;
     overflow: hidden;
 }
@@ -68,6 +84,10 @@ body:has(.portfolio-home) .social-links {
     background: #d9d8d2;
 }
 
+.home-photograph__frame:last-child .home-photograph__image {
+    object-position: center 20%;
+}
+
 .home-directions {
     display: flex;
     justify-content: space-between;
@@ -79,7 +99,8 @@ body:has(.portfolio-home) .social-links {
 .home-directions a {
     color: var(--color-ink);
     font-size: clamp(1.8rem, 1.8vw, 2.8rem);
-    letter-spacing: -0.035em;
+    font-weight: 500;
+    letter-spacing: -0.025em;
     text-decoration: none;
 }
 
@@ -93,9 +114,12 @@ body:has(.portfolio-home) .social-links {
         min-height: 32rem;
     }
 
+    .home-header {
+        padding-right: clamp(4.25rem, 16vw, 5.25rem);
+    }
+
     .portfolio-home h1 {
         max-width: 12ch;
-        padding-right: clamp(4.25rem, 16vw, 5.25rem);
         font-size: clamp(3rem, 11vw, 4.8rem);
     }
 

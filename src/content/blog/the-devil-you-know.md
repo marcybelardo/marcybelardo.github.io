@@ -4,6 +4,7 @@ slug: the-devil-you-know
 date: 2026-06-02
 description: Where Marceline comes to terms with AI's usefulness, and why its issues run deeper than technology
 tags:
+  - essay
   - AI
   - Technology
   - Politics

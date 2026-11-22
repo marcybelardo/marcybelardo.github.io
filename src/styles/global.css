@@ -20,9 +20,10 @@
     --color-muted-ink: #68655f;
     --color-rule: #c9c4b8;
     --color-prussian-blue: #003153;
-    --font-reading: "Source Sans 3", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    --color-link: #2a72b5;
+    --font-reading: "Helvetica Neue", Helvetica, Arial, sans-serif;
     --font-utility: "Helvetica Neue", Helvetica, Arial, sans-serif;
-    --font-display: "Arial Narrow", "Liberation Sans Narrow", "Helvetica Neue", Arial, sans-serif;
+    --font-display: "Helvetica Neue", Helvetica, Arial, sans-serif;
     --editorial-measure: 72rem;
     --reading-measure: 44rem;
 }
@@ -386,6 +387,12 @@ article {
         display: none;
     }
 
+    .margin-note-rail[data-margin-note-measuring] > ol > li {
+        padding-inline-start: 1.75rem;
+        font-size: 0.875rem;
+        line-height: 1.45;
+    }
+
     .blog-article[data-margin-notes-enhanced="true"] .margin-note-rail > ol,
     .blog-article[data-margin-notes-enhanced="true"] .margin-note-rail > ul {
         position: relative;
@@ -393,6 +400,7 @@ article {
         margin: 0;
         padding: 0;
         list-style: none;
+        counter-reset: margin-note;
     }
 
     .blog-article[data-margin-notes-enhanced="true"] .margin-note-rail > ol > li {
@@ -400,9 +408,29 @@ article {
         inset-inline: 0;
         top: var(--margin-note-top, 0);
         margin: 0;
+        padding-inline-start: 1.75rem;
         list-style: none;
+        counter-increment: margin-note;
         font-size: 0.875rem;
         line-height: 1.45;
+    }
+
+    .blog-article[data-margin-notes-enhanced="true"] .margin-note-rail > ol > li::before {
+        content: counter(margin-note) ".";
+        position: absolute;
+        inset-inline-start: 0;
+        top: 0;
+        color: var(--color-muted-ink);
+        font-family: var(--font-utility);
+        font-variant-numeric: tabular-nums;
+    }
+
+    .margin-note-rail a {
+        color: var(--color-link);
+    }
+
+    .margin-note-rail a:hover {
+        color: var(--color-prussian-blue);
     }
 
     .blog-article[data-margin-note-cleanup-failed="true"] .margin-note-rail > ol {
