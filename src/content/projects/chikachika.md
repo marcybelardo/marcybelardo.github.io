@@ -14,7 +14,7 @@ tags:
   - skills
   - desktop
 featured: true
-featuredOrder: 6
+featuredOrder: 1
 draft: false
 repositoryUrl: https://github.com/marcybelardo/chikachika
 ---

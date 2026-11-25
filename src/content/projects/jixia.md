@@ -14,7 +14,7 @@ tags:
   - skills
   - harness-engineering
 featured: true
-featuredOrder: 5
+featuredOrder: 2
 draft: false
 repositoryUrl: https://github.com/marcybelardo/jixia
 ---
